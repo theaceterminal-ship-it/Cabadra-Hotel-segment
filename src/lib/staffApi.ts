@@ -175,6 +175,7 @@ export async function fetchRoomsForProperty(propertyId: string): Promise<Room[]>
       number: r.number,
       type: r.type,
       floor: r.floor,
+      maxOccupancy: r.max_occupancy ?? 2,
       status: r.status,
       pricePerNight: r.price_per_night,
       guestName: guest?.name,
@@ -196,7 +197,7 @@ export async function fetchRoomsForProperty(propertyId: string): Promise<Room[]>
 /** Persists a room's status/ops fields (Reception) and/or its core details (owner editing type/floor/price/photo) — same function, since it's the same table and the same RLS policy covers both. */
 export async function updateRoom(roomId: string, patch: {
   status?: RoomStatus; notes?: string; cleanProgress?: number; maintenanceEta?: string; issueDescription?: string;
-  number?: string; type?: string; floor?: number; pricePerNight?: number; image?: string;
+  number?: string; type?: string; floor?: number; maxOccupancy?: number; pricePerNight?: number; image?: string;
 }): Promise<void> {
   const { error } = await supabase.from('rooms').update({
     ...(patch.status !== undefined && { status: patch.status }),
@@ -207,6 +208,7 @@ export async function updateRoom(roomId: string, patch: {
     ...(patch.number !== undefined && { number: patch.number }),
     ...(patch.type !== undefined && { type: patch.type }),
     ...(patch.floor !== undefined && { floor: patch.floor }),
+    ...(patch.maxOccupancy !== undefined && { max_occupancy: patch.maxOccupancy }),
     ...(patch.pricePerNight !== undefined && { price_per_night: patch.pricePerNight }),
     ...(patch.image !== undefined && { image: patch.image }),
   }).eq('id', roomId);
@@ -214,13 +216,14 @@ export async function updateRoom(roomId: string, patch: {
 }
 
 /** Creates a room for real — the missing piece that made a freshly-created property a dead end (no rooms means nothing for Reception to show or a reservation to point at). */
-export async function addRoom(propertyId: string, room: { number: string; type: string; floor: number; pricePerNight: number; image?: string }): Promise<void> {
+export async function addRoom(propertyId: string, room: { number: string; type: string; floor: number; maxOccupancy?: number; pricePerNight: number; image?: string }): Promise<void> {
   const { error } = await supabase.from('rooms').insert({
     id: `${propertyId}-${slugify(room.number)}`,
     property_id: propertyId,
     number: room.number,
     type: room.type,
     floor: room.floor,
+    max_occupancy: room.maxOccupancy ?? 2,
     status: 'ready',
     price_per_night: room.pricePerNight,
     image: room.image || null,

@@ -17,6 +17,8 @@ export interface Room {
   number: string;
   type: string;
   floor: number;
+  /** How many guests this room sleeps — what the New Booking search filters availability on. */
+  maxOccupancy: number;
   status: RoomStatus;
   guestName?: string;
   guestPhone?: string;

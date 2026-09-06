@@ -4,9 +4,10 @@ import { GuestLinkCard } from './GuestLinkCard';
 import { RoomFolioModal } from './RoomFolioModal';
 import { RoomQrModal } from './RoomQrModal';
 import { CheckInModal } from './CheckInModal';
+import { NewBookingModal } from './NewBookingModal';
 import { formatCurrency } from '../lib/currency';
 import {
-  Search, User, Brush, AlertCircle, Star, Wrench, QrCode, Receipt, UserPlus, FileText, Phone, Mail,
+  Search, User, Brush, AlertCircle, Star, Wrench, QrCode, Receipt, UserPlus, FileText, Phone, Mail, CalendarPlus,
 } from 'lucide-react';
 
 interface RoomsFloorsViewProps {
@@ -99,6 +100,7 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, cu
   const [showFolio, setShowFolio] = useState(false);
   const [qrRoom, setQrRoom] = useState<Room | null>(null);
   const [checkInRoom, setCheckInRoom] = useState<Room | null>(null);
+  const [showNewBooking, setShowNewBooking] = useState(false);
 
   const filteredRooms = rooms.filter((r) => {
     const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
@@ -134,14 +136,22 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, cu
           <h1 className="text-2xl md:text-3xl font-semibold text-[#141d23]">Rooms & Floors</h1>
           <p className="text-sm text-[#4e463a] mt-1">Manage every room, and print a room-service QR for the door.</p>
         </div>
-        <div className="relative w-full sm:w-72">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#7f7668]" />
-          <input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search room, type or guest..."
-            className="w-full h-10 pl-9 pr-3 bg-white border border-[#E9ECEF] rounded-lg text-xs focus:outline-none focus:border-[#765a25]"
-          />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-72">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#7f7668]" />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search room, type or guest..."
+              className="w-full h-10 pl-9 pr-3 bg-white border border-[#E9ECEF] rounded-lg text-xs focus:outline-none focus:border-[#765a25]"
+            />
+          </div>
+          <button
+            onClick={() => setShowNewBooking(true)}
+            className="h-10 px-3 rounded-lg bg-[#765a25] text-white text-xs font-semibold hover:bg-[#5c4210] flex items-center gap-1.5 whitespace-nowrap shrink-0"
+          >
+            <CalendarPlus className="w-4 h-4" /> New Booking
+          </button>
         </div>
       </div>
 
@@ -368,6 +378,16 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, cu
             setCheckInRoom(null);
             setSelectedRoomForDetail(null);
           }}
+        />
+      )}
+
+      {showNewBooking && (
+        <NewBookingModal
+          propertyId={propertyId}
+          currency={currency}
+          rooms={rooms}
+          onClose={() => setShowNewBooking(false)}
+          onBooked={onRefreshRooms}
         />
       )}
     </div>

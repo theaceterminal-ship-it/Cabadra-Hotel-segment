@@ -271,6 +271,8 @@ export default function ReceptionApp() {
         <div className="flex-1 overflow-y-auto">
           {view === 'dashboard' && (
             <ReceptionDashboard
+              propertyId={propertyId}
+              currency={currency}
               rooms={rooms}
               urgentRequests={urgentRequests.filter(r => r.status === 'open')}
               upcomingArrivals={upcomingArrivals}

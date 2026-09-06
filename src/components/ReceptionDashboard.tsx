@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import {
   BedDouble, Users, ClipboardList, Megaphone, Plus, Star, Clock,
-  UtensilsCrossed, ArrowRight, CheckCircle2, Sparkles,
+  UtensilsCrossed, ArrowRight, CheckCircle2, Sparkles, CalendarPlus,
 } from 'lucide-react';
 import { Room, UrgentRequest, UpcomingArrival, LiveOpsTask, KdsOrder, AppNotification, AppView } from '../types';
 import { updateArrivalEta } from '../lib/staffApi';
+import { NewBookingModal } from './NewBookingModal';
 
 interface ReceptionDashboardProps {
+  propertyId: string;
+  currency: string;
   rooms: Room[];
   urgentRequests: UrgentRequest[];
   upcomingArrivals: UpcomingArrival[];
@@ -74,11 +77,12 @@ function timeAgo(iso: string): string {
  * (RoomsFloorsView) so this page never grows to match its complexity.
  */
 export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
-  rooms, urgentRequests, upcomingArrivals, tasks, kdsOrders, notifications,
+  propertyId, currency, rooms, urgentRequests, upcomingArrivals, tasks, kdsOrders, notifications,
   onResolveUrgentRequest, onCheckInGuest, onRefreshRooms, onOpenNewRequest, onMarkNotificationRead, onNavigate,
 }) => {
   const [etaEditArrivalId, setEtaEditArrivalId] = useState<string | null>(null);
   const [savingEta, setSavingEta] = useState(false);
+  const [showNewBooking, setShowNewBooking] = useState(false);
 
   const occupiedCount = rooms.filter(r => r.status === 'occupied' || r.status === 'occupied_vip').length;
   const occupancyPct = rooms.length > 0 ? Math.round((occupiedCount / rooms.length) * 100) : 0;
@@ -106,12 +110,20 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
           <h1 className="text-2xl md:text-3xl font-semibold text-[#141d23]">Dashboard</h1>
           <p className="text-sm text-[#4e463a] mt-1">Today at a glance.</p>
         </div>
-        <button
-          onClick={onOpenNewRequest}
-          className="h-10 px-4 rounded-lg bg-[#765a25] text-white text-xs font-semibold hover:bg-[#5c4210] transition-colors flex items-center gap-1.5 shadow-sm whitespace-nowrap"
-        >
-          <Plus className="w-4 h-4" /> New Request
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onOpenNewRequest}
+            className="h-10 px-4 rounded-lg border border-[#E9ECEF] text-[#4e463a] text-xs font-semibold hover:border-[#765a25] hover:text-[#765a25] transition-colors flex items-center gap-1.5 whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4" /> New Request
+          </button>
+          <button
+            onClick={() => setShowNewBooking(true)}
+            className="h-10 px-4 rounded-lg bg-[#765a25] text-white text-xs font-semibold hover:bg-[#5c4210] transition-colors flex items-center gap-1.5 shadow-sm whitespace-nowrap"
+          >
+            <CalendarPlus className="w-4 h-4" /> New Booking
+          </button>
+        </div>
       </div>
 
       {/* 4 KPI boxes */}
@@ -248,6 +260,16 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
           </div>
         </div>
       </div>
+
+      {showNewBooking && (
+        <NewBookingModal
+          propertyId={propertyId}
+          currency={currency}
+          rooms={rooms}
+          onClose={() => setShowNewBooking(false)}
+          onBooked={onRefreshRooms}
+        />
+      )}
     </div>
   );
 };

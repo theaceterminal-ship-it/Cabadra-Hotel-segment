@@ -272,7 +272,7 @@ function StatCard({ label, value }: { label: string; value: string }) {
 }
 
 function RoomsTab({ propertyId, currency, rooms, onChanged }: { propertyId: string; currency: string; rooms: Room[]; onChanged: () => void }) {
-  const emptyForm = { number: '', type: '', floor: '1', price: '', image: '' };
+  const emptyForm = { number: '', type: '', floor: '1', occupancy: '2', price: '', image: '' };
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -280,7 +280,7 @@ function RoomsTab({ propertyId, currency, rooms, onChanged }: { propertyId: stri
 
   const startEdit = (r: Room) => {
     setEditingId(r.id);
-    setForm({ number: r.number, type: r.type, floor: String(r.floor), price: String(r.pricePerNight), image: r.image ?? '' });
+    setForm({ number: r.number, type: r.type, floor: String(r.floor), occupancy: String(r.maxOccupancy), price: String(r.pricePerNight), image: r.image ?? '' });
   };
   const cancelEdit = () => { setEditingId(null); setForm(emptyForm); };
 
@@ -292,7 +292,7 @@ function RoomsTab({ propertyId, currency, rooms, onChanged }: { propertyId: stri
     try {
       const payload = {
         number: form.number.trim(), type: form.type.trim(),
-        floor: parseInt(form.floor) || 1, pricePerNight: parseFloat(form.price) || 0,
+        floor: parseInt(form.floor) || 1, maxOccupancy: parseInt(form.occupancy) || 2, pricePerNight: parseFloat(form.price) || 0,
         image: form.image.trim() || undefined,
       };
       if (editingId) {
@@ -322,7 +322,7 @@ function RoomsTab({ propertyId, currency, rooms, onChanged }: { propertyId: stri
   return (
     <div className="space-y-4">
       <form onSubmit={handleSubmit} className="space-y-2 bg-[#f6faff] p-3 rounded-lg border border-[#E9ECEF]">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           <div>
             <label className={labelCls}>Number</label>
             <input value={form.number} onChange={e => setForm(f => ({ ...f, number: e.target.value }))} placeholder="101" className={inputCls} />
@@ -334,6 +334,10 @@ function RoomsTab({ propertyId, currency, rooms, onChanged }: { propertyId: stri
           <div>
             <label className={labelCls}>Floor</label>
             <input type="number" value={form.floor} onChange={e => setForm(f => ({ ...f, floor: e.target.value }))} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Sleeps</label>
+            <input type="number" min={1} value={form.occupancy} onChange={e => setForm(f => ({ ...f, occupancy: e.target.value }))} placeholder="2" className={inputCls} />
           </div>
           <div>
             <label className={labelCls}>Price/night ({currency})</label>
@@ -363,7 +367,7 @@ function RoomsTab({ propertyId, currency, rooms, onChanged }: { propertyId: stri
           rooms.map(r => (
             <div key={r.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs ${editingId === r.id ? 'border-[#765a25] bg-[#fff8ec]' : 'border-[#E9ECEF]'}`}>
               <span className="font-semibold text-[#141d23]">Room {r.number}</span>
-              <span className="text-[#7f7668]">{r.type} · Floor {r.floor} · {formatCurrency(r.pricePerNight, currency)}/night</span>
+              <span className="text-[#7f7668]">{r.type} · Floor {r.floor} · Sleeps {r.maxOccupancy} · {formatCurrency(r.pricePerNight, currency)}/night</span>
               <div className="flex items-center gap-1">
                 <button onClick={() => startEdit(r)} className="text-[#765a25] hover:text-[#5c4210] p-1">
                   <Pencil className="w-3.5 h-3.5" />
