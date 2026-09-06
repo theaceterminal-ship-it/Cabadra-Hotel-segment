@@ -1,0 +1,147 @@
+export type AppView = 
+  | 'owner_overview'
+  | 'properties'
+  | 'reception'
+  | 'live_ops'
+  | 'kitchen_kds'
+  | 'active_deliveries'
+  | 'guest_home'
+  | 'room_dining';
+
+export type RoomStatus = 'ready' | 'occupied' | 'cleaning' | 'dirty' | 'occupied_vip' | 'maintenance';
+
+export interface Room {
+  id: string;
+  number: string;
+  type: string;
+  floor: number;
+  status: RoomStatus;
+  guestName?: string;
+  checkoutInfo?: string;
+  notes?: string;
+  cleanProgress?: number;
+  maintenanceEta?: string;
+  issueDescription?: string;
+  pricePerNight: number;
+  image?: string;
+  /** The current guest's link token — set only when the room is genuinely occupied by a checked-in reservation. Builds their guest_token URL: /guest/:guestToken. */
+  guestToken?: string;
+  /** The checked-in reservation behind this room's occupancy, if any — what staff_get_folio/staff_checkout_reservation key off. */
+  reservationId?: string;
+}
+
+export interface Property {
+  id: string;
+  name: string;
+  location: string;
+  status: 'active' | 'maintenance' | 'paused';
+  occupancy: number;
+  revenueToday: string;
+  ordersToday: number;
+  requestsCount: number;
+  totalRooms: number;
+  totalRevenue: string;
+  avgOrderValue: string;
+  image: string;
+  modelImage: string;
+}
+
+export interface MenuItem {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  description: string;
+  image: string;
+  isVeg: boolean;
+  tags: string[];
+  prepTime?: string;
+}
+
+export interface CartItem {
+  menuItem: MenuItem;
+  quantity: number;
+  specialInstructions?: string;
+}
+
+export interface KdsOrder {
+  id: string;
+  orderNumber: string;
+  roomNumber: string;
+  isVip?: boolean;
+  isRush?: boolean;
+  status: 'new' | 'preparing' | 'ready' | 'delivered';
+  timeElapsed: string;
+  timerSeconds: number;
+  isOverdue?: boolean;
+  notes?: string;
+  items: {
+    name: string;
+    quantity: number;
+    modifier?: string;
+    completed?: boolean;
+  }[];
+}
+
+export interface LiveOpsTask {
+  id: string;
+  roomNumber: string;
+  title: string;
+  description: string;
+  priority: 'high' | 'standard';
+  dueTime: string;
+  status: 'pending' | 'in_progress' | 'completed';
+  assignedTo?: string;
+  category: 'housekeeping' | 'maintenance' | 'amenities' | 'concierge';
+}
+
+export interface UpcomingArrival {
+  id: string;
+  guestName: string;
+  initials: string;
+  eta: string;
+  roomType: string;
+  isVip?: boolean;
+  isDelayed?: boolean;
+  assignedRoom?: string;
+  checkedIn?: boolean;
+}
+
+export interface UrgentRequest {
+  id: string;
+  title: string;
+  timeAgo: string;
+  roomNumber: string;
+  priority: 'High Priority' | 'Pending Approval' | 'Standard';
+  isUrgent: boolean;
+  status: 'open' | 'resolved';
+}
+
+export interface AppNotification {
+  id: string;
+  type: 'new_order' | 'guest_request' | 'high_priority_request' | 'task_created' | 'new_arrival';
+  title: string;
+  body: string;
+  roomNumber?: string;
+  createdAt: string;
+  read: boolean;
+}
+
+export interface FolioCharge {
+  id: string;
+  description: string;
+  amount: number;
+  category: 'room_service' | 'spa' | 'laundry' | 'minibar' | 'other';
+  postedAt: string;
+  settled: boolean;
+}
+
+export interface Folio {
+  reservationId: string;
+  status: 'upcoming' | 'checked_in' | 'checked_out' | 'cancelled';
+  checkIn: string;
+  checkOut: string;
+  charges: FolioCharge[];
+  totalOutstanding: number;
+  totalPaid: number;
+}

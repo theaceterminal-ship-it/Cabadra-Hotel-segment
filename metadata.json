@@ -1,0 +1,6 @@
+{
+  "name": "Cabadra - Hospitality Management & Guest Experience Suite",
+  "description": "Comprehensive enterprise hospitality management and guest experience platform featuring Reception & Room Grid, Kitchen KDS, Active Deliveries, Owner Overview Analytics, Properties Portfolio, Live Ops, and Guest Room Dining.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
