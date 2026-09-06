@@ -277,6 +277,8 @@ function OverviewTab({ property, imageUrl, setImageUrl, onSaveImage, savingImage
         </div>
       </div>
 
+      <PmsModeCard property={property} />
+
       <UpiSettingsCard property={property} />
 
       <div className="bg-white rounded-xl border border-[#E9ECEF] p-5">
@@ -289,6 +291,61 @@ function OverviewTab({ property, imageUrl, setImageUrl, onSaveImage, savingImage
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The one switch that decides whether Cabadra is this hotel's front desk
+ * or sits on top of one they already have. Off: Reception gets the full
+ * New Booking flow (search availability, book ahead, cancel). On: that
+ * flow disappears — the hotel's real PMS already owns bookings, so
+ * Reception's only job is tapping a room and typing who's in it, which
+ * is all the guest-experience features (QR, folio, requests) actually
+ * need to work. No integration exists yet either way — this just keeps
+ * Cabadra's own screens out of the way of a front desk it doesn't own.
+ */
+function PmsModeCard({ property }: { property: Property }) {
+  const [hasExternalPms, setHasExternalPms] = useState(property.hasExternalPms);
+  const [saving, setSaving] = useState(false);
+
+  const handleToggle = async () => {
+    const next = !hasExternalPms;
+    setHasExternalPms(next); // optimistic — a settings switch should feel instant
+    setSaving(true);
+    try {
+      await updateProperty(property.id, { hasExternalPms: next });
+    } catch {
+      setHasExternalPms(!next); // revert on failure
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-[#E9ECEF] p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-bold text-[#141d23]">Does this hotel already use a PMS?</h3>
+          <p className="text-xs text-[#7f7668] mt-1 max-w-md">
+            {hasExternalPms
+              ? 'On — Reception skips booking screens entirely. They just tap a room and add the guest’s name so the room’s QR code, folio and requests work for them.'
+              : 'Off — Cabadra is the front desk here. Reception uses New Booking to search availability and book rooms.'}
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={hasExternalPms}
+          onClick={handleToggle}
+          disabled={saving}
+          className={`shrink-0 w-12 h-7 rounded-full relative transition-colors disabled:opacity-60 ${hasExternalPms ? 'bg-[#765a25]' : 'bg-[#E9ECEF]'}`}
+        >
+          <span
+            className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-transform ${hasExternalPms ? 'translate-x-6' : 'translate-x-1'}`}
+          />
+        </button>
       </div>
     </div>
   );

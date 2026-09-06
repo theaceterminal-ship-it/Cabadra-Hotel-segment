@@ -57,6 +57,8 @@ export interface Property {
   modelImage: string;
   /** UPI ID for guest/front-desk payment QR codes — set once by the owner (Overview tab), optional. */
   upiId?: string;
+  /** true = this hotel already runs its own PMS for bookings; Cabadra hides its own New Booking/availability-search flow and Reception just links a guest to a room via a room tile. false (default) = Cabadra is the front desk. */
+  hasExternalPms: boolean;
 }
 
 export interface MenuItem {

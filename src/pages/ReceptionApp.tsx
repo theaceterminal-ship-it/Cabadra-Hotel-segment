@@ -85,6 +85,7 @@ export default function ReceptionApp() {
   const [currency, setCurrency] = useState('USD');
   const [propertyName, setPropertyName] = useState('');
   const [upiId, setUpiId] = useState<string | undefined>(undefined);
+  const [hasExternalPms, setHasExternalPms] = useState(false);
   const syncInFlight = useRef(false);
 
   const propertyId = assignments.find(a => a.role === 'receptionist')?.propertyId;
@@ -129,7 +130,7 @@ export default function ReceptionApp() {
     reloadRoomsAndArrivals(propertyId);
     reloadRequests(propertyId);
     reloadTasks(propertyId);
-    fetchPropertyMeta(propertyId).then(meta => { setCurrency(meta.currency); setPropertyName(meta.name); setUpiId(meta.upiId); }).catch(err => console.warn('Failed to load property currency:', err));
+    fetchPropertyMeta(propertyId).then(meta => { setCurrency(meta.currency); setPropertyName(meta.name); setUpiId(meta.upiId); setHasExternalPms(meta.hasExternalPms); }).catch(err => console.warn('Failed to load property currency:', err));
     fetchStaffDirectory(propertyId).then(setDirectory).catch(err => console.warn('Failed to load staff directory:', err));
   }, [propertyId]);
 
@@ -314,6 +315,7 @@ export default function ReceptionApp() {
             <ReceptionDashboard
               propertyId={propertyId}
               currency={currency}
+              hasExternalPms={hasExternalPms}
               rooms={rooms}
               urgentRequests={urgentRequests.filter(r => r.status === 'open')}
               upcomingArrivals={upcomingArrivals}
@@ -335,6 +337,7 @@ export default function ReceptionApp() {
               propertyName={propertyName}
               currency={currency}
               upiId={upiId}
+              hasExternalPms={hasExternalPms}
               rooms={rooms}
               onUpdateRoom={handleUpdateRoom}
               onOpenNewRequest={() => setIsRequestModalOpen(true)}

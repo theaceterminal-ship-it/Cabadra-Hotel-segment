@@ -10,6 +10,8 @@ import { NewBookingModal } from './NewBookingModal';
 interface ReceptionDashboardProps {
   propertyId: string;
   currency: string;
+  /** true = this hotel runs its own PMS — New Booking (availability search/advance booking) is hidden; a room is checked in directly from Rooms & Floors instead. */
+  hasExternalPms: boolean;
   rooms: Room[];
   urgentRequests: UrgentRequest[];
   upcomingArrivals: UpcomingArrival[];
@@ -89,7 +91,7 @@ function timeAgo(iso: string): string {
  * (RoomsFloorsView) so this page never grows to match its complexity.
  */
 export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
-  propertyId, currency, rooms, urgentRequests, upcomingArrivals, tasks, kdsOrders, notifications,
+  propertyId, currency, hasExternalPms, rooms, urgentRequests, upcomingArrivals, tasks, kdsOrders, notifications,
   onResolveUrgentRequest, onCheckInGuest, onCancelBooking, onRefreshRooms, onOpenNewRequest, onMarkNotificationRead, onNavigate,
 }) => {
   const [etaEditArrivalId, setEtaEditArrivalId] = useState<string | null>(null);
@@ -129,12 +131,14 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
           >
             <Plus className="w-4 h-4" /> New Request
           </button>
-          <button
-            onClick={() => setShowNewBooking(true)}
-            className="h-10 px-4 rounded-lg bg-[#765a25] text-white text-xs font-semibold hover:bg-[#5c4210] transition-colors flex items-center gap-1.5 shadow-sm whitespace-nowrap"
-          >
-            <CalendarPlus className="w-4 h-4" /> New Booking
-          </button>
+          {!hasExternalPms && (
+            <button
+              onClick={() => setShowNewBooking(true)}
+              className="h-10 px-4 rounded-lg bg-[#765a25] text-white text-xs font-semibold hover:bg-[#5c4210] transition-colors flex items-center gap-1.5 shadow-sm whitespace-nowrap"
+            >
+              <CalendarPlus className="w-4 h-4" /> New Booking
+            </button>
+          )}
         </div>
       </div>
 
@@ -282,7 +286,7 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
         </div>
       </div>
 
-      {showNewBooking && (
+      {!hasExternalPms && showNewBooking && (
         <NewBookingModal
           propertyId={propertyId}
           currency={currency}

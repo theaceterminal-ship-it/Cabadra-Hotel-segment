@@ -15,6 +15,8 @@ interface RoomsFloorsViewProps {
   propertyName: string;
   currency: string;
   upiId?: string;
+  /** true = this hotel runs its own PMS — New Booking (availability search/advance booking) is hidden; tapping a room here to check someone in is the whole flow, and records source: 'imported'. */
+  hasExternalPms: boolean;
   rooms: Room[];
   onUpdateRoom: (updated: Room) => void;
   onOpenNewRequest: () => void;
@@ -62,7 +64,7 @@ function RoomTileBody({ room, currency }: { room: Room; currency: string }) {
  * landing page is now its own tab, so the Dashboard can stay simple while
  * this stays as powerful as front-desk work actually needs.
  */
-export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, propertyName, currency, upiId, rooms, onUpdateRoom, onRefreshRooms }) => {
+export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, propertyName, currency, upiId, hasExternalPms, rooms, onUpdateRoom, onRefreshRooms }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<RoomStatus | 'all'>('all');
   const [selectedRoomForDetail, setSelectedRoomForDetail] = useState<Room | null>(null);
@@ -103,7 +105,11 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-semibold text-[#141d23]">Rooms & Floors</h1>
-          <p className="text-sm text-[#4e463a] mt-1">Manage every room, and print a room-service QR for the door.</p>
+          <p className="text-sm text-[#4e463a] mt-1">
+            {hasExternalPms
+              ? 'Your PMS handles bookings — tap a ready room to check the guest in here and switch on their QR.'
+              : 'Manage every room, and print a room-service QR for the door.'}
+          </p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <div className="relative flex-1 sm:w-72">
@@ -115,12 +121,14 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
               className="w-full h-10 pl-9 pr-3 bg-white border border-[#E9ECEF] rounded-lg text-xs focus:outline-none focus:border-[#765a25]"
             />
           </div>
-          <button
-            onClick={() => setShowNewBooking(true)}
-            className="h-10 px-3 rounded-lg bg-[#765a25] text-white text-xs font-semibold hover:bg-[#5c4210] flex items-center gap-1.5 whitespace-nowrap shrink-0"
-          >
-            <CalendarPlus className="w-4 h-4" /> New Booking
-          </button>
+          {!hasExternalPms && (
+            <button
+              onClick={() => setShowNewBooking(true)}
+              className="h-10 px-3 rounded-lg bg-[#765a25] text-white text-xs font-semibold hover:bg-[#5c4210] flex items-center gap-1.5 whitespace-nowrap shrink-0"
+            >
+              <CalendarPlus className="w-4 h-4" /> New Booking
+            </button>
+          )}
         </div>
       </div>
 
@@ -345,6 +353,7 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
         <CheckInModal
           propertyId={propertyId}
           room={checkInRoom}
+          source={hasExternalPms ? 'imported' : 'built_in'}
           onClose={() => setCheckInRoom(null)}
           onCheckedIn={() => {
             onRefreshRooms();
@@ -354,7 +363,7 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
         />
       )}
 
-      {showNewBooking && (
+      {!hasExternalPms && showNewBooking && (
         <NewBookingModal
           propertyId={propertyId}
           currency={currency}

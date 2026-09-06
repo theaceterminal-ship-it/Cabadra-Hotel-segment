@@ -7,6 +7,8 @@ import { ImageUploadField } from './ImageUploadField';
 interface CheckInModalProps {
   propertyId: string;
   room: Room;
+  /** 'imported' = the booking already exists in the hotel's real PMS; this check-in just links a guest to the room so the QR/folio/requests work. Defaults to 'built_in'. */
+  source?: 'built_in' | 'imported';
   onClose: () => void;
   onCheckedIn: () => void;
 }
@@ -28,7 +30,7 @@ const labelCls = 'text-[11px] font-bold text-[#4e463a] block mb-1';
  * makes those two things agree: a room only becomes occupied by way of a
  * real guest record and reservation (staff_checkin_new_guest).
  */
-export function CheckInModal({ propertyId, room, onClose, onCheckedIn }: CheckInModalProps) {
+export function CheckInModal({ propertyId, room, source = 'built_in', onClose, onCheckedIn }: CheckInModalProps) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -53,6 +55,7 @@ export function CheckInModal({ propertyId, room, onClose, onCheckedIn }: CheckIn
         idDocumentUrl: idDocumentUrl || undefined,
         checkOut: checkOut ? new Date(`${checkOut}T12:00:00`) : undefined,
         partySize: parseInt(partySize, 10) || 1,
+        source,
       });
       onCheckedIn();
     } catch (err) {
@@ -74,7 +77,9 @@ export function CheckInModal({ propertyId, room, onClose, onCheckedIn }: CheckIn
         </div>
 
         <p className="text-xs text-[#7f7668]">
-          This creates the guest's profile and assigns them to this room — their room-service QR will work for them specifically until checkout.
+          {source === 'imported'
+            ? "This doesn't book the room — it just tells Cabadra who's staying in it, so their room QR, folio and requests work for them specifically until checkout."
+            : "This creates the guest's profile and assigns them to this room — their room-service QR will work for them specifically until checkout."}
         </p>
 
         <div className="space-y-3">

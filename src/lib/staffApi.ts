@@ -91,6 +91,7 @@ export async function fetchStaffProperties(): Promise<Property[]> {
       image: p.image ?? '',
       modelImage: p.image ?? '',
       upiId: p.upi_id ?? undefined,
+      hasExternalPms: p.has_external_pms ?? false,
     };
   });
 }
@@ -102,21 +103,27 @@ export async function fetchPropertyCurrency(propertyId: string): Promise<string>
   return data?.currency ?? 'USD';
 }
 
-/** Name + currency + UPI id — what Reception's folio/bill-printing needs but has no other reason to load the full Property/stats bundle for. */
-export async function fetchPropertyMeta(propertyId: string): Promise<{ name: string; currency: string; upiId?: string }> {
-  const { data, error } = await supabase.from('properties').select('name, currency, upi_id').eq('id', propertyId).single();
+/** Name + currency + UPI id + PMS mode — what Reception's folio/bill-printing/booking-UI needs but has no other reason to load the full Property/stats bundle for. */
+export async function fetchPropertyMeta(propertyId: string): Promise<{ name: string; currency: string; upiId?: string; hasExternalPms: boolean }> {
+  const { data, error } = await supabase.from('properties').select('name, currency, upi_id, has_external_pms').eq('id', propertyId).single();
   if (error) throw error;
-  return { name: data?.name ?? '', currency: data?.currency ?? 'USD', upiId: data?.upi_id ?? undefined };
+  return {
+    name: data?.name ?? '',
+    currency: data?.currency ?? 'USD',
+    upiId: data?.upi_id ?? undefined,
+    hasExternalPms: data?.has_external_pms ?? false,
+  };
 }
 
-/** Property-level settings an owner can change after creation — name/location/status/photo URL. All optional; only the fields passed are updated. */
-export async function updateProperty(propertyId: string, patch: { name?: string; location?: string; status?: string; image?: string; upiId?: string }): Promise<void> {
+/** Property-level settings an owner can change after creation — name/location/status/photo URL/PMS mode. All optional; only the fields passed are updated. */
+export async function updateProperty(propertyId: string, patch: { name?: string; location?: string; status?: string; image?: string; upiId?: string; hasExternalPms?: boolean }): Promise<void> {
   const { error } = await supabase.from('properties').update({
     ...(patch.name !== undefined && { name: patch.name }),
     ...(patch.location !== undefined && { location: patch.location }),
     ...(patch.status !== undefined && { status: patch.status }),
     ...(patch.image !== undefined && { image: patch.image }),
     ...(patch.upiId !== undefined && { upi_id: patch.upiId }),
+    ...(patch.hasExternalPms !== undefined && { has_external_pms: patch.hasExternalPms }),
   }).eq('id', propertyId);
   if (error) throw error;
 }
@@ -487,6 +494,8 @@ export interface WalkInGuestInput {
   checkIn?: Date;
   checkOut?: Date;
   partySize?: number;
+  /** 'imported' marks a check-in made in PMS mode (the property's real booking already lives in an external PMS — this just links a guest to a room so the guest app works). Defaults to 'built_in', Cabadra's own booking. */
+  source?: 'built_in' | 'imported';
 }
 
 /**
@@ -509,6 +518,7 @@ export async function checkInNewGuest(propertyId: string, roomId: string, guest:
     p_check_in: guest.checkIn ? guest.checkIn.toISOString() : new Date().toISOString(),
     p_check_out: guest.checkOut ? guest.checkOut.toISOString() : null,
     p_party_size: guest.partySize ?? 1,
+    p_source: guest.source ?? 'built_in',
   });
   if (error) throw error;
   return data as string;
