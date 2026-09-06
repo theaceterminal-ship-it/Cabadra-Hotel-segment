@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { Search, Users, BedDouble, ArrowLeft, X, CheckCircle2, QrCode, UserPlus } from 'lucide-react';
+import { Search, Users, BedDouble, Calendar, ArrowLeft, X, CheckCircle2, QrCode, UserPlus } from 'lucide-react';
 import { Room } from '../types';
-import { checkInNewGuest } from '../lib/staffApi';
+import { checkInNewGuest, searchAvailableRooms, AvailableRoom } from '../lib/staffApi';
 import { formatCurrency } from '../lib/currency';
 import { ImageUploadField } from './ImageUploadField';
 import { RoomQrModal } from './RoomQrModal';
@@ -19,7 +19,11 @@ type Step = 'search' | 'results' | 'details' | 'success';
 const inputCls = 'w-full h-10 px-3 text-sm border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none';
 const labelCls = 'text-[11px] font-bold text-[#4e463a] block mb-1';
 
-function defaultCheckoutDate(): string {
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function tomorrowIso(): string {
   const d = new Date();
   d.setDate(d.getDate() + 1);
   return d.toISOString().slice(0, 10);
@@ -27,18 +31,26 @@ function defaultCheckoutDate(): string {
 
 /**
  * The actual front-desk sequence: a guest states what they need (how many
- * people, roughly what kind of room), Reception searches for a room that
- * fits instead of eyeballing the floor grid, picks one, then collects the
- * guest's details to assign it — the same staff_checkin_new_guest this
- * whole thing ends in is also reachable per-room from Rooms & Floors
- * (CheckInModal) for the simpler "I already know which room" case.
+ * people, roughly what kind of room, and when), Reception searches for a
+ * room that's genuinely free for that whole window — not just "ready right
+ * now" — picks one, then collects the guest's details to assign it. A
+ * check-in date in the future creates an advance booking (shows up in
+ * Upcoming Arrivals, checked in later from there); today creates an
+ * immediate walk-in check-in. Same staff_checkin_new_guest either way — it
+ * decides which based on the date. The simpler "I already know which room"
+ * case still exists too, per-room, via CheckInModal on Rooms & Floors.
  */
 export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked }: NewBookingModalProps) {
   const [step, setStep] = useState<Step>('search');
   const [partySize, setPartySize] = useState('2');
   const [roomType, setRoomType] = useState('any');
-  const [checkOut, setCheckOut] = useState(defaultCheckoutDate());
-  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [checkIn, setCheckIn] = useState(todayIso());
+  const [checkOut, setCheckOut] = useState(tomorrowIso());
+  const [selectedRoom, setSelectedRoom] = useState<AvailableRoom | null>(null);
+
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [availableRooms, setAvailableRooms] = useState<AvailableRoom[]>([]);
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -54,21 +66,30 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
     [rooms]
   );
 
-  const matchingRooms = useMemo(() => {
-    const party = parseInt(partySize, 10) || 1;
-    return rooms
-      .filter(r => r.status === 'ready')
-      .filter(r => r.maxOccupancy >= party)
-      .filter(r => roomType === 'any' || r.type === roomType)
-      .sort((a, b) => a.pricePerNight - b.pricePerNight);
-  }, [rooms, partySize, roomType]);
+  const isFutureBooking = checkIn > todayIso();
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStep('results');
+    setSearching(true);
+    setSearchError(null);
+    try {
+      const results = await searchAvailableRooms(
+        propertyId,
+        new Date(`${checkIn}T12:00:00`),
+        new Date(`${checkOut}T12:00:00`),
+        parseInt(partySize, 10) || 1,
+        roomType === 'any' ? undefined : roomType
+      );
+      setAvailableRooms(results);
+      setStep('results');
+    } catch (err) {
+      setSearchError(err instanceof Error ? err.message : 'Search failed.');
+    } finally {
+      setSearching(false);
+    }
   };
 
-  const handlePickRoom = (room: Room) => {
+  const handlePickRoom = (room: AvailableRoom) => {
     setSelectedRoom(room);
     setStep('details');
   };
@@ -85,7 +106,8 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
         email: email.trim() || undefined,
         vip,
         idDocumentUrl: idDocumentUrl || undefined,
-        checkOut: checkOut ? new Date(`${checkOut}T12:00:00`) : undefined,
+        checkIn: new Date(`${checkIn}T14:00:00`),
+        checkOut: new Date(`${checkOut}T12:00:00`),
         partySize: parseInt(partySize, 10) || 1,
       });
       setStep('success');
@@ -107,7 +129,7 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
               {step === 'search' && 'What does the guest need?'}
               {step === 'results' && 'Available Rooms'}
               {step === 'details' && `Assign Room ${selectedRoom?.number}`}
-              {step === 'success' && 'Checked In'}
+              {step === 'success' && (isFutureBooking ? 'Booking Confirmed' : 'Checked In')}
             </h3>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1"><X className="w-5 h-5" /></button>
@@ -117,23 +139,45 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
           <form onSubmit={handleSearch} className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
+                <label className={labelCls}><Calendar className="w-3 h-3 inline mr-1" />Check-in Date</label>
+                <input
+                  type="date" value={checkIn} min={todayIso()}
+                  onChange={e => {
+                    setCheckIn(e.target.value);
+                    if (e.target.value >= checkOut) {
+                      const d = new Date(`${e.target.value}T00:00:00`); d.setDate(d.getDate() + 1);
+                      setCheckOut(d.toISOString().slice(0, 10));
+                    }
+                  }}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Checkout Date</label>
+                <input type="date" value={checkOut} onChange={e => setCheckOut(e.target.value)} min={checkIn} className={inputCls} />
+              </div>
+            </div>
+            {isFutureBooking && (
+              <p className="text-[11px] text-[#765a25] bg-[#fff8ec] border border-[#f0dfb8] rounded-lg px-2.5 py-1.5">
+                Check-in is in the future — this creates an advance booking, not an immediate check-in. It'll show up in Upcoming Arrivals until they check in.
+              </p>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
                 <label className={labelCls}><Users className="w-3 h-3 inline mr-1" />Guests</label>
                 <input type="number" min={1} value={partySize} onChange={e => setPartySize(e.target.value)} className={inputCls} />
               </div>
               <div>
-                <label className={labelCls}>Checkout Date</label>
-                <input type="date" value={checkOut} onChange={e => setCheckOut(e.target.value)} min={new Date().toISOString().slice(0, 10)} className={inputCls} />
+                <label className={labelCls}><BedDouble className="w-3 h-3 inline mr-1" />Room Type</label>
+                <select value={roomType} onChange={e => setRoomType(e.target.value)} className={`${inputCls} bg-white`}>
+                  <option value="any">Any type</option>
+                  {roomTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
               </div>
             </div>
-            <div>
-              <label className={labelCls}><BedDouble className="w-3 h-3 inline mr-1" />Room Type</label>
-              <select value={roomType} onChange={e => setRoomType(e.target.value)} className={`${inputCls} bg-white`}>
-                <option value="any">Any type</option>
-                {roomTypes.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
-            <button type="submit" className="w-full h-11 rounded-lg bg-[#765a25] text-white font-semibold text-sm hover:bg-[#5c4210] flex items-center justify-center gap-2">
-              <Search className="w-4 h-4" /> Search Available Rooms
+            {searchError && <p className="text-xs text-red-600">{searchError}</p>}
+            <button type="submit" disabled={searching} className="w-full h-11 rounded-lg bg-[#765a25] text-white font-semibold text-sm hover:bg-[#5c4210] disabled:opacity-60 flex items-center justify-center gap-2">
+              <Search className="w-4 h-4" /> {searching ? 'Searching…' : 'Search Available Rooms'}
             </button>
           </form>
         )}
@@ -143,13 +187,16 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
             <button onClick={() => setStep('search')} className="text-xs font-semibold text-[#765a25] hover:underline flex items-center gap-1">
               <ArrowLeft className="w-3 h-3" /> Adjust search
             </button>
-            {matchingRooms.length === 0 ? (
+            <p className="text-[11px] text-[#7f7668]">
+              {checkIn} &rarr; {checkOut} · {partySize} guest{partySize === '1' ? '' : 's'}{roomType !== 'any' ? ` · ${roomType}` : ''}
+            </p>
+            {availableRooms.length === 0 ? (
               <p className="text-sm text-[#7f7668] text-center py-10">
-                No ready rooms sleep {partySize}+{roomType !== 'any' ? ` in "${roomType}"` : ''} right now. Try adjusting the search.
+                Nothing free for those dates that sleeps {partySize}+{roomType !== 'any' ? ` in "${roomType}"` : ''}. Try adjusting the search.
               </p>
             ) : (
               <div className="space-y-2 max-h-80 overflow-y-auto">
-                {matchingRooms.map(room => (
+                {availableRooms.map(room => (
                   <button
                     key={room.id}
                     onClick={() => handlePickRoom(room)}
@@ -176,7 +223,7 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
               <ArrowLeft className="w-3 h-3" /> Choose a different room
             </button>
             <div className="bg-[#f6faff] p-2.5 rounded-lg border border-[#E9ECEF] text-xs text-[#4e463a]">
-              Room {selectedRoom.number} · {selectedRoom.type} · {formatCurrency(selectedRoom.pricePerNight, currency)}/night
+              Room {selectedRoom.number} · {selectedRoom.type} · {formatCurrency(selectedRoom.pricePerNight, currency)}/night · {checkIn} &rarr; {checkOut}
             </div>
 
             <div>
@@ -202,7 +249,8 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
             {error && <p className="text-xs text-red-600">{error}</p>}
 
             <button type="submit" disabled={submitting || !name.trim()} className="w-full h-11 rounded-lg bg-[#765a25] text-white font-semibold text-sm hover:bg-[#5c4210] disabled:opacity-60 flex items-center justify-center gap-2">
-              <UserPlus className="w-4 h-4" /> {submitting ? 'Assigning…' : `Assign Room ${selectedRoom.number}`}
+              <UserPlus className="w-4 h-4" />
+              {submitting ? 'Saving…' : isFutureBooking ? `Reserve Room ${selectedRoom.number}` : `Assign Room ${selectedRoom.number}`}
             </button>
           </form>
         )}
@@ -210,21 +258,35 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
         {step === 'success' && selectedRoom && (
           <div className="text-center py-4 space-y-3">
             <CheckCircle2 className="w-12 h-12 text-[#2D6A4F] mx-auto" />
-            <p className="text-base font-bold text-[#141d23]">Room {selectedRoom.number} assigned to {name}</p>
-            <p className="text-xs text-[#7f7668]">
-              Their folio starts now and runs through checkout — every order and request on this room belongs to them until then.
-            </p>
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={() => setShowQr(true)}
-                className="flex-1 h-10 rounded-lg border border-[#765a25] text-[#765a25] text-xs font-bold hover:bg-[#fff8ec] flex items-center justify-center gap-1.5"
-              >
-                <QrCode className="w-3.5 h-3.5" /> Room Key (QR)
-              </button>
-              <button onClick={onClose} className="flex-1 h-10 rounded-lg bg-[#141d23] text-white text-xs font-semibold">
-                Done
-              </button>
-            </div>
+            {isFutureBooking ? (
+              <>
+                <p className="text-base font-bold text-[#141d23]">Room {selectedRoom.number} reserved for {name}</p>
+                <p className="text-xs text-[#7f7668]">
+                  Arriving {checkIn}. It'll show in Upcoming Arrivals on the Dashboard — check them in from there when they arrive, or cancel it if plans change.
+                </p>
+                <button onClick={onClose} className="w-full h-10 rounded-lg bg-[#141d23] text-white text-xs font-semibold mt-2">
+                  Done
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-base font-bold text-[#141d23]">Room {selectedRoom.number} assigned to {name}</p>
+                <p className="text-xs text-[#7f7668]">
+                  Their folio starts now and runs through checkout — every order and request on this room belongs to them until then.
+                </p>
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={() => setShowQr(true)}
+                    className="flex-1 h-10 rounded-lg border border-[#765a25] text-[#765a25] text-xs font-bold hover:bg-[#fff8ec] flex items-center justify-center gap-1.5"
+                  >
+                    <QrCode className="w-3.5 h-3.5" /> Room Key (QR)
+                  </button>
+                  <button onClick={onClose} className="flex-1 h-10 rounded-lg bg-[#141d23] text-white text-xs font-semibold">
+                    Done
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

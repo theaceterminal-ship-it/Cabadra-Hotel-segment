@@ -10,6 +10,7 @@ import {
   updateRoom,
   fetchArrivals,
   checkInReservation,
+  cancelReservation,
   fetchGuestRequests,
   resolveGuestRequest,
   logStaffRequest,
@@ -152,6 +153,16 @@ export default function ReceptionApp() {
     }
   };
 
+  const handleCancelBooking = async (arrivalId: string) => {
+    setUpcomingArrivals(prev => prev.filter(a => a.id !== arrivalId));
+    try {
+      await cancelReservation(arrivalId);
+    } catch (err) {
+      console.warn(`Failed to cancel booking ${arrivalId}:`, err);
+      if (propertyId) await reloadRoomsAndArrivals(propertyId); // undo the optimistic removal on failure
+    }
+  };
+
   const handleUpdateTask = (updatedTask: LiveOpsTask) => {
     setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
     updateTaskStatus(updatedTask.id, updatedTask.status).catch(err => console.warn(`Failed to update task ${updatedTask.id}:`, err));
@@ -281,6 +292,7 @@ export default function ReceptionApp() {
               notifications={notifications}
               onResolveUrgentRequest={handleResolveUrgentRequest}
               onCheckInGuest={handleCheckInGuest}
+              onCancelBooking={handleCancelBooking}
               onRefreshRooms={() => propertyId && reloadRoomsAndArrivals(propertyId)}
               onOpenNewRequest={() => setIsRequestModalOpen(true)}
               onMarkNotificationRead={markRead}

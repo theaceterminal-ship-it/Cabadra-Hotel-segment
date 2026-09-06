@@ -8,13 +8,23 @@
 import { supabase } from './supabaseClient';
 import type { MenuItem } from '../types';
 
+export interface GuestExperience {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  unitLabel: string;
+  image: string;
+}
+
 export interface GuestContext {
   reservationId: string;
   partySize: number;
-  property: { id: string; name: string; currency: string };
+  property: { id: string; name: string; currency: string; image?: string };
   room: { id: string; number: string; type: string };
   guest: { name: string; vip: boolean };
   menu: MenuItem[];
+  experiences: GuestExperience[];
 }
 
 export async function fetchGuestContext(token: string): Promise<GuestContext> {

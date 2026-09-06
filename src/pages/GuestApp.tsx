@@ -60,14 +60,16 @@ export default function GuestApp() {
 
   return (
     <>
-      <OrderStatusBar token={token} />
+      <OrderStatusBar token={token} currency={context.property.currency} />
       {view === 'guest_home' && (
         <GuestHome
           propertyName={context.property.name}
+          propertyImage={context.property.image}
           roomNumber={context.room.number}
           guestName={context.guest.name}
           isVip={context.guest.vip}
           currency={context.property.currency}
+          experiences={context.experiences}
           onNavigate={handleNavigate}
           onOpenNewRequest={() => setIsRequestModalOpen(true)}
           onSubmitConciergeRequest={(title) => submitGuestRequest(token, title, 'Standard').then(() => {})}

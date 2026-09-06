@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   BedDouble, Users, ClipboardList, Megaphone, Plus, Star, Clock,
-  UtensilsCrossed, ArrowRight, CheckCircle2, Sparkles, CalendarPlus,
+  UtensilsCrossed, ArrowRight, CheckCircle2, Sparkles, CalendarPlus, XCircle,
 } from 'lucide-react';
 import { Room, UrgentRequest, UpcomingArrival, LiveOpsTask, KdsOrder, AppNotification, AppView } from '../types';
 import { updateArrivalEta } from '../lib/staffApi';
@@ -18,6 +18,7 @@ interface ReceptionDashboardProps {
   notifications: AppNotification[];
   onResolveUrgentRequest: (id: string) => void;
   onCheckInGuest: (arrivalId: string) => void;
+  onCancelBooking: (arrivalId: string) => void;
   onRefreshRooms: () => void;
   onOpenNewRequest: () => void;
   onMarkNotificationRead: (id: string) => void;
@@ -78,7 +79,7 @@ function timeAgo(iso: string): string {
  */
 export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
   propertyId, currency, rooms, urgentRequests, upcomingArrivals, tasks, kdsOrders, notifications,
-  onResolveUrgentRequest, onCheckInGuest, onRefreshRooms, onOpenNewRequest, onMarkNotificationRead, onNavigate,
+  onResolveUrgentRequest, onCheckInGuest, onCancelBooking, onRefreshRooms, onOpenNewRequest, onMarkNotificationRead, onNavigate,
 }) => {
   const [etaEditArrivalId, setEtaEditArrivalId] = useState<string | null>(null);
   const [savingEta, setSavingEta] = useState(false);
@@ -183,6 +184,13 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
                       className="h-7 px-2.5 rounded border border-[#E9ECEF] text-[11px] font-bold text-[#141d23] hover:border-[#765a25] hover:text-[#765a25]"
                     >
                       Check In
+                    </button>
+                    <button
+                      onClick={() => { if (confirm(`Cancel ${arr.guestName}'s booking?`)) onCancelBooking(arr.id); }}
+                      className="h-7 w-7 flex items-center justify-center rounded border border-[#E9ECEF] text-[#7f7668] hover:border-[#BC4749] hover:text-[#BC4749]"
+                      title="Cancel booking"
+                    >
+                      <XCircle className="w-3 h-3" />
                     </button>
                   </div>
                 )}

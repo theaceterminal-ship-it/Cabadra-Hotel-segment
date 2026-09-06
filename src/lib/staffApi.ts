@@ -309,6 +309,58 @@ export async function updateMenuItem(propertyId: string, itemId: string, patch: 
 }
 
 // ============================================================================
+// EXPERIENCES — the guest home page's "Curated For You" cards, owner-managed
+// instead of hardcoded (0016_experiences_and_guest_photos.sql)
+// ============================================================================
+
+export interface Experience {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  unitLabel: string;
+  image: string;
+}
+
+export async function fetchExperiencesForProperty(propertyId: string): Promise<Experience[]> {
+  const { data, error } = await supabase.from('experiences').select('*').eq('property_id', propertyId).order('name');
+  if (error) throw error;
+  return (data ?? []).map(e => ({
+    id: e.id, name: e.name, description: e.description, price: e.price,
+    unitLabel: e.unit_label, image: e.image ?? '',
+  }));
+}
+
+export async function addExperience(propertyId: string, exp: Omit<Experience, 'id'>): Promise<void> {
+  const { error } = await supabase.from('experiences').insert({
+    id: `${slugify(exp.name)}-${Date.now().toString(36)}`,
+    property_id: propertyId,
+    name: exp.name,
+    description: exp.description,
+    price: exp.price,
+    unit_label: exp.unitLabel,
+    image: exp.image,
+  });
+  if (error) throw error;
+}
+
+export async function updateExperience(propertyId: string, expId: string, patch: Partial<Omit<Experience, 'id'>>): Promise<void> {
+  const { error } = await supabase.from('experiences').update({
+    ...(patch.name !== undefined && { name: patch.name }),
+    ...(patch.description !== undefined && { description: patch.description }),
+    ...(patch.price !== undefined && { price: patch.price }),
+    ...(patch.unitLabel !== undefined && { unit_label: patch.unitLabel }),
+    ...(patch.image !== undefined && { image: patch.image }),
+  }).eq('property_id', propertyId).eq('id', expId);
+  if (error) throw error;
+}
+
+export async function deleteExperience(propertyId: string, expId: string): Promise<void> {
+  const { error } = await supabase.from('experiences').delete().eq('property_id', propertyId).eq('id', expId);
+  if (error) throw error;
+}
+
+// ============================================================================
 // STAFF MANAGEMENT — owner granting/revoking access, no SQL required
 // ============================================================================
 
@@ -380,20 +432,59 @@ export async function checkInReservation(reservationId: string): Promise<void> {
   if (error) throw error;
 }
 
+/** Cancels a future ('upcoming') booking that never happened — distinct from checkout, which is for a stay that actually occurred (staff_cancel_reservation, 0015_advance_booking.sql). */
+export async function cancelReservation(reservationId: string): Promise<void> {
+  const { error } = await supabase.rpc('staff_cancel_reservation', { p_reservation_id: reservationId });
+  if (error) throw error;
+}
+
+export interface AvailableRoom {
+  id: string;
+  number: string;
+  type: string;
+  floor: number;
+  maxOccupancy: number;
+  pricePerNight: number;
+  image?: string;
+}
+
+/**
+ * Real date-range availability, not "what's the room's status right now" —
+ * a room occupied today can still be free next Monday, and a room that's
+ * 'ready' today might already be booked for next Monday. Backs New
+ * Booking's search step (staff_search_available_rooms, 0015_advance_booking.sql).
+ */
+export async function searchAvailableRooms(
+  propertyId: string, checkIn: Date, checkOut: Date, minOccupancy = 1, roomType?: string
+): Promise<AvailableRoom[]> {
+  const { data, error } = await supabase.rpc('staff_search_available_rooms', {
+    p_property_id: propertyId,
+    p_check_in: checkIn.toISOString(),
+    p_check_out: checkOut.toISOString(),
+    p_min_occupancy: minOccupancy,
+    p_room_type: roomType || null,
+  });
+  if (error) throw error;
+  return (data ?? []) as AvailableRoom[];
+}
+
 export interface WalkInGuestInput {
   name: string;
   phone?: string;
   email?: string;
   vip?: boolean;
   idDocumentUrl?: string;
+  /** Defaults to now() server-side (a walk-in) — pass a future date to create an advance booking ('upcoming') instead of an immediate check-in. */
+  checkIn?: Date;
   checkOut?: Date;
   partySize?: number;
 }
 
 /**
- * A walk-in, not a pre-existing booking: creates the guest record and a
- * 'checked_in' reservation in one step, and assigns the room right away
- * (staff_checkin_new_guest, 0013_guest_checkin.sql). This is what makes a
+ * Creates the guest record and a reservation in one step, and assigns the
+ * room (staff_checkin_new_guest, 0013/0015). A future checkIn creates an
+ * 'upcoming' booking without touching the room's current status — a walk-in
+ * (checkIn omitted or in the past) checks straight in. This is what makes a
  * room's printed QR (0011_room_qr.sql) actually mean something — it only
  * resolves to a real person once a reservation like this exists.
  */
@@ -406,6 +497,7 @@ export async function checkInNewGuest(propertyId: string, roomId: string, guest:
     p_guest_email: guest.email || null,
     p_guest_vip: guest.vip ?? false,
     p_id_document_url: guest.idDocumentUrl || null,
+    p_check_in: guest.checkIn ? guest.checkIn.toISOString() : new Date().toISOString(),
     p_check_out: guest.checkOut ? guest.checkOut.toISOString() : null,
     p_party_size: guest.partySize ?? 1,
   });

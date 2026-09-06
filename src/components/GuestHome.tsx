@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AppView } from '../types';
+import { GuestExperience } from '../lib/guestApi';
 import { formatCurrency } from '../lib/currency';
 import {
   Utensils,
@@ -18,10 +19,14 @@ import {
 
 interface GuestHomeProps {
   propertyName: string;
+  /** The property's own uploaded photo (Owner > Overview > Property Photo). Falls back to a generic hotel image when the owner hasn't set one yet. */
+  propertyImage?: string;
   roomNumber: string;
   guestName: string;
   isVip: boolean;
   currency: string;
+  /** Owner-managed via the Experiences tab — empty until they add one, no more hardcoded demo cards. */
+  experiences: GuestExperience[];
   onNavigate: (view: AppView) => void;
   onOpenNewRequest: () => void;
   /** Real submission (guest_submit_request) — the housekeeping/amenities/spa/transfers modal below calls this instead of just showing a toast. */
@@ -30,12 +35,16 @@ interface GuestHomeProps {
   onBookExperience: (name: string, price: number) => Promise<void>;
 }
 
+const DEFAULT_HERO_IMAGE = 'https://lh3.googleusercontent.com/aida-public/AB6AXuApNU48JgNCtMBN-62dVkxqySJJot6g74LTZFb76CgYauRB7gZ9OBq6UNLjzWLklzLHF0WxdgSVGi7Btvz2FX9Mz9zjzCgeZm0rXMOfzC3JTMboHzUDMShFpBOSyLDvadLUW5LGJT_7r1ZGmlxCfr1XsthTQ3KOUDw2bafbxI8uzbxrQaFylTmBaNgb8QFn0NxK7Vb9s_Z23jOcyZE4TIqg5mD8gQgrgMPSzcxD_g2CHheeE2JR0Cop';
+
 export const GuestHome: React.FC<GuestHomeProps> = ({
   propertyName,
+  propertyImage,
   roomNumber,
   guestName,
   isVip,
   currency,
+  experiences,
   onNavigate,
   onOpenNewRequest,
   onSubmitConciergeRequest,
@@ -85,8 +94,8 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
         >
           <div 
             className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-            style={{ 
-              backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuApNU48JgNCtMBN-62dVkxqySJJot6g74LTZFb76CgYauRB7gZ9OBq6UNLjzWLklzLHF0WxdgSVGi7Btvz2FX9Mz9zjzCgeZm0rXMOfzC3JTMboHzUDMShFpBOSyLDvadLUW5LGJT_7r1ZGmlxCfr1XsthTQ3KOUDw2bafbxI8uzbxrQaFylTmBaNgb8QFn0NxK7Vb9s_Z23jOcyZE4TIqg5mD8gQgrgMPSzcxD_g2CHheeE2JR0Cop')`
+            style={{
+              backgroundImage: `url('${propertyImage || DEFAULT_HERO_IMAGE}')`
             }}
           ></div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
@@ -201,78 +210,42 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
           </div>
         </section>
 
-        {/* Featured Curated Experiences */}
-        <section id="curated-experiences-section" className="space-y-4 pt-2">
-          <h2 className="text-xl font-bold text-[#141d23] px-1">Curated For You</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Experience 1 */}
-            <div 
-              id="exp-card-sunset-cruise"
-              className="rounded-2xl border border-[#E9ECEF] overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row group"
-            >
-              <div 
-                className="h-44 sm:h-auto sm:w-48 bg-cover bg-center shrink-0 group-hover:scale-105 transition-transform duration-500"
-                style={{ 
-                  backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuBYX8P3chw_hUPPSd4cfsR-RIhg6EHiKH0sfUKPjIIlV6nxc03Zg-dANYr7bpW5Yg96gKAYI2cmmhQRkBJbAq2-8NUwROwuMf2DWGASlUHzbjYcCMFeEzyK650ekeUargGYG-EEuKOsVGJ8tKC50sUKQbN4gW3RGMhrzpcyyj86_nP4FdP5VoNv2QAHogmyk3A7AUVkToKOJibwr4aPJ2qv8fVx326LnH5jjismn_Nv1T233enDqmBc')`
-                }}
-              ></div>
-              <div className="p-5 flex flex-col justify-between flex-grow">
-                <div>
-                  <span className="text-[10px] font-bold text-[#765a25] uppercase tracking-wider block mb-1">
-                    Signature Excursion
-                  </span>
-                  <h3 className="text-lg font-bold text-[#141d23] mb-1">Sunset Yacht Cruise</h3>
-                  <p className="text-xs text-[#4e463a] leading-relaxed">
-                    Experience the Manhattan skyline from a private 65ft luxury yacht with complimentary champagne &amp; caviar.
-                  </p>
-                </div>
-                <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#E9ECEF]">
-                  <span className="text-sm font-bold text-[#765a25]">{formatCurrency(350, currency)} / couple</span>
-                  <button
-                    onClick={() => handleBookExperience('Sunset Yacht Cruise', 350)}
-                    className="px-4 py-2 bg-[#765a25] text-white rounded-lg text-xs font-bold hover:bg-[#5c4210] transition-colors cursor-pointer"
-                  >
-                    Reserve Now
-                  </button>
-                </div>
-              </div>
-            </div>
+        {/* Featured Curated Experiences — owner-managed (Experiences tab), not hardcoded. Section just doesn't render until the owner adds one. */}
+        {experiences.length > 0 && (
+          <section id="curated-experiences-section" className="space-y-4 pt-2">
+            <h2 className="text-xl font-bold text-[#141d23] px-1">Curated For You</h2>
 
-            {/* Experience 2 */}
-            <div 
-              id="exp-card-chefs-table"
-              className="rounded-2xl border border-[#E9ECEF] overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row group"
-            >
-              <div 
-                className="h-44 sm:h-auto sm:w-48 bg-cover bg-center shrink-0 group-hover:scale-105 transition-transform duration-500"
-                style={{ 
-                  backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuDi8-lU1mljDUbqeUFXLYJ0Uq81KOiVpfAnBmnirbOC0urK4hTGLfdERclcvG-NMUnZ3SqTiCVD2ine1-n-PtT0NEv9U_umXpevtyV_daOAtrdvqdkP3jV-TMqXnQgMbLgtlH6REwc1HJ9t1117wHQLleb5WRQ3GXk4KWfLwRRik57-x2sV8VuS3rCaWN1HUn51n5-l4_potZy6RgrXdlZv_-M5gjIpJRl9NLP7NEYLuLxQ7mj-9sa6')`
-                }}
-              ></div>
-              <div className="p-5 flex flex-col justify-between flex-grow">
-                <div>
-                  <span className="text-[10px] font-bold text-[#765a25] uppercase tracking-wider block mb-1">
-                    Culinary Tasting
-                  </span>
-                  <h3 className="text-lg font-bold text-[#141d23]">Chef's Tasting Table</h3>
-                  <p className="text-xs text-[#4e463a] leading-relaxed">
-                    7-course sensory dinner with master sommelier wine pairing prepared tableside by our Michelin-starred executive chef.
-                  </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {experiences.map(exp => (
+                <div
+                  key={exp.id}
+                  id={`exp-card-${exp.id}`}
+                  className="rounded-2xl border border-[#E9ECEF] overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row group"
+                >
+                  <div
+                    className="h-44 sm:h-auto sm:w-48 bg-cover bg-center bg-[#ecf5fe] shrink-0 group-hover:scale-105 transition-transform duration-500"
+                    style={exp.image ? { backgroundImage: `url('${exp.image}')` } : undefined}
+                  ></div>
+                  <div className="p-5 flex flex-col justify-between flex-grow">
+                    <div>
+                      <h3 className="text-lg font-bold text-[#141d23] mb-1">{exp.name}</h3>
+                      <p className="text-xs text-[#4e463a] leading-relaxed">{exp.description}</p>
+                    </div>
+                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#E9ECEF]">
+                      <span className="text-sm font-bold text-[#765a25]">{formatCurrency(exp.price, currency)} {exp.unitLabel}</span>
+                      <button
+                        onClick={() => handleBookExperience(exp.name, exp.price)}
+                        className="px-4 py-2 bg-[#765a25] text-white rounded-lg text-xs font-bold hover:bg-[#5c4210] transition-colors cursor-pointer"
+                      >
+                        Reserve Now
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#E9ECEF]">
-                  <span className="text-sm font-bold text-[#765a25]">{formatCurrency(280, currency)} / person</span>
-                  <button
-                    onClick={() => handleBookExperience("Chef's Tasting Table", 280)}
-                    className="px-4 py-2 bg-[#765a25] text-white rounded-lg text-xs font-bold hover:bg-[#5c4210] transition-colors cursor-pointer"
-                  >
-                    Reserve Now
-                  </button>
-                </div>
-              </div>
+              ))}
             </div>
-          </div>
-        </section>
+          </section>
+        )}
       </div>
 
       {/* Interactive Service Modals */}
