@@ -70,9 +70,10 @@ export default function GuestApp() {
           isVip={context.guest.vip}
           currency={context.property.currency}
           experiences={context.experiences}
+          serviceCategories={context.serviceCategories}
           onNavigate={handleNavigate}
           onOpenNewRequest={() => setIsRequestModalOpen(true)}
-          onSubmitConciergeRequest={(title) => submitGuestRequest(token, title, 'Standard').then(() => {})}
+          onSubmitConciergeRequest={(title, department) => submitGuestRequest(token, title, 'Standard', department).then(() => {})}
           onBookExperience={(name, price) => bookGuestExperience(token, name, price).then(() => {})}
         />
       )}

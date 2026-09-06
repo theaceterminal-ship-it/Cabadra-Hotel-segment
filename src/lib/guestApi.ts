@@ -17,6 +17,16 @@ export interface GuestExperience {
   image: string;
 }
 
+export type Department = 'housekeeping' | 'maintenance' | 'amenities' | 'concierge';
+
+export interface GuestServiceCategory {
+  id: string;
+  name: string;
+  description: string;
+  department: Department;
+  iconKey: string;
+}
+
 export interface GuestContext {
   reservationId: string;
   partySize: number;
@@ -25,6 +35,7 @@ export interface GuestContext {
   guest: { name: string; vip: boolean };
   menu: MenuItem[];
   experiences: GuestExperience[];
+  serviceCategories: GuestServiceCategory[];
 }
 
 export async function fetchGuestContext(token: string): Promise<GuestContext> {
@@ -74,9 +85,10 @@ export async function placeGuestOrder(token: string, items: GuestOrderItem[], no
 export async function submitGuestRequest(
   token: string,
   title: string,
-  priority: 'High Priority' | 'Standard' | 'Pending Approval' = 'Standard'
+  priority: 'High Priority' | 'Standard' | 'Pending Approval' = 'Standard',
+  department: Department = 'concierge'
 ): Promise<string> {
-  const { data, error } = await supabase.rpc('guest_submit_request', { p_token: token, p_title: title, p_priority: priority });
+  const { data, error } = await supabase.rpc('guest_submit_request', { p_token: token, p_title: title, p_priority: priority, p_department: department });
   if (error) throw new Error(`Failed to send request: ${error.message}`);
   return data as string;
 }
@@ -93,10 +105,12 @@ export async function bookGuestExperience(token: string, experienceName: string,
 
 export interface ActiveOrder {
   id: string;
-  status: 'new' | 'preparing' | 'ready';
+  status: 'new' | 'preparing' | 'ready' | 'rejected';
   items: GuestOrderItem[];
   totalAmount: number;
   createdAt: string;
+  /** Why the kitchen couldn't make it — set whenever status is 'rejected'; the charge is already off the folio by the time the guest sees this. */
+  rejectionNote?: string;
 }
 
 /** The guest home page's "active order" banner — null when nothing's in flight. */

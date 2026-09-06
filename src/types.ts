@@ -81,11 +81,13 @@ export interface KdsOrder {
   roomNumber: string;
   isVip?: boolean;
   isRush?: boolean;
-  status: 'new' | 'preparing' | 'ready' | 'delivered';
+  status: 'new' | 'preparing' | 'ready' | 'delivered' | 'rejected';
   timeElapsed: string;
   timerSeconds: number;
   isOverdue?: boolean;
   notes?: string;
+  /** Why the kitchen rejected it — required whenever status is 'rejected'. */
+  rejectionNote?: string;
   items: {
     name: string;
     quantity: number;
@@ -126,6 +128,8 @@ export interface UrgentRequest {
   priority: 'High Priority' | 'Pending Approval' | 'Standard';
   isUrgent: boolean;
   status: 'open' | 'resolved';
+  /** Which department it's routed to — matches LiveOpsTask.category, so a request and a dispatched task speak the same vocabulary. */
+  department: 'housekeeping' | 'maintenance' | 'amenities' | 'concierge';
 }
 
 export interface AppNotification {

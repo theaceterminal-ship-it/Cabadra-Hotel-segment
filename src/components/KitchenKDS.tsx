@@ -1,30 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { KdsOrder, AppView } from '../types';
-import { 
-  Play, 
-  Check, 
-  CheckCheck, 
-  Clock, 
-  AlertTriangle, 
-  ChefHat, 
-  Timer, 
-  Truck, 
+import {
+  Play,
+  Check,
+  CheckCheck,
+  Clock,
+  AlertTriangle,
+  ChefHat,
+  Timer,
+  Truck,
   Flame,
-  CheckCircle2
+  CheckCircle2,
+  X,
 } from 'lucide-react';
 
 interface KitchenKDSProps {
   orders: KdsOrder[];
   onUpdateOrder: (order: KdsOrder) => void;
+  /** The "can't make this" path — required note, voids the guest's charge and notifies them (staff_reject_order). */
+  onRejectOrder: (orderId: string, note: string) => void;
   onNavigate: (view: AppView) => void;
 }
 
 export const KitchenKDS: React.FC<KitchenKDSProps> = ({
   orders,
   onUpdateOrder,
+  onRejectOrder,
   onNavigate,
 }) => {
   const [currentTime, setCurrentTime] = useState<string>('');
+  const [rejectingOrder, setRejectingOrder] = useState<KdsOrder | null>(null);
+  const [rejectNote, setRejectNote] = useState('');
 
   // Live ticking clock
   useEffect(() => {
@@ -46,6 +52,13 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
       ...order,
       status: 'preparing',
     });
+  };
+
+  const handleConfirmReject = () => {
+    if (!rejectingOrder || !rejectNote.trim()) return;
+    onRejectOrder(rejectingOrder.id, rejectNote.trim());
+    setRejectingOrder(null);
+    setRejectNote('');
   };
 
   const handleToggleItemComplete = (order: KdsOrder, itemIndex: number) => {
@@ -164,15 +177,24 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
                     )}
                   </div>
 
-                  {/* Action Button */}
-                  <button
-                    id={`btn-start-prep-${order.id}`}
-                    onClick={() => handleStartPreparing(order)}
-                    className="w-full h-11 bg-[#765a25] text-white rounded-lg text-sm font-bold uppercase tracking-wider hover:bg-[#5c4210] active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
-                  >
-                    <Play className="w-4 h-4 fill-white" />
-                    <span>Start Preparing</span>
-                  </button>
+                  {/* Action Buttons: accept, or reject with a required reason */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { setRejectingOrder(order); setRejectNote(''); }}
+                      className="h-11 px-3 rounded-lg border border-[#BC4749] text-[#BC4749] hover:bg-[#ffdad6]/30 transition-all flex items-center justify-center cursor-pointer shrink-0"
+                      title="Reject this order"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                    <button
+                      id={`btn-start-prep-${order.id}`}
+                      onClick={() => handleStartPreparing(order)}
+                      className="flex-1 h-11 bg-[#765a25] text-white rounded-lg text-sm font-bold uppercase tracking-wider hover:bg-[#5c4210] active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                    >
+                      <Play className="w-4 h-4 fill-white" />
+                      <span>Start Preparing</span>
+                    </button>
+                  </div>
                 </article>
               ))
             )}
@@ -332,6 +354,40 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
           </div>
         </section>
       </main>
+
+      {rejectingOrder && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-[#E9ECEF] space-y-3">
+            <h3 className="text-lg font-bold text-[#141d23]">Reject Order {rejectingOrder.orderNumber}?</h3>
+            <p className="text-xs text-[#7f7668]">
+              The guest sees this reason and isn't charged for it — say why so they know what happened.
+            </p>
+            <textarea
+              autoFocus
+              rows={3}
+              value={rejectNote}
+              onChange={(e) => setRejectNote(e.target.value)}
+              placeholder="e.g. Out of paneer tonight, kitchen closing in 5 mins..."
+              className="w-full p-2.5 text-sm border border-[#E9ECEF] rounded-lg focus:border-[#BC4749] focus:outline-none resize-none"
+            />
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                onClick={() => setRejectingOrder(null)}
+                className="px-4 py-2 border border-[#E9ECEF] rounded-lg text-xs font-semibold text-[#4e463a] hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmReject}
+                disabled={!rejectNote.trim()}
+                className="px-4 py-2 bg-[#BC4749] text-white rounded-lg text-xs font-bold hover:bg-red-700 disabled:opacity-50"
+              >
+                Reject Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

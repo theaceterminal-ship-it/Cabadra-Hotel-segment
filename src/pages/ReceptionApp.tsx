@@ -5,6 +5,7 @@ import { useAuth, signOut } from '../hooks/useAuth';
 import {
   fetchOrdersForProperty,
   updateOrderStatus,
+  rejectOrder,
   StaffOrder,
   fetchRoomsForProperty,
   updateRoom,
@@ -59,6 +60,7 @@ function supabaseOrderToKdsOrder(order: StaffOrder, previouslySeen?: KdsOrder): 
       completed: previouslySeen?.items[idx]?.completed,
     })),
     notes: order.notes,
+    rejectionNote: order.rejectionNote,
   };
 }
 
@@ -210,6 +212,22 @@ export default function ReceptionApp() {
     }
   };
 
+  const handleRejectOrder = async (orderId: string, note: string) => {
+    setKdsOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'rejected', rejectionNote: note } : o));
+    try {
+      syncInFlight.current = true;
+      await rejectOrder(orderId, note);
+    } catch (err) {
+      console.warn(`Failed to reject order ${orderId}:`, err);
+      if (propertyId) {
+        const orders = await fetchOrdersForProperty(propertyId).catch(() => null);
+        if (orders) setKdsOrders(orders.map(o => supabaseOrderToKdsOrder(o, undefined)));
+      }
+    } finally {
+      syncInFlight.current = false;
+    }
+  };
+
   // Polls real orders for the KDS board — this is the one screen that needs
   // live push-like behavior, since a guest can place an order at any moment
   // from a page this tab has no other way to hear from.
@@ -319,7 +337,7 @@ export default function ReceptionApp() {
             />
           )}
           {view === 'kitchen_kds' && (
-            <KitchenKDS orders={kdsOrders} onUpdateOrder={handleUpdateKdsOrder} onNavigate={(v: AppView) => setView(v as ReceptionTab)} />
+            <KitchenKDS orders={kdsOrders} onUpdateOrder={handleUpdateKdsOrder} onRejectOrder={handleRejectOrder} onNavigate={(v: AppView) => setView(v as ReceptionTab)} />
           )}
           {view === 'active_deliveries' && <ActiveDeliveries propertyId={propertyId} onNavigate={(v: AppView) => setView(v as ReceptionTab)} />}
         </div>

@@ -510,16 +510,17 @@ export interface StaffOrder {
   roomId: string;
   items: { menuItemId: string; name: string; price: number; quantity: number; fromRecommendation?: boolean }[];
   totalAmount: number;
-  status: 'new' | 'preparing' | 'ready' | 'delivered';
+  status: 'new' | 'preparing' | 'ready' | 'delivered' | 'rejected';
   createdAt: string;
   notes?: string;
+  rejectionNote?: string;
 }
 
 /** Real guest orders for the KDS board — RLS already limits this to properties the caller is staff on. */
 export async function fetchOrdersForProperty(propertyId: string): Promise<StaffOrder[]> {
   const { data, error } = await supabase
     .from('orders')
-    .select('id, room_id, items, total_amount, status, created_at, notes')
+    .select('id, room_id, items, total_amount, status, created_at, notes, rejection_note')
     .eq('property_id', propertyId)
     .order('created_at', { ascending: false });
   if (error) throw error;
@@ -531,11 +532,22 @@ export async function fetchOrdersForProperty(propertyId: string): Promise<StaffO
     status: o.status,
     createdAt: o.created_at,
     notes: o.notes ?? undefined,
+    rejectionNote: o.rejection_note ?? undefined,
   }));
 }
 
 export async function updateOrderStatus(orderId: string, status: StaffOrder['status']): Promise<void> {
   const { error } = await supabase.from('orders').update({ status }).eq('id', orderId);
+  if (error) throw error;
+}
+
+/**
+ * The kitchen's "we can't make this" path — only valid while the order is
+ * still 'new'. Voids the folio charge and notifies both staff and the
+ * guest (staff_reject_order, 0017_kitchen_reject_order.sql).
+ */
+export async function rejectOrder(orderId: string, note: string): Promise<void> {
+  const { error } = await supabase.rpc('staff_reject_order', { p_order_id: orderId, p_note: note });
   if (error) throw error;
 }
 
@@ -567,6 +579,7 @@ export async function fetchGuestRequests(propertyId: string): Promise<UrgentRequ
     priority: r.priority,
     isUrgent: r.priority === 'High Priority',
     status: r.status,
+    department: r.department ?? 'concierge',
   }));
 }
 
@@ -576,8 +589,51 @@ export async function resolveGuestRequest(requestId: string): Promise<void> {
 }
 
 /** Reception logging a request on a guest's behalf (phone-in, walk-up) — a direct insert, since staff write their own property's requests under RLS. */
-export async function logStaffRequest(propertyId: string, roomNumber: string, title: string, priority: UrgentRequest['priority']): Promise<void> {
-  const { error } = await supabase.from('guest_requests').insert({ property_id: propertyId, room_number: roomNumber, title, priority });
+export async function logStaffRequest(propertyId: string, roomNumber: string, title: string, priority: UrgentRequest['priority'], department: UrgentRequest['department'] = 'concierge'): Promise<void> {
+  const { error } = await supabase.from('guest_requests').insert({ property_id: propertyId, room_number: roomNumber, title, priority, department });
+  if (error) throw error;
+}
+
+// ============================================================================
+// SERVICE CATEGORIES — the guest home page's "At Your Service" grid,
+// owner-managed instead of a fixed four cards (0018_service_categories.sql)
+// ============================================================================
+
+export interface ServiceCategory {
+  id: string;
+  name: string;
+  description: string;
+  department: 'housekeeping' | 'maintenance' | 'amenities' | 'concierge';
+}
+
+export async function fetchServiceCategories(propertyId: string): Promise<ServiceCategory[]> {
+  const { data, error } = await supabase.from('service_categories').select('*').eq('property_id', propertyId).order('sort_order');
+  if (error) throw error;
+  return (data ?? []).map(s => ({ id: s.id, name: s.name, description: s.description, department: s.department }));
+}
+
+export async function addServiceCategory(propertyId: string, cat: Omit<ServiceCategory, 'id'>): Promise<void> {
+  const { error } = await supabase.from('service_categories').insert({
+    id: `${slugify(cat.name)}-${Date.now().toString(36)}`,
+    property_id: propertyId,
+    name: cat.name,
+    description: cat.description,
+    department: cat.department,
+  });
+  if (error) throw error;
+}
+
+export async function updateServiceCategory(propertyId: string, catId: string, patch: Partial<Omit<ServiceCategory, 'id'>>): Promise<void> {
+  const { error } = await supabase.from('service_categories').update({
+    ...(patch.name !== undefined && { name: patch.name }),
+    ...(patch.description !== undefined && { description: patch.description }),
+    ...(patch.department !== undefined && { department: patch.department }),
+  }).eq('property_id', propertyId).eq('id', catId);
+  if (error) throw error;
+}
+
+export async function deleteServiceCategory(propertyId: string, catId: string): Promise<void> {
+  const { error } = await supabase.from('service_categories').delete().eq('property_id', propertyId).eq('id', catId);
   if (error) throw error;
 }
 

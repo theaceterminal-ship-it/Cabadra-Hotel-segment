@@ -24,16 +24,21 @@ import {
   addExperience,
   updateExperience,
   deleteExperience,
+  fetchServiceCategories,
+  addServiceCategory,
+  updateServiceCategory,
+  deleteServiceCategory,
   StaffMember,
   TicketSizeAnalytics,
   PendingInvite,
   Experience,
+  ServiceCategory,
 } from '../lib/staffApi';
 import { ImageUploadField } from '../components/ImageUploadField';
 import { formatCurrency } from '../lib/currency';
 import {
   ArrowLeft, Plus, Trash2, BedDouble, UtensilsCrossed, Users, Pencil,
-  LayoutDashboard, Upload, Download, AlertTriangle, Sparkles,
+  LayoutDashboard, Upload, Download, AlertTriangle, Sparkles, ConciergeBell,
 } from 'lucide-react';
 
 const inputCls = "w-full h-9 px-2 text-xs border border-[#E9ECEF] rounded focus:border-[#765a25] focus:outline-none";
@@ -55,10 +60,11 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
   const navigate = useNavigate();
   const property = properties.find(p => p.id === propertyId);
 
-  const [tab, setTab] = useState<'overview' | 'rooms' | 'menu' | 'experiences' | 'staff'>('overview');
+  const [tab, setTab] = useState<'overview' | 'rooms' | 'menu' | 'experiences' | 'services' | 'staff'>('overview');
   const [rooms, setRooms] = useState<Room[]>([]);
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [experiences, setExperiences] = useState<Experience[]>([]);
+  const [services, setServices] = useState<ServiceCategory[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
   const [ticketAnalytics, setTicketAnalytics] = useState<TicketSizeAnalytics | null>(null);
@@ -69,10 +75,11 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
 
   const reload = async () => {
     try {
-      const [freshRooms, freshMenu, freshExperiences, freshStaff, analytics, freshPending] = await Promise.all([
+      const [freshRooms, freshMenu, freshExperiences, freshServices, freshStaff, analytics, freshPending] = await Promise.all([
         fetchRoomsForProperty(propertyId),
         fetchMenuForProperty(propertyId),
         fetchExperiencesForProperty(propertyId).catch(() => []), // older projects may not have run 0016 yet
+        fetchServiceCategories(propertyId).catch(() => []), // older projects may not have run 0018 yet
         fetchStaffForProperty(propertyId).catch(() => []), // older projects may not have run 0005 yet
         fetchTicketSizeAnalytics(propertyId).catch(() => null),
         fetchPendingInvites(propertyId).catch(() => []), // older projects may not have run 0008 yet
@@ -80,6 +87,7 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
       setRooms(freshRooms);
       setMenu(freshMenu);
       setExperiences(freshExperiences);
+      setServices(freshServices);
       setStaff(freshStaff);
       setTicketAnalytics(analytics);
       setPendingInvites(freshPending);
@@ -132,6 +140,7 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
     { id: 'rooms', label: `Rooms (${rooms.length})`, icon: BedDouble },
     { id: 'menu', label: `Menu (${menu.length})`, icon: UtensilsCrossed },
     { id: 'experiences', label: `Experiences (${experiences.length})`, icon: Sparkles },
+    { id: 'services', label: `Services (${services.length})`, icon: ConciergeBell },
     { id: 'staff', label: `Staff (${staff.length})`, icon: Users },
   ];
 
@@ -191,6 +200,8 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
         <MenuTab propertyId={propertyId} currency={property?.currency ?? 'USD'} menu={menu} onChanged={handleReload} />
       ) : tab === 'experiences' ? (
         <ExperiencesTab propertyId={propertyId} currency={property?.currency ?? 'USD'} experiences={experiences} onChanged={handleReload} />
+      ) : tab === 'services' ? (
+        <ServicesTab propertyId={propertyId} services={services} onChanged={handleReload} />
       ) : (
         <StaffTab propertyId={propertyId} staff={staff} pendingInvites={pendingInvites} onChanged={handleReload} />
       )}
@@ -695,6 +706,120 @@ function ExperiencesTab({ propertyId, currency, experiences, onChanged }: { prop
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
                 <button onClick={() => handleDelete(exp.id)} className="text-[#BC4749] hover:text-red-700 p-1">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+const DEPARTMENTS: { value: ServiceCategory['department']; label: string }[] = [
+  { value: 'housekeeping', label: 'Housekeeping' },
+  { value: 'amenities', label: 'Amenities' },
+  { value: 'maintenance', label: 'Maintenance' },
+  { value: 'concierge', label: 'Concierge' },
+];
+
+/** The guest home page's "At Your Service" grid — owner-managed instead of a fixed Housekeeping/Amenities/Spa/Transfers set every property showed identically. Department decides which Live Ops queue a resulting request lands in. */
+function ServicesTab({ propertyId, services, onChanged }: { propertyId: string; services: ServiceCategory[]; onChanged: () => void }) {
+  const emptyForm = { name: '', description: '', department: 'concierge' as ServiceCategory['department'] };
+  const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const startEdit = (s: ServiceCategory) => {
+    setEditingId(s.id);
+    setForm({ name: s.name, description: s.description, department: s.department });
+  };
+  const cancelEdit = () => { setEditingId(null); setForm(emptyForm); };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim()) return;
+    setSubmitting(true);
+    setFormError(null);
+    try {
+      const payload = { name: form.name.trim(), description: form.description.trim(), department: form.department };
+      if (editingId) {
+        await updateServiceCategory(propertyId, editingId, payload);
+      } else {
+        await addServiceCategory(propertyId, payload);
+      }
+      cancelEdit();
+      onChanged();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Failed to save service.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteServiceCategory(propertyId, id);
+      if (editingId === id) cancelEdit();
+      onChanged();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Failed to delete service.');
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-[#7f7668]">
+        These show up as "At Your Service" cards on the guest home page — add whatever this property actually
+        offers (housekeeping, spa, airport transfers, business center...). A guest's request is tagged with the
+        department here, so it routes straight to the right Live Ops queue instead of Reception guessing from a title.
+      </p>
+
+      <form onSubmit={handleSubmit} className="space-y-2 bg-[#f6faff] p-3 rounded-lg border border-[#E9ECEF]">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div>
+            <label className={labelCls}>Name</label>
+            <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Spa & Wellness" className={inputCls} />
+          </div>
+          <div className="col-span-2 sm:col-span-1">
+            <label className={labelCls}>Routes To</label>
+            <select value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value as ServiceCategory['department'] }))} className={`${inputCls} bg-white`}>
+              {DEPARTMENTS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+            </select>
+          </div>
+          <div className="col-span-2 sm:col-span-1">
+            <label className={labelCls}>Short Description</label>
+            <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Massages & Sauna" className={inputCls} />
+          </div>
+        </div>
+        <div className="flex gap-2 items-end justify-end">
+          <button type="submit" disabled={submitting} className="h-9 px-4 rounded-lg bg-[#765a25] text-white text-xs font-bold flex items-center justify-center gap-1 hover:bg-[#5c4210] disabled:opacity-60 whitespace-nowrap">
+            {editingId ? 'Save Changes' : <><Plus className="w-3.5 h-3.5" /> Add</>}
+          </button>
+          {editingId && (
+            <button type="button" onClick={cancelEdit} className="h-9 px-3 rounded-lg border border-[#E9ECEF] text-xs font-semibold text-[#4e463a]">
+              Cancel
+            </button>
+          )}
+        </div>
+      </form>
+      {formError && <p className="text-xs text-red-600">{formError}</p>}
+
+      <div className="space-y-1.5">
+        {services.length === 0 ? (
+          <p className="text-xs text-[#7f7668] text-center py-6">No services yet — the guest home page's "At Your Service" section stays empty until you add one.</p>
+        ) : (
+          services.map(s => (
+            <div key={s.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs ${editingId === s.id ? 'border-[#765a25] bg-[#fff8ec]' : 'border-[#E9ECEF]'}`}>
+              <span className="font-semibold text-[#141d23]">{s.name}</span>
+              <span className="text-[#7f7668] capitalize">{s.description}{s.description ? ' · ' : ''}routes to {s.department}</span>
+              <div className="flex items-center gap-1">
+                <button onClick={() => startEdit(s)} className="text-[#765a25] hover:text-[#5c4210] p-1">
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => handleDelete(s.id)} className="text-[#BC4749] hover:text-red-700 p-1">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>

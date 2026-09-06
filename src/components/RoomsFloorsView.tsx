@@ -33,58 +33,25 @@ const STATUS_STYLE: Record<RoomStatus, { tile: string; text: string; icon: React
   maintenance: { tile: 'bg-[#9ea0a1] border-transparent', text: 'text-[#343738]', icon: Wrench },
 };
 
+/** One line only — these tiles are small on purpose (a floor plan, not a room dossier). Click through to the detail modal for everything else. */
 function RoomTileBody({ room, currency }: { room: Room; currency: string }) {
   switch (room.status) {
     case 'occupied':
-      return (
-        <>
-          <p className="text-[10px] font-semibold opacity-80 uppercase tracking-wider mb-0.5">{room.type}</p>
-          <p className="text-sm font-semibold truncate">{room.guestName || 'Occupied'}</p>
-          <p className="text-[11px] opacity-75 mt-0.5">{room.checkoutInfo || 'In House'}</p>
-        </>
-      );
+      return <p className="text-[10px] font-semibold truncate opacity-90">{room.guestName || 'Occupied'}</p>;
     case 'occupied_vip':
-      return (
-        <>
-          <p className="text-[10px] font-bold opacity-90 uppercase tracking-wider mb-0.5">{room.type}</p>
-          <p className="text-sm font-bold truncate">{room.guestName}</p>
-          <p className="text-[11px] font-bold text-[#765a25] mt-0.5">{room.checkoutInfo || 'VIP Guest'}</p>
-        </>
-      );
+      return <p className="text-[10px] font-bold truncate">{room.guestName || 'VIP'}</p>;
     case 'cleaning':
       return (
-        <>
-          <p className="text-[10px] font-semibold opacity-80 uppercase tracking-wider mb-1">{room.type}</p>
-          <div className="w-full bg-[#c6c6c9] h-1.5 rounded-full mb-1 overflow-hidden">
-            <div className="bg-[#636467] h-full rounded-full transition-all" style={{ width: `${room.cleanProgress || 60}%` }} />
-          </div>
-          <p className="text-[11px] opacity-80 mt-0.5">{room.notes || 'In progress'}</p>
-        </>
+        <div className="w-full bg-[#c6c6c9] h-1 rounded-full overflow-hidden">
+          <div className="bg-[#636467] h-full rounded-full transition-all" style={{ width: `${room.cleanProgress || 60}%` }} />
+        </div>
       );
     case 'dirty':
-      return (
-        <>
-          <p className="text-[10px] font-semibold opacity-80 uppercase tracking-wider mb-0.5">{room.type}</p>
-          <p className="text-sm font-semibold">{room.issueDescription || 'Checkout Done'}</p>
-          <p className="text-[11px] font-medium mt-0.5 text-[#BC4749]">{room.notes || 'Requires service'}</p>
-        </>
-      );
+      return <p className="text-[10px] font-semibold truncate text-[#93000a]">{room.issueDescription || 'Requires service'}</p>;
     case 'maintenance':
-      return (
-        <>
-          <p className="text-[10px] font-semibold opacity-80 uppercase tracking-wider mb-0.5">{room.type}</p>
-          <p className="text-sm font-semibold">{room.issueDescription || 'Maintenance issue'}</p>
-          <p className="text-[11px] opacity-80 mt-0.5">ETA: {room.maintenanceEta || 'TBD'}</p>
-        </>
-      );
+      return <p className="text-[10px] font-semibold truncate">ETA {room.maintenanceEta || 'TBD'}</p>;
     default:
-      return (
-        <>
-          <p className="text-[10px] font-semibold text-[#7f7668] uppercase tracking-wider mb-0.5">{room.type}</p>
-          <p className="text-sm font-medium">Available</p>
-          <p className="text-[11px] text-[#2D6A4F] font-semibold mt-0.5">{formatCurrency(room.pricePerNight, currency)}/night</p>
-        </>
-      );
+      return <p className="text-[10px] text-[#2D6A4F] font-semibold truncate">{formatCurrency(room.pricePerNight, currency)}</p>;
   }
 }
 
@@ -200,28 +167,29 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, cu
                 Floor {floor}
                 <span className="text-[#7f7668] font-medium">({floorRooms.length} room{floorRooms.length === 1 ? '' : 's'})</span>
               </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
                 {floorRooms.map(room => {
                   const style = STATUS_STYLE[room.status];
                   const Icon = style.icon;
                   return (
-                    <div key={room.id} className="relative aspect-square">
+                    <div key={room.id} className="relative">
                       <button
                         onClick={() => setSelectedRoomForDetail(room)}
-                        className={`w-full h-full rounded-xl p-3.5 text-left transition-all shadow-2xs hover:brightness-95 flex flex-col justify-between ${style.tile} ${style.text}`}
+                        title={room.type}
+                        className={`w-full h-[70px] rounded-lg p-2 text-left transition-all shadow-2xs hover:brightness-95 flex flex-col justify-between ${style.tile} ${style.text}`}
                       >
                         <div className="flex justify-between items-start">
-                          <span className="text-xl font-bold">{room.number}</span>
-                          <Icon className="w-4 h-4 opacity-80" />
+                          <span className="text-sm font-bold">{room.number}</span>
+                          <Icon className="w-3 h-3 opacity-80 shrink-0" />
                         </div>
-                        <div><RoomTileBody room={room} currency={currency} /></div>
+                        <RoomTileBody room={room} currency={currency} />
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); setQrRoom(room); }}
                         title="Generate room-service QR"
-                        className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white/90 border border-[#E9ECEF] flex items-center justify-center text-[#765a25] hover:bg-white shadow-2xs"
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-white border border-[#E9ECEF] flex items-center justify-center text-[#765a25] hover:bg-[#fff8ec] shadow-2xs"
                       >
-                        <QrCode className="w-3 h-3" />
+                        <QrCode className="w-2.5 h-2.5" />
                       </button>
                     </div>
                   );

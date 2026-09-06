@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { fetchActiveOrder, ActiveOrder } from '../lib/guestApi';
 import { computeOrderEta } from '../lib/eta';
 import { formatCurrency } from '../lib/currency';
-import { ChefHat, Check, X, ChevronDown } from 'lucide-react';
+import { ChefHat, Check, X, ChevronDown, AlertTriangle } from 'lucide-react';
 
 interface OrderStatusBarProps {
   token: string;
@@ -51,6 +51,32 @@ export function OrderStatusBar({ token, currency }: OrderStatusBarProps) {
   }, []);
 
   if (!order || order.id === dismissed) return null;
+
+  // A rejected order has no ETA to count down to — the kitchen never made
+  // it, and the charge is already off the folio (staff_reject_order). This
+  // is the "real-time notification ends up in the guest's app" case: the
+  // guest sees exactly why, without needing to ask anyone.
+  if (order.status === 'rejected') {
+    return (
+      <div className="fixed top-0 inset-x-0 z-40 flex justify-center px-3 pt-3 pointer-events-none">
+        <div className="pointer-events-auto w-full max-w-md bg-white rounded-2xl shadow-lg border border-[#ffdad6] overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="p-4 flex items-start gap-3">
+            <div className="w-9 h-9 rounded-full bg-[#BC4749] text-white flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-4 h-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-[#93000a]">Order #{order.id.slice(0, 4)} couldn't be fulfilled</p>
+              <p className="text-xs text-[#4e463a] mt-1">{order.rejectionNote || 'The kitchen was unable to prepare this order.'}</p>
+              <p className="text-[10px] text-[#7f7668] mt-1.5">You haven't been charged for this.</p>
+            </div>
+            <button onClick={() => setDismissed(order.id)} className="p-1 text-gray-400 hover:text-gray-600 shrink-0">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const eta = computeOrderEta(order.items, order.createdAt, order.status);
   const stepIndex = STATUS_STEPS.indexOf(order.status);

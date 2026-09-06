@@ -25,30 +25,41 @@ interface ReceptionDashboardProps {
   onNavigate: (view: AppView) => void;
 }
 
-function KpiCard({ icon: Icon, label, value, sub }: { icon: typeof BedDouble; label: string; value: string; sub: string }) {
+/** A named accent, not raw hex at each call site — keeps every colorful spot on the dashboard pulling from the same small palette instead of one-off colors. */
+const ACCENTS = {
+  blue: { bg: '#E7F1FF', text: '#2563EB', border: '#BFDBFE' },
+  purple: { bg: '#F3E8FF', text: '#7C3AED', border: '#E9D5FF' },
+  amber: { bg: '#FFF1E0', text: '#D97706', border: '#FDE4B8' },
+  rose: { bg: '#FFE4E6', text: '#E11D48', border: '#FECDD3' },
+} as const;
+type Accent = keyof typeof ACCENTS;
+
+function KpiCard({ icon: Icon, label, value, sub, accent }: { icon: typeof BedDouble; label: string; value: string; sub: string; accent: Accent }) {
+  const c = ACCENTS[accent];
   return (
     <div className="bg-white rounded-xl border border-[#E9ECEF] p-4 flex items-start gap-3">
-      <div className="w-10 h-10 rounded-lg bg-[#fff8ec] text-[#765a25] flex items-center justify-center shrink-0">
+      <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: c.bg, color: c.text }}>
         <Icon className="w-5 h-5" />
       </div>
       <div className="min-w-0">
         <p className="text-[11px] font-semibold text-[#7f7668] uppercase tracking-wider">{label}</p>
         <p className="text-xl font-bold text-[#141d23] leading-tight">{value}</p>
-        <p className="text-[11px] text-[#4e463a] mt-0.5">{sub}</p>
+        <p className="text-[11px] mt-0.5" style={{ color: c.text }}>{sub}</p>
       </div>
     </div>
   );
 }
 
-function SectionCard({ title, count, viewAllLabel, onViewAll, children, empty }: {
-  title: string; count: number; viewAllLabel?: string; onViewAll?: () => void; children: React.ReactNode; empty: string;
+function SectionCard({ title, count, accent, viewAllLabel, onViewAll, children, empty }: {
+  title: string; count: number; accent: Accent; viewAllLabel?: string; onViewAll?: () => void; children: React.ReactNode; empty: string;
 }) {
+  const c = ACCENTS[accent];
   return (
-    <div className="bg-white rounded-xl border border-[#E9ECEF] overflow-hidden">
-      <div className="px-4 py-3 border-b border-[#E9ECEF] bg-[#f6faff] flex items-center justify-between">
-        <h3 className="text-sm font-bold text-[#141d23]">{title} {count > 0 && <span className="text-[#7f7668] font-medium">({count})</span>}</h3>
+    <div className="bg-white rounded-xl border overflow-hidden" style={{ borderColor: c.border }}>
+      <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor: c.border, backgroundColor: c.bg }}>
+        <h3 className="text-sm font-bold" style={{ color: c.text }}>{title} {count > 0 && <span className="font-medium opacity-70">({count})</span>}</h3>
         {onViewAll && (
-          <button onClick={onViewAll} className="text-[11px] font-semibold text-[#765a25] hover:underline flex items-center gap-1">
+          <button onClick={onViewAll} className="text-[11px] font-semibold hover:underline flex items-center gap-1" style={{ color: c.text }}>
             {viewAllLabel ?? 'View all'} <ArrowRight className="w-3 h-3" />
           </button>
         )}
@@ -129,16 +140,16 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
 
       {/* 4 KPI boxes */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard icon={BedDouble} label="Rooms Occupied" value={`${occupiedCount}/${rooms.length}`} sub={`${occupancyPct}% occupancy`} />
-        <KpiCard icon={Users} label="Upcoming Guests" value={String(notCheckedInArrivals.length)} sub="arriving today" />
-        <KpiCard icon={ClipboardList} label="Live Operations" value={String(openTasks.length)} sub="open tasks" />
-        <KpiCard icon={Megaphone} label="Open Requests" value={String(urgentRequests.length)} sub="need attention" />
+        <KpiCard icon={BedDouble} label="Rooms Occupied" value={`${occupiedCount}/${rooms.length}`} sub={`${occupancyPct}% occupancy`} accent="blue" />
+        <KpiCard icon={Users} label="Upcoming Guests" value={String(notCheckedInArrivals.length)} sub="arriving today" accent="purple" />
+        <KpiCard icon={ClipboardList} label="Live Operations" value={String(openTasks.length)} sub="open tasks" accent="amber" />
+        <KpiCard icon={Megaphone} label="Open Requests" value={String(urgentRequests.length)} sub="need attention" accent="rose" />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
         {/* Main column */}
         <div className="xl:col-span-8 flex flex-col gap-6">
-          <SectionCard title="Guest Requests" count={urgentRequests.length} empty="Nothing outstanding — nice.">
+          <SectionCard title="Guest Requests" count={urgentRequests.length} accent="rose" empty="Nothing outstanding — nice.">
             {urgentRequests.map(req => (
               <div key={req.id} onClick={() => onResolveUrgentRequest(req.id)} className="p-3.5 hover:bg-[#ecf5fe] transition-colors cursor-pointer group flex items-center justify-between gap-3">
                 <div className="min-w-0">
@@ -154,7 +165,7 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
             ))}
           </SectionCard>
 
-          <SectionCard title="Upcoming Arrivals" count={upcomingArrivals.length} empty="No arrivals scheduled today.">
+          <SectionCard title="Upcoming Arrivals" count={upcomingArrivals.length} accent="purple" empty="No arrivals scheduled today.">
             {upcomingArrivals.map(arr => (
               <div key={arr.id} className="relative p-3 flex items-center gap-3">
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0 relative ${
@@ -207,7 +218,7 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
             ))}
           </SectionCard>
 
-          <SectionCard title="Room Service" count={activeOrders.length} viewAllLabel="Kitchen board" onViewAll={() => onNavigate('kitchen_kds')} empty="No active orders.">
+          <SectionCard title="Room Service" count={activeOrders.length} accent="amber" viewAllLabel="Kitchen board" onViewAll={() => onNavigate('kitchen_kds')} empty="No active orders.">
             {activeOrders.map(order => (
               <div key={order.id} className="px-3.5 py-2.5 flex items-center justify-between gap-3">
                 <div className="min-w-0 flex items-center gap-2">
@@ -229,10 +240,12 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
 
         {/* Right info panel */}
         <div className="xl:col-span-4 flex flex-col gap-6">
-          <div className="bg-white rounded-xl border border-[#E9ECEF] p-4">
-            <p className="text-[11px] font-semibold text-[#7f7668] uppercase tracking-wider">Front Desk Shift</p>
-            <p className="text-lg font-bold text-[#141d23] mt-1">08:00 – 16:00</p>
-            <div className="grid grid-cols-2 gap-2 mt-3 text-center">
+          <div className="bg-white rounded-xl border overflow-hidden" style={{ borderColor: ACCENTS.blue.border }}>
+            <div className="px-4 py-2.5" style={{ backgroundColor: ACCENTS.blue.bg }}>
+              <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: ACCENTS.blue.text }}>Front Desk Shift</p>
+              <p className="text-lg font-bold text-[#141d23] mt-0.5">08:00 – 16:00</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 p-3 text-center">
               <div className="bg-[#f6faff] rounded-lg p-2">
                 <p className="text-sm font-bold text-[#141d23]">{rooms.length}</p>
                 <p className="text-[10px] text-[#7f7668]">Total Rooms</p>
@@ -244,10 +257,10 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-[#E9ECEF] overflow-hidden">
-            <div className="px-4 py-3 border-b border-[#E9ECEF] bg-[#f6faff] flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-[#765a25]" />
-              <h3 className="text-sm font-bold text-[#141d23]">Recent Activity</h3>
+          <div className="bg-white rounded-xl border overflow-hidden" style={{ borderColor: ACCENTS.amber.border }}>
+            <div className="px-4 py-3 border-b flex items-center gap-2" style={{ borderColor: ACCENTS.amber.border, backgroundColor: ACCENTS.amber.bg }}>
+              <Sparkles className="w-3.5 h-3.5" style={{ color: ACCENTS.amber.text }} />
+              <h3 className="text-sm font-bold" style={{ color: ACCENTS.amber.text }}>Recent Activity</h3>
             </div>
             {notifications.length === 0 ? (
               <p className="text-xs text-[#7f7668] text-center py-6">Nothing yet today.</p>

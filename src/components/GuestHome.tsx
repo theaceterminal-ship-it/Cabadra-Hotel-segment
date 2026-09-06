@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppView } from '../types';
-import { GuestExperience } from '../lib/guestApi';
+import { GuestExperience, GuestServiceCategory, Department } from '../lib/guestApi';
 import { formatCurrency } from '../lib/currency';
 import {
   Utensils,
@@ -14,7 +14,9 @@ import {
   Calendar,
   X,
   Compass,
-  Heart
+  Heart,
+  Wrench,
+  MessageCircle,
 } from 'lucide-react';
 
 interface GuestHomeProps {
@@ -27,15 +29,24 @@ interface GuestHomeProps {
   currency: string;
   /** Owner-managed via the Experiences tab — empty until they add one, no more hardcoded demo cards. */
   experiences: GuestExperience[];
+  /** Owner-managed via the Services tab (0018_service_categories.sql) — replaces the old fixed Housekeeping/Amenities/Spa/Transfers grid, since not every property offers the same things. */
+  serviceCategories: GuestServiceCategory[];
   onNavigate: (view: AppView) => void;
   onOpenNewRequest: () => void;
-  /** Real submission (guest_submit_request) — the housekeeping/amenities/spa/transfers modal below calls this instead of just showing a toast. */
-  onSubmitConciergeRequest: (title: string) => Promise<void>;
+  /** Real submission (guest_submit_request), tagged with the service's department so it routes to the right team instead of Reception guessing from the title. */
+  onSubmitConciergeRequest: (title: string, department: Department) => Promise<void>;
   /** Real submission (guest_book_experience) for the curated-experience "Reserve Now" buttons. */
   onBookExperience: (name: string, price: number) => Promise<void>;
 }
 
 const DEFAULT_HERO_IMAGE = 'https://lh3.googleusercontent.com/aida-public/AB6AXuApNU48JgNCtMBN-62dVkxqySJJot6g74LTZFb76CgYauRB7gZ9OBq6UNLjzWLklzLHF0WxdgSVGi7Btvz2FX9Mz9zjzCgeZm0rXMOfzC3JTMboHzUDMShFpBOSyLDvadLUW5LGJT_7r1ZGmlxCfr1XsthTQ3KOUDw2bafbxI8uzbxrQaFylTmBaNgb8QFn0NxK7Vb9s_Z23jOcyZE4TIqg5mD8gQgrgMPSzcxD_g2CHheeE2JR0Cop';
+
+const SERVICE_ICONS: Record<string, typeof Sparkles> = {
+  bed: BedDouble, sparkles: Sparkles, heart: Heart, car: Car, wrench: Wrench, message: MessageCircle,
+};
+function serviceIconFor(key: string) {
+  return SERVICE_ICONS[key] ?? Compass;
+}
 
 export const GuestHome: React.FC<GuestHomeProps> = ({
   propertyName,
@@ -45,12 +56,15 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
   isVip,
   currency,
   experiences,
+  serviceCategories,
   onNavigate,
   onOpenNewRequest,
   onSubmitConciergeRequest,
   onBookExperience,
 }) => {
-  const [activeModal, setActiveModal] = useState<string | null>(null);
+  const [activeModal, setActiveModal] = useState<GuestServiceCategory | null>(null);
+  const [requestNote, setRequestNote] = useState('');
+  const [submittingRequest, setSubmittingRequest] = useState(false);
   const [bookedExperience, setBookedExperience] = useState<string | null>(null);
 
   const handleBookExperience = async (title: string, price: number) => {
@@ -63,13 +77,26 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
     }
   };
 
-  const handleConciergeRequest = async (title: string) => {
+  const handleConciergeRequest = async (title: string, department: Department) => {
     try {
-      await onSubmitConciergeRequest(title);
+      await onSubmitConciergeRequest(title, department);
       setBookedExperience(title);
       setTimeout(() => setBookedExperience(null), 4000);
     } catch (err) {
       console.warn('Failed to submit request:', err);
+    }
+  };
+
+  const handleSubmitServiceRequest = async () => {
+    if (!activeModal) return;
+    setSubmittingRequest(true);
+    try {
+      const title = requestNote.trim() ? `${activeModal.name}: ${requestNote.trim()}` : activeModal.name;
+      await handleConciergeRequest(title, activeModal.department);
+    } finally {
+      setSubmittingRequest(false);
+      setActiveModal(null);
+      setRequestNote('');
     }
   };
 
@@ -149,74 +176,34 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
               </div>
             </div>
 
-            {/* Housekeeping */}
-            <div
-              id="service-card-housekeeping"
-              onClick={() => setActiveModal('housekeeping')}
-              className="col-span-1 relative rounded-2xl overflow-hidden cursor-pointer group shadow-sm border border-[#E9ECEF] hover:shadow-md transition-all h-36 md:h-38 bg-white hover:bg-[#ecf5fe] flex flex-col items-center justify-center p-4 text-center"
-            >
-              <div className="bg-[#765a25]/10 rounded-full p-3 mb-2 text-[#765a25] group-hover:scale-110 transition-transform">
-                <BedDouble className="w-6 h-6" />
-              </div>
-              <h3 className="text-sm font-bold text-[#141d23]">Housekeeping</h3>
-              <p className="text-[11px] text-[#7f7668] mt-0.5">Linens &amp; Turnover</p>
-            </div>
-
-            {/* Amenities */}
-            <div
-              id="service-card-amenities"
-              onClick={() => setActiveModal('amenities')}
-              className="col-span-1 relative rounded-2xl overflow-hidden cursor-pointer group shadow-sm border border-[#E9ECEF] hover:shadow-md transition-all h-36 md:h-38 bg-white hover:bg-[#ecf5fe] flex flex-col items-center justify-center p-4 text-center"
-            >
-              <div className="bg-[#765a25]/10 rounded-full p-3 mb-2 text-[#765a25] group-hover:scale-110 transition-transform">
-                <Sparkles className="w-6 h-6" />
-              </div>
-              <h3 className="text-sm font-bold text-[#141d23]">Amenities</h3>
-              <p className="text-[11px] text-[#7f7668] mt-0.5">Toiletries &amp; Robes</p>
-            </div>
-
-            {/* Spa */}
-            <div
-              id="service-card-spa"
-              onClick={() => setActiveModal('spa')}
-              className="col-span-1 relative rounded-2xl overflow-hidden cursor-pointer group shadow-sm border border-[#E9ECEF] hover:shadow-md transition-all h-36 md:h-38"
-            >
-              <div 
-                className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-                style={{ 
-                  backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuAFS7M4s6kuMzdIMHsi_i8Sx1HkACaIw_EkHyv9Wj8uQoY13pxBlWhCx0yj3F3710LNSPlmyQi9BB6LLEIIKeb-m5T-QeHyYFgyheD2m1nRFSxA5RHVyGar6gbNzu9EfiQPNiUIHc4v-MAfRcE6Lfu2w7bJJGTPIEGFE0XvgwprDZse-RljkZZUEjMutE1PXNb-fxbcSjlWsIUULQ8qsoRgH1IliCt1WYzW5qat-Pcop93hPO_RCqkS')`
-                }}
-              ></div>
-              <div className="absolute inset-0 bg-black/45"></div>
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center text-white">
-                <Heart className="w-6 h-6 mb-1 text-[#ffdea9]" />
-                <h3 className="text-sm font-bold">Spa &amp; Wellness</h3>
-                <p className="text-[11px] text-white/80">Massages &amp; Sauna</p>
-              </div>
-            </div>
-
-            {/* Transfers */}
-            <div
-              id="service-card-transfers"
-              onClick={() => setActiveModal('transfers')}
-              className="col-span-1 relative rounded-2xl overflow-hidden cursor-pointer group shadow-sm border border-[#E9ECEF] hover:shadow-md transition-all h-36 md:h-38 bg-white hover:bg-[#ecf5fe] flex flex-col items-center justify-center p-4 text-center"
-            >
-              <div className="bg-[#765a25]/10 rounded-full p-3 mb-2 text-[#765a25] group-hover:scale-110 transition-transform">
-                <Car className="w-6 h-6" />
-              </div>
-              <h3 className="text-sm font-bold text-[#141d23]">Transfers</h3>
-              <p className="text-[11px] text-[#7f7668] mt-0.5">Private Chauffeur</p>
-            </div>
+            {/* Owner-managed (Services tab) — not every property offers the same things, so this is no longer a fixed four cards. */}
+            {(serviceCategories ?? []).map(cat => {
+              const Icon = serviceIconFor(cat.iconKey);
+              return (
+                <div
+                  key={cat.id}
+                  id={`service-card-${cat.id}`}
+                  onClick={() => setActiveModal(cat)}
+                  className="col-span-1 relative rounded-2xl overflow-hidden cursor-pointer group shadow-sm border border-[#E9ECEF] hover:shadow-md transition-all h-36 md:h-38 bg-white hover:bg-[#ecf5fe] flex flex-col items-center justify-center p-4 text-center"
+                >
+                  <div className="bg-[#765a25]/10 rounded-full p-3 mb-2 text-[#765a25] group-hover:scale-110 transition-transform">
+                    <Icon className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-sm font-bold text-[#141d23]">{cat.name}</h3>
+                  {cat.description && <p className="text-[11px] text-[#7f7668] mt-0.5">{cat.description}</p>}
+                </div>
+              );
+            })}
           </div>
         </section>
 
         {/* Featured Curated Experiences — owner-managed (Experiences tab), not hardcoded. Section just doesn't render until the owner adds one. */}
-        {experiences.length > 0 && (
+        {(experiences ?? []).length > 0 && (
           <section id="curated-experiences-section" className="space-y-4 pt-2">
             <h2 className="text-xl font-bold text-[#141d23] px-1">Curated For You</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {experiences.map(exp => (
+              {experiences.map((exp) => (
                 <div
                   key={exp.id}
                   id={`exp-card-${exp.id}`}
@@ -248,99 +235,46 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
         )}
       </div>
 
-      {/* Interactive Service Modals */}
+      {/* Service Request Modal — one generic form for any owner-defined category, tagged with its department on submit */}
       {activeModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#E9ECEF]">
             <div className="flex justify-between items-center pb-3 border-b border-[#E9ECEF] mb-4">
-              <h3 className="text-lg font-bold text-[#141d23] capitalize">
-                Request {activeModal} (Room {roomNumber})
+              <h3 className="text-lg font-bold text-[#141d23]">
+                Request {activeModal.name} (Room {roomNumber})
               </h3>
-              <button 
-                onClick={() => setActiveModal(null)}
+              <button
+                onClick={() => { setActiveModal(null); setRequestNote(''); }}
                 className="text-gray-400 hover:text-gray-600 text-xl font-bold"
               >
                 &times;
               </button>
             </div>
 
-            <p className="text-xs text-[#4e463a] mb-4">
-              Select items or services needed. Your concierge dispatch will confirm arrival time within 5 minutes.
-            </p>
+            {activeModal.description && <p className="text-xs text-[#4e463a] mb-3">{activeModal.description}</p>}
 
-            <div className="space-y-2 mb-6 text-xs">
-              {activeModal === 'housekeeping' && (
-                <>
-                  <label className="flex items-center gap-2 p-2.5 bg-[#f6faff] rounded-lg border border-[#E9ECEF] cursor-pointer">
-                    <input type="checkbox" defaultChecked className="accent-[#765a25]" />
-                    <span>Complete Room Cleaning &amp; Linen Change</span>
-                  </label>
-                  <label className="flex items-center gap-2 p-2.5 bg-[#f6faff] rounded-lg border border-[#E9ECEF] cursor-pointer">
-                    <input type="checkbox" className="accent-[#765a25]" />
-                    <span>Evening Turndown Service with Herbal Tea</span>
-                  </label>
-                </>
-              )}
-
-              {activeModal === 'amenities' && (
-                <>
-                  <label className="flex items-center gap-2 p-2.5 bg-[#f6faff] rounded-lg border border-[#E9ECEF] cursor-pointer">
-                    <input type="checkbox" defaultChecked className="accent-[#765a25]" />
-                    <span>Extra Plush Bath Towels &amp; Bathrobes</span>
-                  </label>
-                  <label className="flex items-center gap-2 p-2.5 bg-[#f6faff] rounded-lg border border-[#E9ECEF] cursor-pointer">
-                    <input type="checkbox" className="accent-[#765a25]" />
-                    <span>Le Labo Santal 33 Toiletries Kit</span>
-                  </label>
-                  <label className="flex items-center gap-2 p-2.5 bg-[#f6faff] rounded-lg border border-[#E9ECEF] cursor-pointer">
-                    <input type="checkbox" className="accent-[#765a25]" />
-                    <span>Hypoallergenic Feather Down Pillows</span>
-                  </label>
-                </>
-              )}
-
-              {activeModal === 'spa' && (
-                <>
-                  <label className="flex items-center gap-2 p-2.5 bg-[#f6faff] rounded-lg border border-[#E9ECEF] cursor-pointer">
-                    <input type="checkbox" defaultChecked className="accent-[#765a25]" />
-                    <span>60-Min Swedish Aromatherapy Massage ({formatCurrency(180, currency)})</span>
-                  </label>
-                  <label className="flex items-center gap-2 p-2.5 bg-[#f6faff] rounded-lg border border-[#E9ECEF] cursor-pointer">
-                    <input type="checkbox" className="accent-[#765a25]" />
-                    <span>Deep Tissue In-Suite Session ({formatCurrency(220, currency)})</span>
-                  </label>
-                </>
-              )}
-
-              {activeModal === 'transfers' && (
-                <>
-                  <label className="flex items-center gap-2 p-2.5 bg-[#f6faff] rounded-lg border border-[#E9ECEF] cursor-pointer">
-                    <input type="checkbox" defaultChecked className="accent-[#765a25]" />
-                    <span>JFK Airport Chauffeur (Mercedes S-Class) ({formatCurrency(160, currency)})</span>
-                  </label>
-                  <label className="flex items-center gap-2 p-2.5 bg-[#f6faff] rounded-lg border border-[#E9ECEF] cursor-pointer">
-                    <input type="checkbox" className="accent-[#765a25]" />
-                    <span>City Hourly Chauffeur Service ({formatCurrency(120, currency)}/hr)</span>
-                  </label>
-                </>
-              )}
-            </div>
+            <label className="text-[11px] font-bold text-[#4e463a] block mb-1">Anything specific? (optional)</label>
+            <textarea
+              rows={3}
+              value={requestNote}
+              onChange={(e) => setRequestNote(e.target.value)}
+              placeholder="e.g. Extra pillows, 3pm arrival, allergic to lavender..."
+              className="w-full p-2.5 text-xs border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none resize-none mb-4"
+            />
 
             <div className="flex justify-end gap-2">
               <button
-                onClick={() => setActiveModal(null)}
+                onClick={() => { setActiveModal(null); setRequestNote(''); }}
                 className="px-4 py-2 border border-[#E9ECEF] rounded-lg text-xs font-semibold text-[#4e463a]"
               >
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  handleConciergeRequest(`${activeModal} request`);
-                  setActiveModal(null);
-                }}
-                className="px-5 py-2 bg-[#765a25] text-white rounded-lg text-xs font-bold hover:bg-[#5c4210]"
+                onClick={handleSubmitServiceRequest}
+                disabled={submittingRequest}
+                className="px-5 py-2 bg-[#765a25] text-white rounded-lg text-xs font-bold hover:bg-[#5c4210] disabled:opacity-60"
               >
-                Confirm Request
+                {submittingRequest ? 'Sending…' : 'Confirm Request'}
               </button>
             </div>
           </div>
