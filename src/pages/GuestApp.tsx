@@ -71,6 +71,7 @@ export default function GuestApp() {
           currency={context.property.currency}
           experiences={context.experiences}
           serviceCategories={context.serviceCategories}
+          transportRoutes={context.transportRoutes}
           onNavigate={handleNavigate}
           onOpenNewRequest={() => setIsRequestModalOpen(true)}
           onSubmitConciergeRequest={(title, department) => submitGuestRequest(token, title, 'Standard', department).then(() => {})}

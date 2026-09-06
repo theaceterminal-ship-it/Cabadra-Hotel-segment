@@ -12,7 +12,9 @@ import {
 
 interface RoomsFloorsViewProps {
   propertyId: string;
+  propertyName: string;
   currency: string;
+  upiId?: string;
   rooms: Room[];
   onUpdateRoom: (updated: Room) => void;
   onOpenNewRequest: () => void;
@@ -60,7 +62,7 @@ function RoomTileBody({ room, currency }: { room: Room; currency: string }) {
  * landing page is now its own tab, so the Dashboard can stay simple while
  * this stays as powerful as front-desk work actually needs.
  */
-export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, currency, rooms, onUpdateRoom, onRefreshRooms }) => {
+export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, propertyName, currency, upiId, rooms, onUpdateRoom, onRefreshRooms }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<RoomStatus | 'all'>('all');
   const [selectedRoomForDetail, setSelectedRoomForDetail] = useState<Room | null>(null);
@@ -167,20 +169,20 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, cu
                 Floor {floor}
                 <span className="text-[#7f7668] font-medium">({floorRooms.length} room{floorRooms.length === 1 ? '' : 's'})</span>
               </h2>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
                 {floorRooms.map(room => {
                   const style = STATUS_STYLE[room.status];
                   const Icon = style.icon;
                   return (
-                    <div key={room.id} className="relative">
+                    <div key={room.id} className="relative aspect-square">
                       <button
                         onClick={() => setSelectedRoomForDetail(room)}
                         title={room.type}
-                        className={`w-full h-[70px] rounded-lg p-2 text-left transition-all shadow-2xs hover:brightness-95 flex flex-col justify-between ${style.tile} ${style.text}`}
+                        className={`w-full h-full rounded-xl p-2.5 text-left transition-all shadow-2xs hover:brightness-95 flex flex-col justify-between ${style.tile} ${style.text}`}
                       >
                         <div className="flex justify-between items-start">
-                          <span className="text-sm font-bold">{room.number}</span>
-                          <Icon className="w-3 h-3 opacity-80 shrink-0" />
+                          <span className="text-lg font-bold">{room.number}</span>
+                          <Icon className="w-3.5 h-3.5 opacity-80 shrink-0" />
                         </div>
                         <RoomTileBody room={room} currency={currency} />
                       </button>
@@ -324,7 +326,10 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, cu
         <RoomFolioModal
           reservationId={selectedRoomForDetail.reservationId}
           roomNumber={selectedRoomForDetail.number}
+          guestName={selectedRoomForDetail.guestName}
+          propertyName={propertyName}
           currency={currency}
+          upiId={upiId}
           onClose={() => setShowFolio(false)}
           onCheckedOut={() => {
             onRefreshRooms();

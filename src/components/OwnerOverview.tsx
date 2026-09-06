@@ -28,6 +28,8 @@ import {
   Building,
   FileText,
   CheckCircle2,
+  Download,
+  Printer,
 } from 'lucide-react';
 
 interface OwnerOverviewProps {
@@ -83,6 +85,62 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
     const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
     fetchRevenueTrend(primaryPropertyId, days).then(setRevenueTrend).catch(() => setRevenueTrend([]));
   }, [primaryPropertyId, timeRange]);
+
+  // Reporting export — same idea as the sibling tableorder product's Order
+  // History export: a plain CSV a hotel's accountant can open directly, and
+  // a print-ready HTML report for a physical copy. Scoped to what's
+  // actually on this page (per-property revenue/occupancy/AOV), not a
+  // separate export pipeline.
+  const exportPortfolioCSV = () => {
+    const rows = [
+      ['Portfolio Report', new Date().toLocaleDateString()], [],
+      ['Property', 'Location', 'Currency', 'Occupancy %', 'Revenue Today', 'Total Revenue', 'Avg Order Value', 'Open Requests'],
+      ...properties.map(p => [p.name, p.location, p.currency, p.occupancy, p.revenueToday, p.totalRevenue, p.avgOrderValue, p.requestsCount]),
+    ];
+    const csv = rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cabadra-portfolio-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const printPortfolioReport = () => {
+    const rowsHtml = properties.map(p => `
+      <tr>
+        <td>${p.name}</td>
+        <td>${p.location}</td>
+        <td style="text-align:right">${p.occupancy}%</td>
+        <td style="text-align:right">${p.revenueToday}</td>
+        <td style="text-align:right">${p.totalRevenue}</td>
+        <td style="text-align:right">${p.requestsCount}</td>
+      </tr>`).join('');
+    const win = window.open('', '_blank', 'width=900,height=700');
+    if (!win) return;
+    win.document.write(`
+      <html><head><title>Cabadra Portfolio Report</title>
+        <style>
+          body { font-family: Georgia, serif; max-width: 900px; margin: 24px auto; color: #141d23; padding: 0 16px; }
+          h1 { font-size: 22px; margin-bottom: 2px; color: #765a25; }
+          .sub { color: #7f7668; font-size: 12px; margin-bottom: 20px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+          th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; }
+          th { background: #f6faff; color: #4e463a; text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.3px; }
+        </style>
+      </head><body>
+        <h1>Portfolio Report</h1>
+        <div class="sub">${properties.length} propert${properties.length === 1 ? 'y' : 'ies'} · Generated ${new Date().toLocaleString()}</div>
+        <table>
+          <thead><tr><th>Property</th><th>Location</th><th style="text-align:right">Occupancy</th><th style="text-align:right">Revenue Today</th><th style="text-align:right">Total Revenue</th><th style="text-align:right">Open Requests</th></tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+        <script>window.onload = () => setTimeout(() => window.print(), 300);</script>
+      </body></html>
+    `);
+    win.document.close();
+  };
 
   return (
     <div id="owner-overview-canvas" className="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
@@ -494,7 +552,19 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button 
+              <button
+                onClick={exportPortfolioCSV}
+                className="px-4 py-2 border border-[#E9ECEF] rounded-lg text-xs font-semibold text-[#4e463a] hover:border-[#765a25] hover:text-[#765a25] flex items-center gap-1.5"
+              >
+                <Download className="w-3.5 h-3.5" /> Export CSV
+              </button>
+              <button
+                onClick={printPortfolioReport}
+                className="px-4 py-2 border border-[#E9ECEF] rounded-lg text-xs font-semibold text-[#4e463a] hover:border-[#765a25] hover:text-[#765a25] flex items-center gap-1.5"
+              >
+                <Printer className="w-3.5 h-3.5" /> Print
+              </button>
+              <button
                 onClick={() => setShowReportModal(false)}
                 className="px-4 py-2 bg-[#765a25] text-white rounded-lg text-xs font-semibold"
               >

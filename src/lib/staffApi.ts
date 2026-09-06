@@ -90,6 +90,7 @@ export async function fetchStaffProperties(): Promise<Property[]> {
       // items. Empty until the owner sets one.
       image: p.image ?? '',
       modelImage: p.image ?? '',
+      upiId: p.upi_id ?? undefined,
     };
   });
 }
@@ -101,13 +102,21 @@ export async function fetchPropertyCurrency(propertyId: string): Promise<string>
   return data?.currency ?? 'USD';
 }
 
+/** Name + currency + UPI id — what Reception's folio/bill-printing needs but has no other reason to load the full Property/stats bundle for. */
+export async function fetchPropertyMeta(propertyId: string): Promise<{ name: string; currency: string; upiId?: string }> {
+  const { data, error } = await supabase.from('properties').select('name, currency, upi_id').eq('id', propertyId).single();
+  if (error) throw error;
+  return { name: data?.name ?? '', currency: data?.currency ?? 'USD', upiId: data?.upi_id ?? undefined };
+}
+
 /** Property-level settings an owner can change after creation — name/location/status/photo URL. All optional; only the fields passed are updated. */
-export async function updateProperty(propertyId: string, patch: { name?: string; location?: string; status?: string; image?: string }): Promise<void> {
+export async function updateProperty(propertyId: string, patch: { name?: string; location?: string; status?: string; image?: string; upiId?: string }): Promise<void> {
   const { error } = await supabase.from('properties').update({
     ...(patch.name !== undefined && { name: patch.name }),
     ...(patch.location !== undefined && { location: patch.location }),
     ...(patch.status !== undefined && { status: patch.status }),
     ...(patch.image !== undefined && { image: patch.image }),
+    ...(patch.upiId !== undefined && { upi_id: patch.upiId }),
   }).eq('id', propertyId);
   if (error) throw error;
 }
@@ -604,12 +613,14 @@ export interface ServiceCategory {
   name: string;
   description: string;
   department: 'housekeeping' | 'maintenance' | 'amenities' | 'concierge';
+  /** 'transportation' swaps the guest-side free-text modal for a route picker (transport_routes) instead. */
+  categoryType: 'general' | 'transportation';
 }
 
 export async function fetchServiceCategories(propertyId: string): Promise<ServiceCategory[]> {
   const { data, error } = await supabase.from('service_categories').select('*').eq('property_id', propertyId).order('sort_order');
   if (error) throw error;
-  return (data ?? []).map(s => ({ id: s.id, name: s.name, description: s.description, department: s.department }));
+  return (data ?? []).map(s => ({ id: s.id, name: s.name, description: s.description, department: s.department, categoryType: s.category_type ?? 'general' }));
 }
 
 export async function addServiceCategory(propertyId: string, cat: Omit<ServiceCategory, 'id'>): Promise<void> {
@@ -619,6 +630,7 @@ export async function addServiceCategory(propertyId: string, cat: Omit<ServiceCa
     name: cat.name,
     description: cat.description,
     department: cat.department,
+    category_type: cat.categoryType,
   });
   if (error) throw error;
 }
@@ -628,12 +640,49 @@ export async function updateServiceCategory(propertyId: string, catId: string, p
     ...(patch.name !== undefined && { name: patch.name }),
     ...(patch.description !== undefined && { description: patch.description }),
     ...(patch.department !== undefined && { department: patch.department }),
+    ...(patch.categoryType !== undefined && { category_type: patch.categoryType }),
   }).eq('property_id', propertyId).eq('id', catId);
   if (error) throw error;
 }
 
 export async function deleteServiceCategory(propertyId: string, catId: string): Promise<void> {
   const { error } = await supabase.from('service_categories').delete().eq('property_id', propertyId).eq('id', catId);
+  if (error) throw error;
+}
+
+// ============================================================================
+// TRANSPORT ROUTES — the route catalog behind a 'transportation'-type
+// service category (0023_transport_routes.sql)
+// ============================================================================
+
+export interface TransportRoute {
+  id: string;
+  from: string;
+  to: string;
+  price: number;
+  priceUnit: string;
+}
+
+export async function fetchTransportRoutes(propertyId: string): Promise<TransportRoute[]> {
+  const { data, error } = await supabase.from('transport_routes').select('*').eq('property_id', propertyId).order('from_location');
+  if (error) throw error;
+  return (data ?? []).map(r => ({ id: r.id, from: r.from_location, to: r.to_location, price: r.price, priceUnit: r.price_unit }));
+}
+
+export async function addTransportRoute(propertyId: string, route: Omit<TransportRoute, 'id'>): Promise<void> {
+  const { error } = await supabase.from('transport_routes').insert({
+    id: `${slugify(route.from)}-${slugify(route.to)}-${Date.now().toString(36)}`,
+    property_id: propertyId,
+    from_location: route.from,
+    to_location: route.to,
+    price: route.price,
+    price_unit: route.priceUnit,
+  });
+  if (error) throw error;
+}
+
+export async function deleteTransportRoute(propertyId: string, routeId: string): Promise<void> {
+  const { error } = await supabase.from('transport_routes').delete().eq('property_id', propertyId).eq('id', routeId);
   if (error) throw error;
 }
 
@@ -662,6 +711,12 @@ export async function updateTaskStatus(taskId: string, status: LiveOpsTask['stat
   if (error) throw error;
 }
 
+/** "Assign to" — a name from the property's staff_directory, not a login. Passing null clears it back to an unassigned department queue. */
+export async function updateTaskAssignment(taskId: string, assignedTo: string | null): Promise<void> {
+  const { error } = await supabase.from('tasks').update({ assigned_to: assignedTo }).eq('id', taskId);
+  if (error) throw error;
+}
+
 export async function createTask(propertyId: string, task: Omit<LiveOpsTask, 'id'>): Promise<void> {
   const { error } = await supabase.from('tasks').insert({
     property_id: propertyId,
@@ -674,6 +729,36 @@ export async function createTask(propertyId: string, task: Omit<LiveOpsTask, 'id
     category: task.category,
     assigned_to: task.assignedTo ?? null,
   });
+  if (error) throw error;
+}
+
+// ============================================================================
+// STAFF DIRECTORY — department contact numbers, separate from login access
+// (0022_staff_directory.sql). Who a Live Ops task actually gets assigned to.
+// ============================================================================
+
+export interface DirectoryContact {
+  id: string;
+  name: string;
+  phone: string;
+  department: 'housekeeping' | 'maintenance' | 'amenities' | 'concierge';
+}
+
+export async function fetchStaffDirectory(propertyId: string): Promise<DirectoryContact[]> {
+  const { data, error } = await supabase.from('staff_directory').select('*').eq('property_id', propertyId).order('name');
+  if (error) throw error;
+  return (data ?? []).map(d => ({ id: d.id, name: d.name, phone: d.phone, department: d.department }));
+}
+
+export async function addDirectoryContact(propertyId: string, contact: Omit<DirectoryContact, 'id'>): Promise<void> {
+  const { error } = await supabase.from('staff_directory').insert({
+    property_id: propertyId, name: contact.name, phone: contact.phone, department: contact.department,
+  });
+  if (error) throw error;
+}
+
+export async function deleteDirectoryContact(contactId: string): Promise<void> {
+  const { error } = await supabase.from('staff_directory').delete().eq('id', contactId);
   if (error) throw error;
 }
 
@@ -692,6 +777,14 @@ export async function checkoutReservation(reservationId: string, paymentMethod: 
   const { data, error } = await supabase.rpc('staff_checkout_reservation', { p_reservation_id: reservationId, p_payment_method: paymentMethod });
   if (error) throw error;
   return data as { reservationId: string; amountCharged: number; paymentMethod: string };
+}
+
+/** A deposit at check-in, a UPI payment mid-stay — recorded as a negative folio line that nets against real charges immediately, not held separately until checkout (staff_record_folio_payment, 0021_folio_payments_and_upi.sql). */
+export async function recordFolioPayment(reservationId: string, amount: number, description: string, method: 'cash' | 'card' | 'upi' | 'other'): Promise<void> {
+  const { error } = await supabase.rpc('staff_record_folio_payment', {
+    p_reservation_id: reservationId, p_amount: amount, p_description: description, p_method: method,
+  });
+  if (error) throw error;
 }
 
 // ============================================================================

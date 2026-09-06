@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AppView } from '../types';
-import { GuestExperience, GuestServiceCategory, Department } from '../lib/guestApi';
+import { GuestExperience, GuestServiceCategory, GuestTransportRoute, Department } from '../lib/guestApi';
 import { formatCurrency } from '../lib/currency';
 import {
   Utensils,
@@ -31,6 +31,8 @@ interface GuestHomeProps {
   experiences: GuestExperience[];
   /** Owner-managed via the Services tab (0018_service_categories.sql) — replaces the old fixed Housekeeping/Amenities/Spa/Transfers grid, since not every property offers the same things. */
   serviceCategories: GuestServiceCategory[];
+  /** The route catalog behind any 'transportation'-type service category — a guest picks from these instead of typing a destination out by hand. */
+  transportRoutes: GuestTransportRoute[];
   onNavigate: (view: AppView) => void;
   onOpenNewRequest: () => void;
   /** Real submission (guest_submit_request), tagged with the service's department so it routes to the right team instead of Reception guessing from the title. */
@@ -57,6 +59,7 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
   currency,
   experiences,
   serviceCategories,
+  transportRoutes,
   onNavigate,
   onOpenNewRequest,
   onSubmitConciergeRequest,
@@ -64,8 +67,19 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
 }) => {
   const [activeModal, setActiveModal] = useState<GuestServiceCategory | null>(null);
   const [requestNote, setRequestNote] = useState('');
+  const [selectedRouteId, setSelectedRouteId] = useState('');
+  const [routeSearch, setRouteSearch] = useState('');
   const [submittingRequest, setSubmittingRequest] = useState(false);
   const [bookedExperience, setBookedExperience] = useState<string | null>(null);
+  const [now, setNow] = useState(() => new Date());
+
+  // A live clock in the hero — small touch, but it's the first thing a
+  // guest sees, and "what time is it right now, at this hotel" is a real
+  // question when you've just landed somewhere with jet lag.
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   const handleBookExperience = async (title: string, price: number) => {
     try {
@@ -91,14 +105,29 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
     if (!activeModal) return;
     setSubmittingRequest(true);
     try {
-      const title = requestNote.trim() ? `${activeModal.name}: ${requestNote.trim()}` : activeModal.name;
+      let title: string;
+      if (activeModal.categoryType === 'transportation') {
+        const route = transportRoutes.find(r => r.id === selectedRouteId);
+        if (!route) return;
+        title = `Transfer: ${route.from} → ${route.to} (${formatCurrency(route.price, currency)} ${route.priceUnit})${requestNote.trim() ? ` — ${requestNote.trim()}` : ''}`;
+      } else {
+        title = requestNote.trim() ? `${activeModal.name}: ${requestNote.trim()}` : activeModal.name;
+      }
       await handleConciergeRequest(title, activeModal.department);
     } finally {
       setSubmittingRequest(false);
       setActiveModal(null);
       setRequestNote('');
+      setSelectedRouteId('');
+      setRouteSearch('');
     }
   };
+
+  const filteredRoutes = transportRoutes.filter(r =>
+    !routeSearch.trim() ||
+    r.from.toLowerCase().includes(routeSearch.toLowerCase()) ||
+    r.to.toLowerCase().includes(routeSearch.toLowerCase())
+  );
 
   return (
     <div id="guest-home-canvas" className="w-full min-h-screen bg-[#f6faff] pb-24">
@@ -127,15 +156,24 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
           ></div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
           
+          <div className="absolute top-4 right-4 md:top-6 md:right-6 bg-black/35 backdrop-blur-sm rounded-xl px-3.5 py-2 text-right text-white">
+            <p className="text-lg md:text-xl font-bold font-mono tabular-nums leading-none">
+              {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </p>
+            <p className="text-[10px] md:text-[11px] opacity-80 mt-0.5">
+              {now.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}
+            </p>
+          </div>
+
           <div className="absolute bottom-0 left-0 p-6 md:p-8 w-full text-white">
             <p className="text-xs font-bold tracking-widest uppercase mb-1 opacity-90 text-[#ffdea9]">
-              Welcome to
+              Welcome, {guestName}{isVip ? ' ✦' : ''}
             </p>
             <h1 className="text-3xl md:text-5xl font-bold mb-1 tracking-tight text-white">
-              {propertyName}
+              at {propertyName}
             </h1>
             <p className="text-sm font-medium opacity-90 text-white/90">
-              Room {roomNumber} • {guestName}{isVip ? ' (VIP Guest)' : ''}
+              Room {roomNumber}{isVip ? ' • VIP Guest' : ''}
             </p>
           </div>
         </section>
@@ -244,7 +282,7 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
                 Request {activeModal.name} (Room {roomNumber})
               </h3>
               <button
-                onClick={() => { setActiveModal(null); setRequestNote(''); }}
+                onClick={() => { setActiveModal(null); setRequestNote(''); setSelectedRouteId(''); setRouteSearch(''); }}
                 className="text-gray-400 hover:text-gray-600 text-xl font-bold"
               >
                 &times;
@@ -253,25 +291,62 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
 
             {activeModal.description && <p className="text-xs text-[#4e463a] mb-3">{activeModal.description}</p>}
 
-            <label className="text-[11px] font-bold text-[#4e463a] block mb-1">Anything specific? (optional)</label>
-            <textarea
-              rows={3}
-              value={requestNote}
-              onChange={(e) => setRequestNote(e.target.value)}
-              placeholder="e.g. Extra pillows, 3pm arrival, allergic to lavender..."
-              className="w-full p-2.5 text-xs border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none resize-none mb-4"
-            />
+            {activeModal.categoryType === 'transportation' ? (
+              <>
+                <label className="text-[11px] font-bold text-[#4e463a] block mb-1">Where to?</label>
+                <div className="relative mb-2">
+                  <MapPin className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[#7f7668]" />
+                  <input
+                    value={routeSearch}
+                    onChange={(e) => setRouteSearch(e.target.value)}
+                    placeholder="Search a destination..."
+                    className="w-full h-9 pl-8 pr-2.5 text-xs border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none"
+                  />
+                </div>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto mb-4">
+                  {filteredRoutes.length === 0 ? (
+                    <p className="text-xs text-[#7f7668] text-center py-6">No routes match — ask the front desk directly.</p>
+                  ) : (
+                    filteredRoutes.map(route => (
+                      <label
+                        key={route.id}
+                        className={`flex items-center justify-between gap-2 p-2.5 rounded-lg border cursor-pointer text-xs ${
+                          selectedRouteId === route.id ? 'border-[#765a25] bg-[#fff8ec]' : 'border-[#E9ECEF] hover:bg-[#f6faff]'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <input type="radio" name="route" checked={selectedRouteId === route.id} onChange={() => setSelectedRouteId(route.id)} className="accent-[#765a25]" />
+                          {route.from} <Car className="w-3 h-3 text-[#7f7668]" /> {route.to}
+                        </span>
+                        <span className="font-bold text-[#765a25] shrink-0">{formatCurrency(route.price, currency)} {route.priceUnit}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <label className="text-[11px] font-bold text-[#4e463a] block mb-1">Anything specific? (optional)</label>
+                <textarea
+                  rows={3}
+                  value={requestNote}
+                  onChange={(e) => setRequestNote(e.target.value)}
+                  placeholder="e.g. Extra pillows, 3pm arrival, allergic to lavender..."
+                  className="w-full p-2.5 text-xs border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none resize-none mb-4"
+                />
+              </>
+            )}
 
             <div className="flex justify-end gap-2">
               <button
-                onClick={() => { setActiveModal(null); setRequestNote(''); }}
+                onClick={() => { setActiveModal(null); setRequestNote(''); setSelectedRouteId(''); setRouteSearch(''); }}
                 className="px-4 py-2 border border-[#E9ECEF] rounded-lg text-xs font-semibold text-[#4e463a]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmitServiceRequest}
-                disabled={submittingRequest}
+                disabled={submittingRequest || (activeModal.categoryType === 'transportation' && !selectedRouteId)}
                 className="px-5 py-2 bg-[#765a25] text-white rounded-lg text-xs font-bold hover:bg-[#5c4210] disabled:opacity-60"
               >
                 {submittingRequest ? 'Sending…' : 'Confirm Request'}

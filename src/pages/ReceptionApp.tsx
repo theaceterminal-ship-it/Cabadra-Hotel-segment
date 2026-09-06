@@ -17,8 +17,11 @@ import {
   logStaffRequest,
   fetchTasks,
   updateTaskStatus,
+  updateTaskAssignment,
   createTask,
-  fetchPropertyCurrency,
+  fetchStaffDirectory,
+  DirectoryContact,
+  fetchPropertyMeta,
 } from '../lib/staffApi';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { Sidebar, SidebarNavItem } from '../components/Sidebar';
@@ -77,8 +80,11 @@ export default function ReceptionApp() {
   const [urgentRequests, setUrgentRequests] = useState<UrgentRequest[]>([]);
   const [upcomingArrivals, setUpcomingArrivals] = useState<UpcomingArrival[]>([]);
   const [tasks, setTasks] = useState<LiveOpsTask[]>([]);
+  const [directory, setDirectory] = useState<DirectoryContact[]>([]);
   const [kdsOrders, setKdsOrders] = useState<KdsOrder[]>([]);
   const [currency, setCurrency] = useState('USD');
+  const [propertyName, setPropertyName] = useState('');
+  const [upiId, setUpiId] = useState<string | undefined>(undefined);
   const syncInFlight = useRef(false);
 
   const propertyId = assignments.find(a => a.role === 'receptionist')?.propertyId;
@@ -123,8 +129,14 @@ export default function ReceptionApp() {
     reloadRoomsAndArrivals(propertyId);
     reloadRequests(propertyId);
     reloadTasks(propertyId);
-    fetchPropertyCurrency(propertyId).then(setCurrency).catch(err => console.warn('Failed to load property currency:', err));
+    fetchPropertyMeta(propertyId).then(meta => { setCurrency(meta.currency); setPropertyName(meta.name); setUpiId(meta.upiId); }).catch(err => console.warn('Failed to load property currency:', err));
+    fetchStaffDirectory(propertyId).then(setDirectory).catch(err => console.warn('Failed to load staff directory:', err));
   }, [propertyId]);
+
+  const handleAssignTask = (taskId: string, assignedTo: string | null) => {
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, assignedTo: assignedTo ?? undefined } : t));
+    updateTaskAssignment(taskId, assignedTo).catch(err => console.warn(`Failed to assign task ${taskId}:`, err));
+  };
 
   const handleUpdateRoom = (updatedRoom: Room) => {
     // Optimistic update so the modal feels instant, then persist and
@@ -320,7 +332,9 @@ export default function ReceptionApp() {
           {view === 'rooms_floors' && (
             <RoomsFloorsView
               propertyId={propertyId}
+              propertyName={propertyName}
               currency={currency}
+              upiId={upiId}
               rooms={rooms}
               onUpdateRoom={handleUpdateRoom}
               onOpenNewRequest={() => setIsRequestModalOpen(true)}
@@ -330,7 +344,9 @@ export default function ReceptionApp() {
           {view === 'live_ops' && (
             <LiveOpsView
               tasks={tasks}
+              directory={directory}
               onUpdateTask={handleUpdateTask}
+              onAssignTask={handleAssignTask}
               onAddTask={handleAddTask}
               onRefresh={() => propertyId && reloadTasks(propertyId)}
               onNavigate={(v: AppView) => setView(v as ReceptionTab)}

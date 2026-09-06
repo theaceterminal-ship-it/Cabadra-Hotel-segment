@@ -55,6 +55,8 @@ export interface Property {
   avgOrderValue: string;
   image: string;
   modelImage: string;
+  /** UPI ID for guest/front-desk payment QR codes — set once by the owner (Overview tab), optional. */
+  upiId?: string;
 }
 
 export interface MenuItem {

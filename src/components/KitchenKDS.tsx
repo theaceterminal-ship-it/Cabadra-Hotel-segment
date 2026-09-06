@@ -12,7 +12,97 @@ import {
   Flame,
   CheckCircle2,
   X,
+  Printer,
 } from 'lucide-react';
+
+// Escapes guest-typed text (item names, notes) before it goes into the
+// print window's HTML — otherwise a note containing `<` or `&` would
+// break the ticket layout.
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Adapted from the sibling tableorder product's printKitchenTicket() — same
+// hidden-iframe + window.print() approach, so it works with zero extra
+// installs on whatever printer the kitchen already has set up as default.
+// Swap the internals for a QZ Tray / local print-bridge call later if you
+// want silent, no-dialog kitchen printing instead.
+function printKitchenTicket(order: KdsOrder) {
+  try {
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(iframe);
+
+    const itemsHtml = order.items.map(it => `
+      <div class="line">
+        <span class="qty">${it.quantity}x</span>
+        <span class="name">${escapeHtml(it.name)}</span>
+      </div>
+      ${it.modifier ? `<div class="sub">${escapeHtml(it.modifier)}</div>` : ''}
+    `).join('');
+
+    const html = `
+      <html>
+        <head>
+          <title>KOT - ${escapeHtml(order.roomNumber)}</title>
+          <style>
+            @page { size: 80mm auto; margin: 0; }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: 'Courier New', monospace; width: 80mm; padding: 8px 10px; color: #000; }
+            .center { text-align: center; }
+            .title { font-size: 17px; font-weight: 800; letter-spacing: 1px; }
+            .divider { border-top: 1px dashed #000; margin: 8px 0; }
+            .row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 3px; }
+            .line { display: flex; gap: 8px; font-size: 15px; font-weight: 800; margin-top: 8px; }
+            .qty { min-width: 30px; }
+            .sub { font-size: 12px; padding-left: 38px; font-style: italic; }
+            .vip { text-align: center; font-weight: 900; margin-top: 6px; font-size: 13px; }
+            .footer { margin-top: 12px; font-size: 10px; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <div class="center title">KITCHEN ORDER TICKET</div>
+          <div class="divider"></div>
+          <div class="row"><span>Room</span><span>${escapeHtml(order.roomNumber)}</span></div>
+          <div class="row"><span>Order</span><span>${escapeHtml(order.orderNumber)}</span></div>
+          ${order.isVip ? `<div class="vip">★ VIP ORDER ★</div>` : ''}
+          <div class="divider"></div>
+          ${itemsHtml}
+          ${order.notes ? `<div class="divider"></div><div class="sub" style="padding-left:0">Note: ${escapeHtml(order.notes)}</div>` : ''}
+          <div class="divider"></div>
+          <div class="footer">Printed ${new Date().toLocaleString()}</div>
+        </body>
+      </html>
+    `;
+
+    const cleanup = () => { if (iframe.parentNode) iframe.parentNode.removeChild(iframe); };
+
+    iframe.onload = () => {
+      setTimeout(() => {
+        try {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        } catch (e) {
+          console.error('KOT print failed', e);
+        }
+        setTimeout(cleanup, 1500);
+      }, 200);
+    };
+
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    doc?.open();
+    doc?.write(html);
+    doc?.close();
+  } catch (e) {
+    console.error('printKitchenTicket failed', e);
+  }
+}
 
 interface KitchenKDSProps {
   orders: KdsOrder[];
@@ -48,6 +138,7 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
   const readyOrders = orders.filter(o => o.status === 'ready');
 
   const handleStartPreparing = (order: KdsOrder) => {
+    printKitchenTicket(order);
     onUpdateOrder({
       ...order,
       status: 'preparing',
@@ -177,7 +268,7 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
                     )}
                   </div>
 
-                  {/* Action Buttons: accept, or reject with a required reason */}
+                  {/* Action Buttons: accept (prints the KOT), reprint, or reject with a required reason */}
                   <div className="flex gap-2">
                     <button
                       onClick={() => { setRejectingOrder(order); setRejectNote(''); }}
@@ -185,6 +276,13 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
                       title="Reject this order"
                     >
                       <X className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => printKitchenTicket(order)}
+                      className="h-11 px-3 rounded-lg border border-[#E9ECEF] text-[#4e463a] hover:border-[#765a25] hover:text-[#765a25] transition-all flex items-center justify-center cursor-pointer shrink-0"
+                      title="Print / reprint ticket"
+                    >
+                      <Printer className="w-4 h-4" />
                     </button>
                     <button
                       id={`btn-start-prep-${order.id}`}

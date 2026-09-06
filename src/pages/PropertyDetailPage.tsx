@@ -28,11 +28,19 @@ import {
   addServiceCategory,
   updateServiceCategory,
   deleteServiceCategory,
+  fetchTransportRoutes,
+  addTransportRoute,
+  deleteTransportRoute,
+  fetchStaffDirectory,
+  addDirectoryContact,
+  deleteDirectoryContact,
   StaffMember,
   TicketSizeAnalytics,
   PendingInvite,
   Experience,
   ServiceCategory,
+  TransportRoute,
+  DirectoryContact,
 } from '../lib/staffApi';
 import { ImageUploadField } from '../components/ImageUploadField';
 import { formatCurrency } from '../lib/currency';
@@ -201,7 +209,7 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
       ) : tab === 'experiences' ? (
         <ExperiencesTab propertyId={propertyId} currency={property?.currency ?? 'USD'} experiences={experiences} onChanged={handleReload} />
       ) : tab === 'services' ? (
-        <ServicesTab propertyId={propertyId} services={services} onChanged={handleReload} />
+        <ServicesTab propertyId={propertyId} currency={property?.currency ?? 'USD'} services={services} onChanged={handleReload} />
       ) : (
         <StaffTab propertyId={propertyId} staff={staff} pendingInvites={pendingInvites} onChanged={handleReload} />
       )}
@@ -269,6 +277,8 @@ function OverviewTab({ property, imageUrl, setImageUrl, onSaveImage, savingImage
         </div>
       </div>
 
+      <UpiSettingsCard property={property} />
+
       <div className="bg-white rounded-xl border border-[#E9ECEF] p-5">
         <h3 className="text-sm font-bold text-[#141d23] mb-3">Room Status</h3>
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
@@ -279,6 +289,47 @@ function OverviewTab({ property, imageUrl, setImageUrl, onSaveImage, savingImage
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** Lets an owner set a UPI ID once so Reception can show a payment QR without re-typing it — folio settlement itself stays manual (Reception confirms what was collected), this just makes "how do they actually pay" concrete for UPI specifically. */
+function UpiSettingsCard({ property }: { property: Property }) {
+  const [upiId, setUpiId] = useState(property.upiId ?? '');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    try {
+      await updateProperty(property.id, { upiId });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch {
+      // Best-effort — the input keeps whatever the owner typed either way.
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-[#E9ECEF] p-5 space-y-3">
+      <h3 className="text-sm font-bold text-[#141d23]">Payment (UPI)</h3>
+      <p className="text-xs text-[#7f7668]">Set once — Reception can show this as a QR at checkout or mid-stay for a guest paying by UPI. Folio settlement is still confirmed manually either way.</p>
+      <div className="flex items-end gap-2 max-w-md">
+        <div className="flex-1">
+          <label className={labelCls}>UPI ID</label>
+          <input value={upiId} onChange={e => setUpiId(e.target.value)} placeholder="hotelname@okhdfcbank" className={inputCls} />
+        </div>
+        <button
+          onClick={handleSave}
+          disabled={saving || upiId === (property.upiId ?? '')}
+          className="h-9 px-3 rounded bg-[#765a25] text-white text-xs font-bold hover:bg-[#5c4210] disabled:opacity-40 whitespace-nowrap"
+        >
+          {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save'}
+        </button>
       </div>
     </div>
   );
@@ -725,8 +776,8 @@ const DEPARTMENTS: { value: ServiceCategory['department']; label: string }[] = [
 ];
 
 /** The guest home page's "At Your Service" grid — owner-managed instead of a fixed Housekeeping/Amenities/Spa/Transfers set every property showed identically. Department decides which Live Ops queue a resulting request lands in. */
-function ServicesTab({ propertyId, services, onChanged }: { propertyId: string; services: ServiceCategory[]; onChanged: () => void }) {
-  const emptyForm = { name: '', description: '', department: 'concierge' as ServiceCategory['department'] };
+function ServicesTab({ propertyId, currency, services, onChanged }: { propertyId: string; currency: string; services: ServiceCategory[]; onChanged: () => void }) {
+  const emptyForm = { name: '', description: '', department: 'concierge' as ServiceCategory['department'], categoryType: 'general' as ServiceCategory['categoryType'] };
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -734,7 +785,7 @@ function ServicesTab({ propertyId, services, onChanged }: { propertyId: string; 
 
   const startEdit = (s: ServiceCategory) => {
     setEditingId(s.id);
-    setForm({ name: s.name, description: s.description, department: s.department });
+    setForm({ name: s.name, description: s.description, department: s.department, categoryType: s.categoryType });
   };
   const cancelEdit = () => { setEditingId(null); setForm(emptyForm); };
 
@@ -744,7 +795,7 @@ function ServicesTab({ propertyId, services, onChanged }: { propertyId: string; 
     setSubmitting(true);
     setFormError(null);
     try {
-      const payload = { name: form.name.trim(), description: form.description.trim(), department: form.department };
+      const payload = { name: form.name.trim(), description: form.description.trim(), department: form.department, categoryType: form.categoryType };
       if (editingId) {
         await updateServiceCategory(propertyId, editingId, payload);
       } else {
@@ -778,20 +829,27 @@ function ServicesTab({ propertyId, services, onChanged }: { propertyId: string; 
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-2 bg-[#f6faff] p-3 rounded-lg border border-[#E9ECEF]">
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <div>
             <label className={labelCls}>Name</label>
             <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Spa & Wellness" className={inputCls} />
           </div>
-          <div className="col-span-2 sm:col-span-1">
+          <div>
             <label className={labelCls}>Routes To</label>
             <select value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value as ServiceCategory['department'] }))} className={`${inputCls} bg-white`}>
               {DEPARTMENTS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
             </select>
           </div>
-          <div className="col-span-2 sm:col-span-1">
+          <div>
             <label className={labelCls}>Short Description</label>
             <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Massages & Sauna" className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Guest Form Type</label>
+            <select value={form.categoryType} onChange={e => setForm(f => ({ ...f, categoryType: e.target.value as ServiceCategory['categoryType'] }))} className={`${inputCls} bg-white`}>
+              <option value="general">Free-text note</option>
+              <option value="transportation">Route picker (below)</option>
+            </select>
           </div>
         </div>
         <div className="flex gap-2 items-end justify-end">
@@ -814,7 +872,10 @@ function ServicesTab({ propertyId, services, onChanged }: { propertyId: string; 
           services.map(s => (
             <div key={s.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs ${editingId === s.id ? 'border-[#765a25] bg-[#fff8ec]' : 'border-[#E9ECEF]'}`}>
               <span className="font-semibold text-[#141d23]">{s.name}</span>
-              <span className="text-[#7f7668] capitalize">{s.description}{s.description ? ' · ' : ''}routes to {s.department}</span>
+              <span className="text-[#7f7668] capitalize">
+                {s.description}{s.description ? ' · ' : ''}routes to {s.department}
+                {s.categoryType === 'transportation' && ' · route picker'}
+              </span>
               <div className="flex items-center gap-1">
                 <button onClick={() => startEdit(s)} className="text-[#765a25] hover:text-[#5c4210] p-1">
                   <Pencil className="w-3.5 h-3.5" />
@@ -823,6 +884,93 @@ function ServicesTab({ propertyId, services, onChanged }: { propertyId: string; 
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {services.some(s => s.categoryType === 'transportation') && (
+        <TransportRoutesManager propertyId={propertyId} currency={currency} />
+      )}
+    </div>
+  );
+}
+
+/** Only shown once a Services entry is set to the route-picker type — the actual route catalog behind it. One shared list per property (a property realistically has one Transfers category, not several with different routes). */
+function TransportRoutesManager({ propertyId, currency }: { propertyId: string; currency: string }) {
+  const [routes, setRoutes] = useState<TransportRoute[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState({ from: '', to: '', price: '', priceUnit: 'per trip' });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const reload = () => fetchTransportRoutes(propertyId).then(setRoutes).catch(() => {}).finally(() => setLoading(false));
+  useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [propertyId]);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.from.trim() || !form.to.trim()) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await addTransportRoute(propertyId, { from: form.from.trim(), to: form.to.trim(), price: parseFloat(form.price) || 0, priceUnit: form.priceUnit.trim() || 'per trip' });
+      setForm({ from: '', to: '', price: '', priceUnit: 'per trip' });
+      reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add route.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteTransportRoute(propertyId, id);
+      reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete route.');
+    }
+  };
+
+  return (
+    <div className="border-t border-[#E9ECEF] pt-4 space-y-3">
+      <h3 className="text-sm font-bold text-[#141d23]">Transport Routes</h3>
+      <p className="text-xs text-[#7f7668]">Where this property actually takes guests — the guest sees these as a searchable pick list, not a blank box.</p>
+
+      <form onSubmit={handleAdd} className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end bg-[#f6faff] p-3 rounded-lg border border-[#E9ECEF]">
+        <div>
+          <label className={labelCls}>From</label>
+          <input value={form.from} onChange={e => setForm(f => ({ ...f, from: e.target.value }))} placeholder="Hotel" className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>To</label>
+          <input value={form.to} onChange={e => setForm(f => ({ ...f, to: e.target.value }))} placeholder="Airport (JFK)" className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Price</label>
+          <input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="60" className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Unit</label>
+          <input value={form.priceUnit} onChange={e => setForm(f => ({ ...f, priceUnit: e.target.value }))} placeholder="per trip" className={inputCls} />
+        </div>
+        <button type="submit" disabled={submitting} className="h-9 rounded-lg bg-[#765a25] text-white text-xs font-bold hover:bg-[#5c4210] disabled:opacity-60 flex items-center justify-center gap-1">
+          <Plus className="w-3.5 h-3.5" /> Add
+        </button>
+      </form>
+      {error && <p className="text-xs text-red-600">{error}</p>}
+
+      <div className="space-y-1.5">
+        {loading ? null : routes.length === 0 ? (
+          <p className="text-xs text-[#7f7668] text-center py-4">No routes yet.</p>
+        ) : (
+          routes.map(r => (
+            <div key={r.id} className="flex items-center justify-between px-3 py-2 rounded-lg border border-[#E9ECEF] text-xs">
+              <span className="font-semibold text-[#141d23]">{r.from} → {r.to}</span>
+              <span className="text-[#7f7668]">{formatCurrency(r.price, currency)} {r.priceUnit}</span>
+              <button onClick={() => handleDelete(r.id)} className="text-[#BC4749] hover:text-red-700 p-1">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
             </div>
           ))
         )}
@@ -962,6 +1110,95 @@ function StaffTab({ propertyId, staff, pendingInvites, onChanged }: { propertyId
               <span className="font-semibold text-[#141d23]">{s.email}</span>
               <span className="capitalize px-2 py-0.5 rounded bg-[#ecf5fe] text-[#765a25] font-bold text-[10px]">{s.role}</span>
               <button onClick={() => handleRevoke(s.userId)} className="text-[#BC4749] hover:text-red-700 p-1">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+
+      <DirectoryContacts propertyId={propertyId} />
+    </div>
+  );
+}
+
+const DEPT_LABELS: Record<DirectoryContact['department'], string> = {
+  housekeeping: 'Housekeeping', maintenance: 'Maintenance', amenities: 'Amenities', concierge: 'Concierge',
+};
+
+/** Phone numbers for the people Live Ops tasks actually get assigned to — deliberately separate from login access above; most of these people don't need or want a Cabadra account. */
+function DirectoryContacts({ propertyId }: { propertyId: string }) {
+  const [contacts, setContacts] = useState<DirectoryContact[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState({ name: '', phone: '', department: 'housekeeping' as DirectoryContact['department'] });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const reload = () => fetchStaffDirectory(propertyId).then(setContacts).catch(() => {}).finally(() => setLoading(false));
+  useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [propertyId]);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.phone.trim()) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await addDirectoryContact(propertyId, { name: form.name.trim(), phone: form.phone.trim(), department: form.department });
+      setForm({ name: '', phone: '', department: form.department });
+      reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add contact.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteDirectoryContact(id);
+      reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to remove contact.');
+    }
+  };
+
+  return (
+    <div className="border-t border-[#E9ECEF] pt-4 space-y-3">
+      <h3 className="text-sm font-bold text-[#141d23]">Department Contacts</h3>
+      <p className="text-xs text-[#7f7668]">
+        Who Live Ops tasks actually get assigned to — a name and phone number per department, not a login. Reception sees these directly on the Live Ops board.
+      </p>
+
+      <form onSubmit={handleAdd} className="grid grid-cols-2 sm:grid-cols-4 gap-2 items-end bg-[#f6faff] p-3 rounded-lg border border-[#E9ECEF]">
+        <div>
+          <label className={labelCls}>Name</label>
+          <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Priya" className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Phone</label>
+          <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+91 98765 43210" className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Department</label>
+          <select value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value as DirectoryContact['department'] }))} className={`${inputCls} bg-white`}>
+            {(Object.keys(DEPT_LABELS) as DirectoryContact['department'][]).map(d => <option key={d} value={d}>{DEPT_LABELS[d]}</option>)}
+          </select>
+        </div>
+        <button type="submit" disabled={submitting} className="h-9 rounded-lg bg-[#765a25] text-white text-xs font-bold hover:bg-[#5c4210] disabled:opacity-60 flex items-center justify-center gap-1">
+          <Plus className="w-3.5 h-3.5" /> Add
+        </button>
+      </form>
+      {error && <p className="text-xs text-red-600">{error}</p>}
+
+      <div className="space-y-1.5">
+        {loading ? null : contacts.length === 0 ? (
+          <p className="text-xs text-[#7f7668] text-center py-4">No contacts yet.</p>
+        ) : (
+          contacts.map(c => (
+            <div key={c.id} className="flex items-center justify-between px-3 py-2 rounded-lg border border-[#E9ECEF] text-xs">
+              <span className="font-semibold text-[#141d23]">{c.name}</span>
+              <span className="text-[#7f7668]">{c.phone} · {DEPT_LABELS[c.department]}</span>
+              <button onClick={() => handleDelete(c.id)} className="text-[#BC4749] hover:text-red-700 p-1">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>

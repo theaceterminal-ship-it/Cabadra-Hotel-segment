@@ -25,6 +25,15 @@ export interface GuestServiceCategory {
   description: string;
   department: Department;
   iconKey: string;
+  categoryType: 'general' | 'transportation';
+}
+
+export interface GuestTransportRoute {
+  id: string;
+  from: string;
+  to: string;
+  price: number;
+  priceUnit: string;
 }
 
 export interface GuestContext {
@@ -36,6 +45,7 @@ export interface GuestContext {
   menu: MenuItem[];
   experiences: GuestExperience[];
   serviceCategories: GuestServiceCategory[];
+  transportRoutes: GuestTransportRoute[];
 }
 
 export async function fetchGuestContext(token: string): Promise<GuestContext> {
