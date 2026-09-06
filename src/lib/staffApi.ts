@@ -143,10 +143,14 @@ export async function fetchPortfolioStats(propertyIds: string[]): Promise<Portfo
   return data as PortfolioStats;
 }
 
-export async function createProperty(id: string, name: string, location: string, image?: string, country?: string, currency?: string): Promise<void> {
+export async function createProperty(
+  id: string, name: string, location: string, image?: string, country?: string, currency?: string,
+  hasExternalPms?: boolean, pmsName?: string,
+): Promise<void> {
   const { error } = await supabase.rpc('staff_create_property', {
     p_id: id, p_name: name, p_location: location, p_image: image || null,
     p_country: country || null, p_currency: currency || 'USD',
+    p_has_external_pms: hasExternalPms ?? false, p_pms_name: pmsName || null,
   });
   if (error) throw error;
 }

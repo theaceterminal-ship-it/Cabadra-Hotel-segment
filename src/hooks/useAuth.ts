@@ -12,8 +12,8 @@ export interface AuthState {
   session: Session | null;
   /** Every property this signed-in user is staff on, and in what role. Empty until staff_properties has been seeded for them (see supabase/seed.sql). */
   assignments: StaffAssignment[];
-  /** Re-fetches staff_properties without a full page reload — needed right after an action that grants new access, e.g. creating a property (staff_create_property adds the caller's own owner row). */
-  refreshAssignments: () => void;
+  /** Re-fetches staff_properties without a full page reload — needed right after an action that grants new access, e.g. creating a property (staff_create_property adds the caller's own owner row). Returns a promise so a caller that's about to navigate can await it first and avoid a one-frame flash of the "no properties yet" state. */
+  refreshAssignments: () => Promise<void>;
 }
 
 /**
@@ -65,7 +65,7 @@ export function useAuth(): AuthState {
   }, [loadAssignments]);
 
   const refreshAssignments = useCallback(() => {
-    loadAssignments(sessionRef.current);
+    return loadAssignments(sessionRef.current);
   }, [loadAssignments]);
 
   return { loading, session, assignments, refreshAssignments };

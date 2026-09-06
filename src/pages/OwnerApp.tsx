@@ -6,6 +6,7 @@ import { fetchStaffProperties, createProperty } from '../lib/staffApi';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { OwnerOverview } from '../components/OwnerOverview';
 import { PropertiesPortfolio } from '../components/PropertiesPortfolio';
+import { NewPropertyForm, NewPropertyInput } from '../components/NewPropertyForm';
 import { SupabaseSetupNeeded } from '../components/SupabaseSetupNeeded';
 import { NotificationBell } from '../components/NotificationBell';
 import { usePortfolioNotifications } from '../hooks/useNotifications';
@@ -35,13 +36,18 @@ export default function OwnerApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, ownedPropertyIds.join(',')]);
 
-  const handleAddProperty = async (input: { id: string; name: string; location: string; image?: string; country?: string; currency?: string }) => {
-    await createProperty(input.id, input.name, input.location, input.image, input.country, input.currency);
+  const handleAddProperty = async (input: NewPropertyInput) => {
+    await createProperty(input.id, input.name, input.location, input.image, input.country, input.currency, input.hasExternalPms, input.pmsName);
     // The RPC just granted this user an owner row on a property that didn't
     // exist a moment ago — useAuth's assignments won't know that until we
-    // ask it to look again.
-    refreshAssignments();
+    // ask it to look again. Awaited so a brand-new owner's very first
+    // property doesn't flash the "no properties yet" screen for a frame
+    // before the route below actually has somewhere to land.
+    await refreshAssignments();
     await reloadProperties();
+    // Land straight on the new property's own page — rooms, staff, and
+    // everything else live there, not on the portfolio grid.
+    navigate(`/owner/properties/${input.id}`);
   };
 
   // Old prop-drilled `(view: AppView) => void` interface, kept as-is on
@@ -56,13 +62,24 @@ export default function OwnerApp() {
   if (loading) return <CenteredMessage title="Loading…" body="" />;
   if (!session) return <LoginPage roleLabel="Owner" />;
 
+  // A brand-new sign-up has no properties yet, and self-serve creation is
+  // real (staff_create_property grants the caller owner on whatever they
+  // just created) — so this is "set up your first hotel," never a dead
+  // end. A receptionist with zero assignments is different (that path is
+  // never self-serve — see ReceptionApp's own empty state), but an owner
+  // account always has this door open.
   if (ownedPropertyIds.length === 0) {
     return (
-      <CenteredMessage
-        title="No properties assigned yet"
-        body="You're signed in, but this account isn't linked to any property as an owner. See the note at the bottom of supabase/seed.sql for how to grant access — insert a row into staff_properties with role 'owner'."
-        onSignOut={signOut}
-      />
+      <div className="min-h-screen w-full bg-[#f6faff] flex items-center justify-center p-4 sm:p-6">
+        <div className="w-full max-w-md bg-white rounded-2xl border border-[#E9ECEF] shadow-sm p-6">
+          <h1 className="text-xl font-bold text-[#141d23]">Welcome to Cabadra</h1>
+          <p className="text-sm text-[#7f7668] mt-1 mb-5">Let's set up your first hotel — this takes about a minute.</p>
+          <NewPropertyForm onCreate={handleAddProperty} submitLabel="Create Hotel" />
+          <button onClick={() => signOut()} className="w-full text-center text-xs font-semibold text-[#7f7668] hover:text-[#141d23] mt-4">
+            Sign out
+          </button>
+        </div>
+      </div>
     );
   }
 

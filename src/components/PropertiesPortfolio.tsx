@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Property, AppView } from '../types';
-import { ImageUploadField } from './ImageUploadField';
-import { COUNTRIES, currencyForCountry } from '../lib/currency';
+import { NewPropertyForm, NewPropertyInput } from './NewPropertyForm';
 import {
   Search,
   Plus,
@@ -20,7 +19,7 @@ interface PropertiesPortfolioProps {
   onSelectProperty: (propertyId: string) => void;
   onNavigate: (view: AppView) => void;
   /** Creates the property for real (staff_create_property) — throws on failure so the modal can show why. Rooms aren't created here yet; that's a separate step, on the property's own detail page. */
-  onAddProperty: (input: { id: string; name: string; location: string; image?: string; country?: string; currency?: string }) => Promise<void>;
+  onAddProperty: (input: NewPropertyInput) => Promise<void>;
 }
 
 export const PropertiesPortfolio: React.FC<PropertiesPortfolioProps> = ({
@@ -34,14 +33,6 @@ export const PropertiesPortfolio: React.FC<PropertiesPortfolioProps> = ({
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'maintenance'>('all');
   const [showAddModal, setShowAddModal] = useState(false);
 
-  // New property form state
-  const [newPropName, setNewPropName] = useState('');
-  const [newPropLocation, setNewPropLocation] = useState('');
-  const [newPropImage, setNewPropImage] = useState('');
-  const [newPropCountry, setNewPropCountry] = useState('US');
-  const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
-
   const filteredProperties = properties.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           p.location.toLowerCase().includes(searchQuery.toLowerCase());
@@ -49,31 +40,9 @@ export const PropertiesPortfolio: React.FC<PropertiesPortfolioProps> = ({
     return matchesSearch && matchesStatus;
   });
 
-  const handleCreateProperty = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPropName.trim()) return;
-
-    setCreating(true);
-    setCreateError(null);
-    try {
-      await onAddProperty({
-        id: newPropName.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-        name: newPropName.trim(),
-        location: newPropLocation.trim() || 'Location TBD',
-        image: newPropImage.trim() || undefined,
-        country: newPropCountry,
-        currency: currencyForCountry(newPropCountry),
-      });
-      setShowAddModal(false);
-      setNewPropName('');
-      setNewPropLocation('');
-      setNewPropImage('');
-      setNewPropCountry('US');
-    } catch (err) {
-      setCreateError(err instanceof Error ? err.message : 'Failed to create property.');
-    } finally {
-      setCreating(false);
-    }
+  const handleCreateProperty = async (input: NewPropertyInput) => {
+    await onAddProperty(input);
+    setShowAddModal(false);
   };
 
   return (
@@ -265,72 +234,9 @@ export const PropertiesPortfolio: React.FC<PropertiesPortfolioProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleCreateProperty} className="py-4 space-y-4 text-xs">
-              <div>
-                <label className="font-semibold text-[#141d23] block mb-1">Property Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g., The Bellagio Suite"
-                  value={newPropName}
-                  onChange={(e) => setNewPropName(e.target.value)}
-                  className="w-full h-10 px-3 border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="font-semibold text-[#141d23] block mb-1">Location / City</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g., Beverly Hills, CA"
-                  value={newPropLocation}
-                  onChange={(e) => setNewPropLocation(e.target.value)}
-                  className="w-full h-10 px-3 border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="font-semibold text-[#141d23] block mb-1">Country</label>
-                <select
-                  value={newPropCountry}
-                  onChange={(e) => setNewPropCountry(e.target.value)}
-                  className="w-full h-10 px-3 border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none bg-white"
-                >
-                  {COUNTRIES.map(c => (
-                    <option key={c.code} value={c.code}>{c.name} ({c.currency})</option>
-                  ))}
-                </select>
-                <p className="text-[10px] text-[#7f7668] mt-1">
-                  Sets this property's currency to {currencyForCountry(newPropCountry)} — every price on this property will display in it. Can't be changed after creation.
-                </p>
-              </div>
-
-              <ImageUploadField label="Photo (optional)" value={newPropImage} onChange={setNewPropImage} />
-
-              <p className="text-[11px] text-[#7f7668]">
-                Rooms and a menu aren't created here yet — you'll add those separately once the property exists.
-              </p>
-
-              {createError && <p className="text-red-600">{createError}</p>}
-
-              <div className="flex justify-end gap-2 pt-4 border-t border-[#E9ECEF]">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 border border-[#E9ECEF] rounded-lg text-[#4e463a] font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={creating}
-                  className="px-5 py-2 bg-[#765a25] text-white rounded-lg font-semibold hover:bg-[#5c4210] disabled:opacity-60"
-                >
-                  {creating ? 'Creating…' : 'Save Property'}
-                </button>
-              </div>
-            </form>
+            <div className="pt-4">
+              <NewPropertyForm onCreate={handleCreateProperty} onCancel={() => setShowAddModal(false)} />
+            </div>
           </div>
         </div>
       )}

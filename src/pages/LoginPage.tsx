@@ -2,16 +2,19 @@ import React, { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
 interface LoginPageProps {
-  /** Just for copy — which staff page sent the user here. */
-  roleLabel: 'Owner' | 'Reception';
+  /** Just for copy — which staff page sent the user here. Omitted at the unified `/` entry point, which doesn't ask a new user to pick a role at all; where a role is known, it's shown for a bookmarked direct link to /owner or /reception while signed out. */
+  roleLabel?: 'Owner' | 'Reception';
 }
 
 /**
- * Shared login for both staff pages. No self-serve "become an owner" flow
- * on purpose — who gets to be staff on a property is decided by inserting a
- * row into staff_properties (see the note at the bottom of
- * supabase/seed.sql), not by whoever signs up first. Sign-up here just
- * creates the auth.users row; it grants no access by itself.
+ * Shared login for owner and reception. Sign-up here just creates the
+ * auth.users row and grants no access by itself — becoming an owner
+ * happens by creating a hotel (staff_create_property grants the caller
+ * owner on whatever they just created; see OwnerApp's empty state, which
+ * is where a brand-new sign-in with zero properties lands). Reception
+ * access is the one path that's deliberately not self-serve — a
+ * receptionist only gets in once a hotel's owner invites that email from
+ * their Staff tab.
  */
 export default function LoginPage({ roleLabel }: LoginPageProps) {
   const [mode, setMode] = useState<'sign_in' | 'sign_up'>('sign_in');
@@ -59,7 +62,7 @@ export default function LoginPage({ roleLabel }: LoginPageProps) {
         if (error) throw error;
         setStatus({
           type: 'info',
-          message: 'Account created. If your Supabase project requires email confirmation, check your inbox before signing in. Then ask whoever manages the database to grant you access (see supabase/seed.sql).',
+          message: 'Account created. If your Supabase project requires email confirmation, check your inbox — otherwise just sign in below and you\'ll be taken straight into setting up your first hotel.',
         });
       }
     } catch (err) {
@@ -82,8 +85,10 @@ export default function LoginPage({ roleLabel }: LoginPageProps) {
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-[#f6faff] p-6">
       <div className="w-full max-w-sm bg-white rounded-2xl border border-[#E9ECEF] shadow-sm p-6">
-        <h1 className="text-lg font-bold text-[#141d23] mb-1">{roleLabel} sign in</h1>
-        <p className="text-xs text-[#7f7668] mb-5">Cabadra staff access — not for guests.</p>
+        <h1 className="text-lg font-bold text-[#141d23] mb-1">{roleLabel ? `${roleLabel} sign in` : 'Sign in to Cabadra'}</h1>
+        <p className="text-xs text-[#7f7668] mb-5">
+          {roleLabel ? 'Cabadra staff access — not for guests.' : 'For hotel owners and staff — not for guests.'}
+        </p>
 
         <button
           type="button"

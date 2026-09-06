@@ -272,8 +272,9 @@ export default function ReceptionApp() {
         <div className="max-w-md text-center space-y-3">
           <h1 className="text-lg font-bold text-[#141d23]">No property assigned yet</h1>
           <p className="text-sm text-[#4e463a]">
-            You're signed in, but this account isn't linked to a property as a receptionist. See the note at the
-            bottom of supabase/seed.sql for how to grant access — insert a row into staff_properties with role 'receptionist'.
+            You're signed in, but this account isn't linked to a hotel yet. Reception access isn't self-serve —
+            ask your hotel's owner to invite this email from their property's Staff tab, and you'll land here
+            automatically once they do.
           </p>
           <button onClick={() => signOut()} className="text-xs font-semibold text-[#765a25] hover:underline">Sign out</button>
         </div>
