@@ -17,6 +17,10 @@ export default defineConfig(() => {
       hmr: process.env.DISABLE_HMR !== 'true',
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      // Honors whatever port the dev harness assigns (.claude/launch.json's
+      // autoPort) instead of a hardcoded one — falls back to Vite's own
+      // default (5173) when PORT isn't set, e.g. a plain `npm run dev`.
+      port: process.env.PORT ? Number(process.env.PORT) : undefined,
     },
   };
 });

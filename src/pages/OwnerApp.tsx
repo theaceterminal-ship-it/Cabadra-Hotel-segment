@@ -35,8 +35,8 @@ export default function OwnerApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, ownedPropertyIds.join(',')]);
 
-  const handleAddProperty = async (input: { id: string; name: string; location: string; image?: string }) => {
-    await createProperty(input.id, input.name, input.location, input.image);
+  const handleAddProperty = async (input: { id: string; name: string; location: string; image?: string; country?: string; currency?: string }) => {
+    await createProperty(input.id, input.name, input.location, input.image, input.country, input.currency);
     // The RPC just granted this user an owner row on a property that didn't
     // exist a moment ago — useAuth's assignments won't know that until we
     // ask it to look again.

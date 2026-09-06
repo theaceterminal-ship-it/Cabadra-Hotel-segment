@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Property, AppView } from '../types';
 import { ImageUploadField } from './ImageUploadField';
+import { COUNTRIES, currencyForCountry } from '../lib/currency';
 import {
   Search,
   Plus,
@@ -19,7 +20,7 @@ interface PropertiesPortfolioProps {
   onSelectProperty: (propertyId: string) => void;
   onNavigate: (view: AppView) => void;
   /** Creates the property for real (staff_create_property) — throws on failure so the modal can show why. Rooms aren't created here yet; that's a separate step, on the property's own detail page. */
-  onAddProperty: (input: { id: string; name: string; location: string; image?: string }) => Promise<void>;
+  onAddProperty: (input: { id: string; name: string; location: string; image?: string; country?: string; currency?: string }) => Promise<void>;
 }
 
 export const PropertiesPortfolio: React.FC<PropertiesPortfolioProps> = ({
@@ -37,6 +38,7 @@ export const PropertiesPortfolio: React.FC<PropertiesPortfolioProps> = ({
   const [newPropName, setNewPropName] = useState('');
   const [newPropLocation, setNewPropLocation] = useState('');
   const [newPropImage, setNewPropImage] = useState('');
+  const [newPropCountry, setNewPropCountry] = useState('US');
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
@@ -59,11 +61,14 @@ export const PropertiesPortfolio: React.FC<PropertiesPortfolioProps> = ({
         name: newPropName.trim(),
         location: newPropLocation.trim() || 'Location TBD',
         image: newPropImage.trim() || undefined,
+        country: newPropCountry,
+        currency: currencyForCountry(newPropCountry),
       });
       setShowAddModal(false);
       setNewPropName('');
       setNewPropLocation('');
       setNewPropImage('');
+      setNewPropCountry('US');
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : 'Failed to create property.');
     } finally {
@@ -283,6 +288,22 @@ export const PropertiesPortfolio: React.FC<PropertiesPortfolioProps> = ({
                   onChange={(e) => setNewPropLocation(e.target.value)}
                   className="w-full h-10 px-3 border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none"
                 />
+              </div>
+
+              <div>
+                <label className="font-semibold text-[#141d23] block mb-1">Country</label>
+                <select
+                  value={newPropCountry}
+                  onChange={(e) => setNewPropCountry(e.target.value)}
+                  className="w-full h-10 px-3 border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none bg-white"
+                >
+                  {COUNTRIES.map(c => (
+                    <option key={c.code} value={c.code}>{c.name} ({c.currency})</option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-[#7f7668] mt-1">
+                  Sets this property's currency to {currencyForCountry(newPropCountry)} — every price on this property will display in it. Can't be changed after creation.
+                </p>
               </div>
 
               <ImageUploadField label="Photo (optional)" value={newPropImage} onChange={setNewPropImage} />

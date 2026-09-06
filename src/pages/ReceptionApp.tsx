@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { LayoutDashboard, BedDouble, ListChecks, UtensilsCrossed, Truck } from 'lucide-react';
 import { AppView, KdsOrder, LiveOpsTask, Room, UpcomingArrival, UrgentRequest } from '../types';
 import { useAuth, signOut } from '../hooks/useAuth';
 import {
@@ -15,9 +16,12 @@ import {
   fetchTasks,
   updateTaskStatus,
   createTask,
+  fetchPropertyCurrency,
 } from '../lib/staffApi';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
-import { ReceptionView } from '../components/ReceptionView';
+import { Sidebar, SidebarNavItem } from '../components/Sidebar';
+import { ReceptionDashboard } from '../components/ReceptionDashboard';
+import { RoomsFloorsView } from '../components/RoomsFloorsView';
 import { LiveOpsView } from '../components/LiveOpsView';
 import { KitchenKDS } from '../components/KitchenKDS';
 import { ActiveDeliveries } from '../components/ActiveDeliveries';
@@ -26,6 +30,10 @@ import { SupabaseSetupNeeded } from '../components/SupabaseSetupNeeded';
 import { NotificationBell } from '../components/NotificationBell';
 import { useNotifications } from '../hooks/useNotifications';
 import LoginPage from './LoginPage';
+
+type ReceptionTab = 'dashboard' | 'rooms_floors' | 'live_ops' | 'kitchen_kds' | 'active_deliveries';
+
+const SIDEBAR_COLLAPSED_KEY = 'cabadra:reception-sidebar-collapsed';
 
 function supabaseOrderToKdsOrder(order: StaffOrder, previouslySeen?: KdsOrder): KdsOrder {
   const roomNumber = order.roomId.split('-').pop() ?? order.roomId;
@@ -56,18 +64,30 @@ function supabaseOrderToKdsOrder(order: StaffOrder, previouslySeen?: KdsOrder): 
 /** The reception page: `/reception`. Supabase Auth-gated, receptionist role. Every screen is wired to real Supabase data — no mock/local-only state left. */
 export default function ReceptionApp() {
   const { loading, session, assignments } = useAuth();
-  const [view, setView] = useState<Extract<AppView, 'reception' | 'live_ops' | 'kitchen_kds' | 'active_deliveries'>>('reception');
+  const [view, setView] = useState<ReceptionTab>('dashboard');
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try { return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true'; } catch { return false; }
+  });
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [urgentRequests, setUrgentRequests] = useState<UrgentRequest[]>([]);
   const [upcomingArrivals, setUpcomingArrivals] = useState<UpcomingArrival[]>([]);
   const [tasks, setTasks] = useState<LiveOpsTask[]>([]);
   const [kdsOrders, setKdsOrders] = useState<KdsOrder[]>([]);
+  const [currency, setCurrency] = useState('USD');
   const syncInFlight = useRef(false);
 
   const propertyId = assignments.find(a => a.role === 'receptionist')?.propertyId;
   const { notifications, unreadCount, markRead, markAllRead } = useNotifications(propertyId);
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(prev => {
+      const next = !prev;
+      try { localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next)); } catch { /* private-mode storage can throw — collapsing still works for this session */ }
+      return next;
+    });
+  };
 
   const reloadRoomsAndArrivals = async (pid: string) => {
     try {
@@ -100,6 +120,7 @@ export default function ReceptionApp() {
     reloadRoomsAndArrivals(propertyId);
     reloadRequests(propertyId);
     reloadTasks(propertyId);
+    fetchPropertyCurrency(propertyId).then(setCurrency).catch(err => console.warn('Failed to load property currency:', err));
   }, [propertyId]);
 
   const handleUpdateRoom = (updatedRoom: Room) => {
@@ -218,62 +239,77 @@ export default function ReceptionApp() {
     );
   }
 
-  const navItems: { id: typeof view; label: string }[] = [
-    { id: 'reception', label: 'Reception & Rooms' },
-    { id: 'live_ops', label: 'Live Ops & Tasks' },
-    { id: 'kitchen_kds', label: 'Kitchen KDS' },
-    { id: 'active_deliveries', label: 'Active Deliveries' },
+  const openRequestsCount = urgentRequests.filter(r => r.status === 'open').length;
+  const openTasksCount = tasks.filter(t => t.status !== 'completed').length;
+  const activeOrdersCount = kdsOrders.filter(o => o.status !== 'delivered').length;
+
+  const navItems: SidebarNavItem[] = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: openRequestsCount },
+    { id: 'rooms_floors', label: 'Rooms & Floors', icon: BedDouble },
+    { id: 'live_ops', label: 'Live Ops & Tasks', icon: ListChecks, badge: openTasksCount },
+    { id: 'kitchen_kds', label: 'Kitchen KDS', icon: UtensilsCrossed, badge: activeOrdersCount },
+    { id: 'active_deliveries', label: 'Active Deliveries', icon: Truck },
   ];
 
   return (
-    <div className="min-h-screen w-full bg-[#f6faff]">
-      <nav className="bg-white border-b border-[#E9ECEF] px-4 sm:px-6 h-14 flex items-center justify-between overflow-x-auto">
-        <div className="flex items-center gap-4">
-          <span className="font-bold text-[#765a25] whitespace-nowrap">Cabadra Reception</span>
-          {navItems.map(item => (
-            <button
-              key={item.id}
-              onClick={() => setView(item.id)}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap ${view === item.id ? 'bg-[#ecf5fe] text-[#765a25]' : 'text-[#4e463a]'}`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <NotificationBell notifications={notifications} unreadCount={unreadCount} onMarkRead={markRead} onMarkAllRead={markAllRead} />
-          <button onClick={() => signOut()} className="text-xs font-semibold text-[#7f7668] hover:text-[#141d23] whitespace-nowrap">
-            Sign out
-          </button>
-        </div>
-      </nav>
+    <div className="min-h-screen w-full bg-[#f6faff] flex">
+      <Sidebar
+        title="Cabadra Reception"
+        navItems={navItems}
+        activeId={view}
+        onNavigate={(id) => setView(id as ReceptionTab)}
+        collapsed={sidebarCollapsed}
+        onToggleCollapsed={toggleSidebar}
+        onSignOut={() => signOut()}
+      />
 
-      {view === 'reception' && (
-        <ReceptionView
-          rooms={rooms}
-          urgentRequests={urgentRequests.filter(r => r.status === 'open')}
-          upcomingArrivals={upcomingArrivals}
-          onUpdateRoom={handleUpdateRoom}
-          onResolveUrgentRequest={handleResolveUrgentRequest}
-          onCheckInGuest={handleCheckInGuest}
-          onOpenNewRequest={() => setIsRequestModalOpen(true)}
-          onNavigate={setView as (v: AppView) => void}
-          onRefreshRooms={() => propertyId && reloadRoomsAndArrivals(propertyId)}
-        />
-      )}
-      {view === 'live_ops' && (
-        <LiveOpsView
-          tasks={tasks}
-          onUpdateTask={handleUpdateTask}
-          onAddTask={handleAddTask}
-          onRefresh={() => propertyId && reloadTasks(propertyId)}
-          onNavigate={setView as (v: AppView) => void}
-        />
-      )}
-      {view === 'kitchen_kds' && (
-        <KitchenKDS orders={kdsOrders} onUpdateOrder={handleUpdateKdsOrder} onNavigate={setView as (v: AppView) => void} />
-      )}
-      {view === 'active_deliveries' && <ActiveDeliveries propertyId={propertyId} onNavigate={setView as (v: AppView) => void} />}
+      <div className="flex-1 min-w-0 flex flex-col">
+        <div className="h-14 bg-white border-b border-[#E9ECEF] flex items-center justify-end px-4 sm:px-6 shrink-0">
+          <NotificationBell notifications={notifications} unreadCount={unreadCount} onMarkRead={markRead} onMarkAllRead={markAllRead} />
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {view === 'dashboard' && (
+            <ReceptionDashboard
+              rooms={rooms}
+              urgentRequests={urgentRequests.filter(r => r.status === 'open')}
+              upcomingArrivals={upcomingArrivals}
+              tasks={tasks}
+              kdsOrders={kdsOrders}
+              notifications={notifications}
+              onResolveUrgentRequest={handleResolveUrgentRequest}
+              onCheckInGuest={handleCheckInGuest}
+              onRefreshRooms={() => propertyId && reloadRoomsAndArrivals(propertyId)}
+              onOpenNewRequest={() => setIsRequestModalOpen(true)}
+              onMarkNotificationRead={markRead}
+              onNavigate={(v: AppView) => setView(v as ReceptionTab)}
+            />
+          )}
+          {view === 'rooms_floors' && (
+            <RoomsFloorsView
+              propertyId={propertyId}
+              currency={currency}
+              rooms={rooms}
+              onUpdateRoom={handleUpdateRoom}
+              onOpenNewRequest={() => setIsRequestModalOpen(true)}
+              onRefreshRooms={() => propertyId && reloadRoomsAndArrivals(propertyId)}
+            />
+          )}
+          {view === 'live_ops' && (
+            <LiveOpsView
+              tasks={tasks}
+              onUpdateTask={handleUpdateTask}
+              onAddTask={handleAddTask}
+              onRefresh={() => propertyId && reloadTasks(propertyId)}
+              onNavigate={(v: AppView) => setView(v as ReceptionTab)}
+            />
+          )}
+          {view === 'kitchen_kds' && (
+            <KitchenKDS orders={kdsOrders} onUpdateOrder={handleUpdateKdsOrder} onNavigate={(v: AppView) => setView(v as ReceptionTab)} />
+          )}
+          {view === 'active_deliveries' && <ActiveDeliveries propertyId={propertyId} onNavigate={(v: AppView) => setView(v as ReceptionTab)} />}
+        </div>
+      </div>
 
       <NewRequestModal
         isOpen={isRequestModalOpen}

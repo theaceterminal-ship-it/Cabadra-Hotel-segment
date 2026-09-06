@@ -67,6 +67,7 @@ export default function GuestApp() {
           roomNumber={context.room.number}
           guestName={context.guest.name}
           isVip={context.guest.vip}
+          currency={context.property.currency}
           onNavigate={handleNavigate}
           onOpenNewRequest={() => setIsRequestModalOpen(true)}
           onSubmitConciergeRequest={(title) => submitGuestRequest(token, title, 'Standard').then(() => {})}
@@ -79,6 +80,7 @@ export default function GuestApp() {
           propertyName={context.property.name}
           roomNumber={context.room.number}
           menuItems={context.menu}
+          currency={context.property.currency}
           onNavigate={handleNavigate}
           onPlaceOrder={() => {}}
         />

@@ -9,6 +9,7 @@ import LandingPage from './pages/LandingPage';
 import OwnerApp from './pages/OwnerApp';
 import ReceptionApp from './pages/ReceptionApp';
 import GuestApp from './pages/GuestApp';
+import RoomRedirect from './pages/RoomRedirect';
 
 /**
  * Three separate pages, not one role-switcher: an owner and a receptionist
@@ -22,6 +23,7 @@ export default function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/owner/*" element={<OwnerApp />} />
       <Route path="/reception/*" element={<ReceptionApp />} />
+      <Route path="/guest/room/:roomId" element={<RoomRedirect />} />
       <Route path="/guest/:token" element={<GuestApp />} />
     </Routes>
   );

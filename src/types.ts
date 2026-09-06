@@ -1,7 +1,9 @@
-export type AppView = 
+export type AppView =
   | 'owner_overview'
   | 'properties'
   | 'reception'
+  | 'dashboard'
+  | 'rooms_floors'
   | 'live_ops'
   | 'kitchen_kds'
   | 'active_deliveries'
@@ -17,6 +19,10 @@ export interface Room {
   floor: number;
   status: RoomStatus;
   guestName?: string;
+  guestPhone?: string;
+  guestEmail?: string;
+  /** URL of an uploaded ID/passport photo, if one was collected at check-in — see staff_checkin_new_guest. */
+  guestIdDocumentUrl?: string;
   checkoutInfo?: string;
   notes?: string;
   cleanProgress?: number;
@@ -34,6 +40,9 @@ export interface Property {
   id: string;
   name: string;
   location: string;
+  country?: string;
+  /** ISO 4217 code, e.g. 'USD', 'INR' — set once at property creation from the owner's chosen country. Defaults to 'USD' for properties created before currency support existed. */
+  currency: string;
   status: 'active' | 'maintenance' | 'paused';
   occupancy: number;
   revenueToday: string;

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AppView } from '../types';
+import { formatCurrency } from '../lib/currency';
 import {
   Utensils,
   Sparkles,
@@ -20,6 +21,7 @@ interface GuestHomeProps {
   roomNumber: string;
   guestName: string;
   isVip: boolean;
+  currency: string;
   onNavigate: (view: AppView) => void;
   onOpenNewRequest: () => void;
   /** Real submission (guest_submit_request) — the housekeeping/amenities/spa/transfers modal below calls this instead of just showing a toast. */
@@ -33,6 +35,7 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
   roomNumber,
   guestName,
   isVip,
+  currency,
   onNavigate,
   onOpenNewRequest,
   onSubmitConciergeRequest,
@@ -225,7 +228,7 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
                   </p>
                 </div>
                 <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#E9ECEF]">
-                  <span className="text-sm font-bold text-[#765a25]">$350 / couple</span>
+                  <span className="text-sm font-bold text-[#765a25]">{formatCurrency(350, currency)} / couple</span>
                   <button
                     onClick={() => handleBookExperience('Sunset Yacht Cruise', 350)}
                     className="px-4 py-2 bg-[#765a25] text-white rounded-lg text-xs font-bold hover:bg-[#5c4210] transition-colors cursor-pointer"
@@ -258,7 +261,7 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
                   </p>
                 </div>
                 <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#E9ECEF]">
-                  <span className="text-sm font-bold text-[#765a25]">$280 / person</span>
+                  <span className="text-sm font-bold text-[#765a25]">{formatCurrency(280, currency)} / person</span>
                   <button
                     onClick={() => handleBookExperience("Chef's Tasting Table", 280)}
                     className="px-4 py-2 bg-[#765a25] text-white rounded-lg text-xs font-bold hover:bg-[#5c4210] transition-colors cursor-pointer"
@@ -327,11 +330,11 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
                 <>
                   <label className="flex items-center gap-2 p-2.5 bg-[#f6faff] rounded-lg border border-[#E9ECEF] cursor-pointer">
                     <input type="checkbox" defaultChecked className="accent-[#765a25]" />
-                    <span>60-Min Swedish Aromatherapy Massage ($180)</span>
+                    <span>60-Min Swedish Aromatherapy Massage ({formatCurrency(180, currency)})</span>
                   </label>
                   <label className="flex items-center gap-2 p-2.5 bg-[#f6faff] rounded-lg border border-[#E9ECEF] cursor-pointer">
                     <input type="checkbox" className="accent-[#765a25]" />
-                    <span>Deep Tissue In-Suite Session ($220)</span>
+                    <span>Deep Tissue In-Suite Session ({formatCurrency(220, currency)})</span>
                   </label>
                 </>
               )}
@@ -340,11 +343,11 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
                 <>
                   <label className="flex items-center gap-2 p-2.5 bg-[#f6faff] rounded-lg border border-[#E9ECEF] cursor-pointer">
                     <input type="checkbox" defaultChecked className="accent-[#765a25]" />
-                    <span>JFK Airport Chauffeur (Mercedes S-Class) ($160)</span>
+                    <span>JFK Airport Chauffeur (Mercedes S-Class) ({formatCurrency(160, currency)})</span>
                   </label>
                   <label className="flex items-center gap-2 p-2.5 bg-[#f6faff] rounded-lg border border-[#E9ECEF] cursor-pointer">
                     <input type="checkbox" className="accent-[#765a25]" />
-                    <span>City Hourly Chauffeur Service ($120/hr)</span>
+                    <span>City Hourly Chauffeur Service ({formatCurrency(120, currency)}/hr)</span>
                   </label>
                 </>
               )}

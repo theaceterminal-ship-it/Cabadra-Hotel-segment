@@ -11,7 +11,7 @@ import type { MenuItem } from '../types';
 export interface GuestContext {
   reservationId: string;
   partySize: number;
-  property: { id: string; name: string };
+  property: { id: string; name: string; currency: string };
   room: { id: string; number: string; type: string };
   guest: { name: string; vip: boolean };
   menu: MenuItem[];
@@ -21,6 +21,13 @@ export async function fetchGuestContext(token: string): Promise<GuestContext> {
   const { data, error } = await supabase.rpc('guest_get_context', { p_token: token });
   if (error) throw new Error(`Invalid or expired guest link: ${error.message}`);
   return data as GuestContext;
+}
+
+/** The other half of a printed room QR: resolves a room id to whichever reservation's guest_token is currently checked in. See guest_resolve_room_token (0011_room_qr.sql) for why this indirection exists instead of the QR encoding a token directly. */
+export async function resolveRoomToken(roomId: string): Promise<string> {
+  const { data, error } = await supabase.rpc('guest_resolve_room_token', { p_room_id: roomId });
+  if (error) throw new Error(error.message.includes('No guest is currently') ? error.message : `Couldn't open this room: ${error.message}`);
+  return data as string;
 }
 
 export interface GuestRecommendation {

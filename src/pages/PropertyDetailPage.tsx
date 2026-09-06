@@ -25,6 +25,7 @@ import {
   PendingInvite,
 } from '../lib/staffApi';
 import { ImageUploadField } from '../components/ImageUploadField';
+import { formatCurrency } from '../lib/currency';
 import {
   ArrowLeft, Plus, Trash2, BedDouble, UtensilsCrossed, Users, Pencil,
   LayoutDashboard, Upload, Download, AlertTriangle,
@@ -176,9 +177,9 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
           ticketAnalytics={ticketAnalytics}
         />
       ) : tab === 'rooms' ? (
-        <RoomsTab propertyId={propertyId} rooms={rooms} onChanged={handleReload} />
+        <RoomsTab propertyId={propertyId} currency={property?.currency ?? 'USD'} rooms={rooms} onChanged={handleReload} />
       ) : tab === 'menu' ? (
-        <MenuTab propertyId={propertyId} menu={menu} onChanged={handleReload} />
+        <MenuTab propertyId={propertyId} currency={property?.currency ?? 'USD'} menu={menu} onChanged={handleReload} />
       ) : (
         <StaffTab propertyId={propertyId} staff={staff} pendingInvites={pendingInvites} onChanged={handleReload} />
       )}
@@ -219,11 +220,11 @@ function OverviewTab({ property, imageUrl, setImageUrl, onSaveImage, savingImage
           </div>
           <div className="flex gap-8">
             <div>
-              <div className="text-xl font-bold text-[#2D6A4F]">${ticketAnalytics.avgOrderValueWithRecommendation.toFixed(2)}</div>
+              <div className="text-xl font-bold text-[#2D6A4F]">{formatCurrency(ticketAnalytics.avgOrderValueWithRecommendation, property.currency)}</div>
               <div className="text-[11px] text-[#4e463a]">Avg · with recommendation</div>
             </div>
             <div>
-              <div className="text-xl font-bold text-[#141d23]">${ticketAnalytics.avgOrderValueWithoutRecommendation.toFixed(2)}</div>
+              <div className="text-xl font-bold text-[#141d23]">{formatCurrency(ticketAnalytics.avgOrderValueWithoutRecommendation, property.currency)}</div>
               <div className="text-[11px] text-[#4e463a]">Avg · without</div>
             </div>
           </div>
@@ -270,7 +271,7 @@ function StatCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-function RoomsTab({ propertyId, rooms, onChanged }: { propertyId: string; rooms: Room[]; onChanged: () => void }) {
+function RoomsTab({ propertyId, currency, rooms, onChanged }: { propertyId: string; currency: string; rooms: Room[]; onChanged: () => void }) {
   const emptyForm = { number: '', type: '', floor: '1', price: '', image: '' };
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -335,7 +336,7 @@ function RoomsTab({ propertyId, rooms, onChanged }: { propertyId: string; rooms:
             <input type="number" value={form.floor} onChange={e => setForm(f => ({ ...f, floor: e.target.value }))} className={inputCls} />
           </div>
           <div>
-            <label className={labelCls}>$/night</label>
+            <label className={labelCls}>Price/night ({currency})</label>
             <input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="195" className={inputCls} />
           </div>
         </div>
@@ -362,7 +363,7 @@ function RoomsTab({ propertyId, rooms, onChanged }: { propertyId: string; rooms:
           rooms.map(r => (
             <div key={r.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs ${editingId === r.id ? 'border-[#765a25] bg-[#fff8ec]' : 'border-[#E9ECEF]'}`}>
               <span className="font-semibold text-[#141d23]">Room {r.number}</span>
-              <span className="text-[#7f7668]">{r.type} · Floor {r.floor} · ${r.pricePerNight}/night</span>
+              <span className="text-[#7f7668]">{r.type} · Floor {r.floor} · {formatCurrency(r.pricePerNight, currency)}/night</span>
               <div className="flex items-center gap-1">
                 <button onClick={() => startEdit(r)} className="text-[#765a25] hover:text-[#5c4210] p-1">
                   <Pencil className="w-3.5 h-3.5" />
@@ -397,7 +398,7 @@ function downloadMenuCsvTemplate() {
   URL.revokeObjectURL(url);
 }
 
-function MenuTab({ propertyId, menu, onChanged }: { propertyId: string; menu: MenuItem[]; onChanged: () => void }) {
+function MenuTab({ propertyId, currency, menu, onChanged }: { propertyId: string; currency: string; menu: MenuItem[]; onChanged: () => void }) {
   const emptyForm = { name: '', category: '', price: '', description: '', image: '', isVeg: true, prepTime: '' };
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -519,7 +520,7 @@ function MenuTab({ propertyId, menu, onChanged }: { propertyId: string; menu: Me
             <input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="Indian" className={inputCls} />
           </div>
           <div>
-            <label className={labelCls}>Price</label>
+            <label className={labelCls}>Price ({currency})</label>
             <input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="14" className={inputCls} />
           </div>
         </div>
@@ -559,7 +560,7 @@ function MenuTab({ propertyId, menu, onChanged }: { propertyId: string; menu: Me
           menu.map(m => (
             <div key={m.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs ${editingId === m.id ? 'border-[#765a25] bg-[#fff8ec]' : 'border-[#E9ECEF]'}`}>
               <span className="font-semibold text-[#141d23]">{m.name}</span>
-              <span className="text-[#7f7668]">{m.category} · ${m.price} · {m.isVeg ? 'Veg' : 'Non-veg'}{m.prepTime ? ` · ${m.prepTime}` : ''}</span>
+              <span className="text-[#7f7668]">{m.category} · {formatCurrency(m.price, currency)} · {m.isVeg ? 'Veg' : 'Non-veg'}{m.prepTime ? ` · ${m.prepTime}` : ''}</span>
               <div className="flex items-center gap-1">
                 <button onClick={() => startEdit(m)} className="text-[#765a25] hover:text-[#5c4210] p-1">
                   <Pencil className="w-3.5 h-3.5" />

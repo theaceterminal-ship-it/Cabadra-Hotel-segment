@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MenuItem, KdsOrder, AppView } from '../types';
 import { fetchGuestRecommendations, placeGuestOrder, GuestRecommendation } from '../lib/guestApi';
+import { formatCurrency } from '../lib/currency';
 import {
   ArrowLeft,
   Search,
@@ -29,6 +30,7 @@ interface RoomDiningViewProps {
   propertyName: string;
   roomNumber: string;
   menuItems: MenuItem[];
+  currency: string;
   onNavigate: (view: AppView) => void;
   onPlaceOrder: (order: KdsOrder) => void;
 }
@@ -38,6 +40,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
   propertyName,
   roomNumber,
   menuItems,
+  currency,
   onNavigate,
   onPlaceOrder,
 }) => {
@@ -271,7 +274,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                     <p className="font-bold text-xs text-[#141d23] leading-snug">{item.name}</p>
                     <p className="text-[11px] text-[#7f7668] italic mt-0.5 mb-2">Why: {rec.reason}</p>
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-xs text-[#765a25]">${item.price}</span>
+                      <span className="font-bold text-xs text-[#765a25]">{formatCurrency(item.price, currency)}</span>
                       <button
                         onClick={() => addToCart(item, true)}
                         className="h-7 px-3 rounded-lg bg-[#765a25] text-white text-[11px] font-bold hover:bg-[#5c4210] transition-colors cursor-pointer"
@@ -328,7 +331,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                     <div className="flex justify-between items-start mb-1.5">
                       <h3 className="font-bold text-base text-[#141d23] leading-snug">{item.name}</h3>
                       <span className="font-bold text-base text-[#765a25] shrink-0 ml-2">
-                        ${item.price}
+                        {formatCurrency(item.price, currency)}
                       </span>
                     </div>
                     <p className="text-xs text-[#4e463a] leading-relaxed line-clamp-2 mb-4">
@@ -388,7 +391,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
             View Cart
           </span>
           <span className="flex items-center gap-1.5 font-bold text-sm">
-            ${grandTotal.toFixed(2)} <ChevronUp className="w-4 h-4" />
+            {formatCurrency(grandTotal, currency)} <ChevronUp className="w-4 h-4" />
           </span>
         </button>
       )}
@@ -430,7 +433,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                         <div className="min-w-0">
                           <p className="font-bold text-xs text-[#141d23] truncate">{item.name}</p>
                           <p className="text-xs text-[#765a25] font-semibold mt-0.5">
-                            ${item.price} each
+                            {formatCurrency(item.price, currency)} each
                           </p>
                         </div>
 
@@ -484,7 +487,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                           <span className="w-5 h-5 rounded-full bg-[#765a25] text-white flex items-center justify-center shrink-0">
                             <Plus className="w-3 h-3" />
                           </span>
-                          <span className="text-[11px] font-semibold text-[#141d23] whitespace-nowrap">{item.name} · ${item.price}</span>
+                          <span className="text-[11px] font-semibold text-[#141d23] whitespace-nowrap">{item.name} · {formatCurrency(item.price, currency)}</span>
                         </button>
                       );
                     })}
@@ -525,19 +528,19 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                 <div className="space-y-1.5 text-xs text-[#4e463a]">
                   <div className="flex justify-between">
                     <span>Food &amp; Beverage:</span>
-                    <span className="font-semibold text-[#141d23]">${subtotal.toFixed(2)}</span>
+                    <span className="font-semibold text-[#141d23]">{formatCurrency(subtotal, currency)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>State &amp; Local Tax (8.875%):</span>
-                    <span>${tax.toFixed(2)}</span>
+                    <span>{formatCurrency(tax, currency)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>In-Suite Service &amp; Gratuity (18%):</span>
-                    <span>${serviceCharge.toFixed(2)}</span>
+                    <span>{formatCurrency(serviceCharge, currency)}</span>
                   </div>
                   <div className="flex justify-between pt-2 border-t border-[#E9ECEF] font-bold text-sm text-[#141d23]">
                     <span>Total (Charged to Room):</span>
-                    <span className="text-[#765a25]">${grandTotal.toFixed(2)}</span>
+                    <span className="text-[#765a25]">{formatCurrency(grandTotal, currency)}</span>
                   </div>
                 </div>
 

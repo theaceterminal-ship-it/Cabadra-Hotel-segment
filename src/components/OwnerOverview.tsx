@@ -8,6 +8,7 @@ import {
   fetchRevenueTrend,
   RevenueTrendPoint,
 } from '../lib/staffApi';
+import { formatCurrency } from '../lib/currency';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -47,6 +48,13 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
 
   const primaryPropertyId = properties[0]?.id;
   const propertyIds = properties.map(p => p.id);
+  // Portfolio totals sum across every property, which can span currencies
+  // (a US and an India property side by side) — there's no single correct
+  // currency for that sum, so it's shown in the first property's currency
+  // as a reasonable default, same simplification ticketAnalytics already
+  // makes by scoping to primaryPropertyId. Each property's own row in the
+  // performance table below is correct in its own currency regardless.
+  const primaryCurrency = properties[0]?.currency ?? 'USD';
 
   // Live from Supabase's staff_ticket_size_analytics() — the direct proof
   // point for whether recommendations are actually moving ticket size, not
@@ -147,7 +155,7 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
             </div>
           </div>
           <div className="text-3xl md:text-4xl font-bold text-[#141d23] tracking-tight">
-            {portfolioStats ? `$${portfolioStats.totalRevenue.toLocaleString()}` : '—'}
+            {portfolioStats ? formatCurrency(portfolioStats.totalRevenue, primaryCurrency) : '—'}
           </div>
           <p className="mt-2 text-xs text-[#7f7668]">Across {properties.length} propert{properties.length === 1 ? 'y' : 'ies'}</p>
         </div>
@@ -183,7 +191,7 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
             </div>
           </div>
           <div className="text-3xl md:text-4xl font-bold text-[#141d23] tracking-tight">
-            {portfolioStats ? `$${portfolioStats.avgOrderValue.toFixed(2)}` : '—'}
+            {portfolioStats ? formatCurrency(portfolioStats.avgOrderValue, primaryCurrency) : '—'}
           </div>
           <p className="mt-2 text-xs text-[#7f7668]">All-time, all properties</p>
         </div>
@@ -224,13 +232,13 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
           <div className="flex items-center gap-8">
             <div>
               <div className="text-2xl font-bold text-[#2D6A4F]">
-                ${ticketAnalytics.avgOrderValueWithRecommendation.toFixed(2)}
+                {formatCurrency(ticketAnalytics.avgOrderValueWithRecommendation, primaryCurrency)}
               </div>
               <div className="text-[11px] text-[#4e463a]">Avg order · with recommendation</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-[#141d23]">
-                ${ticketAnalytics.avgOrderValueWithoutRecommendation.toFixed(2)}
+                {formatCurrency(ticketAnalytics.avgOrderValueWithoutRecommendation, primaryCurrency)}
               </div>
               <div className="text-[11px] text-[#4e463a]">Avg order · without</div>
             </div>
@@ -304,12 +312,12 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
                       stroke="#7f7668"
                       fontSize={12}
                       tickLine={false}
-                      tickFormatter={(val) => activeChartMetric === 'revenue' ? `$${val}` : val}
+                      tickFormatter={(val) => activeChartMetric === 'revenue' ? formatCurrency(val, primaryCurrency) : val}
                     />
                     <Tooltip
                       contentStyle={{ backgroundColor: '#ffffff', borderColor: '#E9ECEF', borderRadius: '8px', fontSize: '12px' }}
                       formatter={(value: number) => [
-                        activeChartMetric === 'revenue' ? `$${Number(value).toLocaleString()}` : `${value}`,
+                        activeChartMetric === 'revenue' ? formatCurrency(Number(value), primaryCurrency) : `${value}`,
                         activeChartMetric === 'revenue' ? 'Revenue' : 'Orders'
                       ]}
                     />
@@ -481,7 +489,7 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
                 ))}
                 <div className="border-t border-[#E9ECEF] pt-1 flex justify-between font-bold text-sm text-[#765a25]">
                   <span>Total F&amp;B Revenue:</span>
-                  <span>{portfolioStats ? `$${portfolioStats.totalRevenue.toLocaleString()}` : '—'}</span>
+                  <span>{portfolioStats ? formatCurrency(portfolioStats.totalRevenue, primaryCurrency) : '—'}</span>
                 </div>
               </div>
             </div>

@@ -9,6 +9,7 @@
 
 import { supabase } from './supabaseClient';
 import type { Property, Room, RoomStatus, UpcomingArrival, UrgentRequest, LiveOpsTask, MenuItem, AppNotification, Folio } from '../types';
+import { formatCurrency } from './currency';
 
 /** Turns "Deluxe King 204" into a URL/id-safe slug. Rooms' primary key is global (not scoped by property_id), so this is prefixed with the property id to guarantee uniqueness — same convention as supabase/seed.sql. */
 function slugify(text: string): string {
@@ -73,14 +74,16 @@ export async function fetchStaffProperties(): Promise<Property[]> {
       id: p.id,
       name: p.name,
       location: p.location,
+      country: p.country ?? undefined,
+      currency: p.currency ?? 'USD',
       status: p.status,
       occupancy: occupancyPct,
-      revenueToday: `$${s.revenueToday.toLocaleString()}`,
+      revenueToday: formatCurrency(s.revenueToday, p.currency),
       ordersToday: s.ordersToday,
       requestsCount: s.openRequests,
       totalRooms: s.totalRooms,
-      totalRevenue: `$${s.totalRevenue.toLocaleString()}`,
-      avgOrderValue: `$${s.avgOrderValue.toFixed(2)}`,
+      totalRevenue: formatCurrency(s.totalRevenue, p.currency),
+      avgOrderValue: formatCurrency(s.avgOrderValue, p.currency),
       // A real URL (properties.image, see 0005_staff_mgmt_and_media.sql) —
       // either pasted directly or filled in by ImageUploadField's Cloudinary
       // upload button (src/components/ImageUploadField.tsx), same as menu
@@ -89,6 +92,13 @@ export async function fetchStaffProperties(): Promise<Property[]> {
       modelImage: p.image ?? '',
     };
   });
+}
+
+/** Just the currency — Reception needs this to format money everywhere (folio, room rates, KPI cards) but has no other reason to load the full Property/stats bundle fetchStaffProperties does. */
+export async function fetchPropertyCurrency(propertyId: string): Promise<string> {
+  const { data, error } = await supabase.from('properties').select('currency').eq('id', propertyId).single();
+  if (error) throw error;
+  return data?.currency ?? 'USD';
 }
 
 /** Property-level settings an owner can change after creation — name/location/status/photo URL. All optional; only the fields passed are updated. */
@@ -117,8 +127,11 @@ export async function fetchPortfolioStats(propertyIds: string[]): Promise<Portfo
   return data as PortfolioStats;
 }
 
-export async function createProperty(id: string, name: string, location: string, image?: string): Promise<void> {
-  const { error } = await supabase.rpc('staff_create_property', { p_id: id, p_name: name, p_location: location, p_image: image || null });
+export async function createProperty(id: string, name: string, location: string, image?: string, country?: string, currency?: string): Promise<void> {
+  const { error } = await supabase.rpc('staff_create_property', {
+    p_id: id, p_name: name, p_location: location, p_image: image || null,
+    p_country: country || null, p_currency: currency || 'USD',
+  });
   if (error) throw error;
 }
 
@@ -145,7 +158,7 @@ export async function fetchRoomsForProperty(propertyId: string): Promise<Room[]>
     supabase.from('rooms').select('*').eq('property_id', propertyId),
     supabase
       .from('reservations')
-      .select('id, room_id, check_out, guest_token, guests(name)')
+      .select('id, room_id, check_out, guest_token, guests(name, phone, email, id_document_url)')
       .eq('property_id', propertyId)
       .eq('status', 'checked_in'),
   ]);
@@ -156,7 +169,7 @@ export async function fetchRoomsForProperty(propertyId: string): Promise<Room[]>
 
   return (rooms ?? []).map(r => {
     const stay = occupancyByRoom.get(r.id);
-    const guest = stay?.guests as unknown as { name: string } | null;
+    const guest = stay?.guests as unknown as { name: string; phone: string | null; email: string | null; id_document_url: string | null } | null;
     return {
       id: r.id,
       number: r.number,
@@ -165,6 +178,9 @@ export async function fetchRoomsForProperty(propertyId: string): Promise<Room[]>
       status: r.status,
       pricePerNight: r.price_per_night,
       guestName: guest?.name,
+      guestPhone: guest?.phone ?? undefined,
+      guestEmail: guest?.email ?? undefined,
+      guestIdDocumentUrl: guest?.id_document_url ?? undefined,
       checkoutInfo: stay ? formatCheckoutInfo(stay.check_out) : undefined,
       notes: r.notes ?? undefined,
       cleanProgress: r.clean_progress ?? undefined,
@@ -359,6 +375,39 @@ export async function updateArrivalEta(reservationId: string, newEta: Date): Pro
 export async function checkInReservation(reservationId: string): Promise<void> {
   const { error } = await supabase.rpc('staff_check_in_reservation', { p_reservation_id: reservationId });
   if (error) throw error;
+}
+
+export interface WalkInGuestInput {
+  name: string;
+  phone?: string;
+  email?: string;
+  vip?: boolean;
+  idDocumentUrl?: string;
+  checkOut?: Date;
+  partySize?: number;
+}
+
+/**
+ * A walk-in, not a pre-existing booking: creates the guest record and a
+ * 'checked_in' reservation in one step, and assigns the room right away
+ * (staff_checkin_new_guest, 0013_guest_checkin.sql). This is what makes a
+ * room's printed QR (0011_room_qr.sql) actually mean something — it only
+ * resolves to a real person once a reservation like this exists.
+ */
+export async function checkInNewGuest(propertyId: string, roomId: string, guest: WalkInGuestInput): Promise<string> {
+  const { data, error } = await supabase.rpc('staff_checkin_new_guest', {
+    p_property_id: propertyId,
+    p_room_id: roomId,
+    p_guest_name: guest.name,
+    p_guest_phone: guest.phone || null,
+    p_guest_email: guest.email || null,
+    p_guest_vip: guest.vip ?? false,
+    p_id_document_url: guest.idDocumentUrl || null,
+    p_check_out: guest.checkOut ? guest.checkOut.toISOString() : null,
+    p_party_size: guest.partySize ?? 1,
+  });
+  if (error) throw error;
+  return data as string;
 }
 
 export interface StaffOrder {

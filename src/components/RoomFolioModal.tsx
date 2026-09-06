@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Receipt, X } from 'lucide-react';
 import { Folio } from '../types';
 import { fetchFolio, checkoutReservation } from '../lib/staffApi';
+import { formatCurrency } from '../lib/currency';
 
 interface RoomFolioModalProps {
   reservationId: string;
   roomNumber: string;
+  currency: string;
   onClose: () => void;
   /** Fires after a successful checkout so the caller can refresh rooms/arrivals. */
   onCheckedOut: () => void;
@@ -24,7 +26,7 @@ const PAYMENT_METHODS: { id: 'cash' | 'card' | 'upi' | 'other'; label: string }[
  * rather than paid per-order. This is the "pay at checkout" flow: nothing
  * is charged until Reception confirms it here.
  */
-export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, roomNumber, onClose, onCheckedOut }) => {
+export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, roomNumber, currency, onClose, onCheckedOut }) => {
   const [folio, setFolio] = useState<Folio | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +70,7 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, r
           <p className="text-sm text-[#7f7668] text-center py-8">Loading folio…</p>
         ) : result ? (
           <div className="text-center py-6 space-y-2">
-            <p className="text-2xl font-bold text-[#2D6A4F]">${result.amountCharged.toFixed(2)} settled</p>
+            <p className="text-2xl font-bold text-[#2D6A4F]">{formatCurrency(result.amountCharged, currency)} settled</p>
             <p className="text-xs text-[#4e463a]">Charged via {method.toUpperCase()}. Room {roomNumber} is now marked for cleaning.</p>
             <button onClick={onClose} className="mt-3 px-5 py-2 bg-[#141d23] text-white rounded-lg text-xs font-semibold">Done</button>
           </div>
@@ -84,7 +86,7 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, r
                       <p className="font-semibold text-[#141d23] truncate">{c.description}</p>
                       <p className="text-[10px] text-[#7f7668] capitalize">{c.category.replace('_', ' ')} · {new Date(c.postedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
-                    <span className={`font-bold shrink-0 ml-2 ${c.settled ? 'text-[#7f7668] line-through' : 'text-[#141d23]'}`}>${c.amount.toFixed(2)}</span>
+                    <span className={`font-bold shrink-0 ml-2 ${c.settled ? 'text-[#7f7668] line-through' : 'text-[#141d23]'}`}>{formatCurrency(c.amount, currency)}</span>
                   </div>
                 ))
               )}
@@ -92,7 +94,7 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, r
 
             <div className="flex items-center justify-between px-1">
               <span className="text-sm font-bold text-[#141d23]">Total due</span>
-              <span className="text-xl font-bold text-[#141d23]">${folio.totalOutstanding.toFixed(2)}</span>
+              <span className="text-xl font-bold text-[#141d23]">{formatCurrency(folio.totalOutstanding, currency)}</span>
             </div>
 
             {folio.status === 'checked_in' && folio.totalOutstanding >= 0 && (
@@ -121,7 +123,7 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, r
                   disabled={settling}
                   className="w-full h-11 rounded-lg bg-[#765a25] text-white font-semibold text-sm hover:bg-[#5c4210] disabled:opacity-60"
                 >
-                  {settling ? 'Settling…' : `Settle $${folio.totalOutstanding.toFixed(2)} & Check Out`}
+                  {settling ? 'Settling…' : `Settle ${formatCurrency(folio.totalOutstanding, currency)} & Check Out`}
                 </button>
               </>
             )}
