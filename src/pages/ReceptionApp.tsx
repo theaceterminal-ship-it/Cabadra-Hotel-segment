@@ -183,7 +183,7 @@ export default function ReceptionApp() {
     updateTaskStatus(updatedTask.id, updatedTask.status).catch(err => console.warn(`Failed to update task ${updatedTask.id}:`, err));
   };
 
-  const handleAddTask = async (newTask: Omit<LiveOpsTask, 'id'>) => {
+  const handleAddTask = async (newTask: Omit<LiveOpsTask, 'id' | 'taskToken'>) => {
     if (!propertyId) return;
     try {
       await createTask(propertyId, newTask);

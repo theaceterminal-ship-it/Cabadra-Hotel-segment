@@ -110,6 +110,8 @@ export interface LiveOpsTask {
   status: 'pending' | 'in_progress' | 'completed';
   assignedTo?: string;
   category: 'housekeeping' | 'maintenance' | 'amenities' | 'concierge';
+  /** The capability token behind this task's QR — whoever scans it can start/complete this one task, no login. See service_task_resolve (0025_task_qr.sql). */
+  taskToken: string;
 }
 
 export interface UpcomingArrival {

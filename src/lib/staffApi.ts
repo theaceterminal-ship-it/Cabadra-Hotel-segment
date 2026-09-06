@@ -712,6 +712,7 @@ export async function fetchTasks(propertyId: string): Promise<LiveOpsTask[]> {
     dueTime: t.due_label,
     status: t.status,
     assignedTo: t.assigned_to ?? undefined,
+    taskToken: t.task_token,
     category: t.category,
   }));
 }
@@ -727,7 +728,8 @@ export async function updateTaskAssignment(taskId: string, assignedTo: string | 
   if (error) throw error;
 }
 
-export async function createTask(propertyId: string, task: Omit<LiveOpsTask, 'id'>): Promise<void> {
+/** taskToken is excluded — it's generated server-side by the tasks table's default (gen_random_uuid()), not something a new-task form could know in advance. See service_task_resolve (0025_task_qr.sql). */
+export async function createTask(propertyId: string, task: Omit<LiveOpsTask, 'id' | 'taskToken'>): Promise<void> {
   const { error } = await supabase.from('tasks').insert({
     property_id: propertyId,
     room_label: task.roomNumber,

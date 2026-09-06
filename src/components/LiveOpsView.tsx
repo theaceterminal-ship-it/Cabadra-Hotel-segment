@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { LiveOpsTask, AppView } from '../types';
 import { DirectoryContact } from '../lib/staffApi';
+import { TaskQrModal } from './TaskQrModal';
 import {
   CheckCircle2,
   AlertTriangle,
@@ -12,6 +13,7 @@ import {
   RefreshCw,
   Phone,
   UserCircle2,
+  QrCode,
 } from 'lucide-react';
 
 interface LiveOpsViewProps {
@@ -19,7 +21,7 @@ interface LiveOpsViewProps {
   directory: DirectoryContact[];
   onUpdateTask: (task: LiveOpsTask) => void;
   onAssignTask: (taskId: string, assignedTo: string | null) => void;
-  onAddTask: (task: Omit<LiveOpsTask, 'id'>) => void;
+  onAddTask: (task: Omit<LiveOpsTask, 'id' | 'taskToken'>) => void;
   onRefresh: () => void;
   onNavigate: (view: AppView) => void;
 }
@@ -40,6 +42,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
   const [filterCategory, setFilterCategory] = useState<'all' | 'housekeeping' | 'maintenance' | 'amenities' | 'concierge'>('all');
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [qrTask, setQrTask] = useState<LiveOpsTask | null>(null);
 
   // New task form state
   const [newRoom, setNewRoom] = useState('');
@@ -248,6 +251,17 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
                             <option key={c.id} value={c.name}>{c.name} · {c.phone}</option>
                           ))}
                         </select>
+                        {/* Once assigned, hand them a QR — they scan it to open a no-login page with just this task, tap Start/Done. No account needed. */}
+                        {task.assignedTo && !isDone && (
+                          <button
+                            type="button"
+                            onClick={() => setQrTask(task)}
+                            title="Generate task QR"
+                            className="shrink-0 w-8 h-8 rounded-lg border border-[#E9ECEF] text-[#765a25] hover:bg-[#ecf5fe] flex items-center justify-center"
+                          >
+                            <QrCode className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
 
                       <div className="flex items-center justify-between gap-2">
@@ -319,6 +333,8 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
           })}
         </aside>
       </div>
+
+      {qrTask && <TaskQrModal task={qrTask} onClose={() => setQrTask(null)} />}
 
       {/* New Task Creation Modal */}
       {showNewTaskModal && (
