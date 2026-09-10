@@ -113,25 +113,31 @@ export function NewPropertyForm({ onCreate, onCancel, submitLabel = 'Save Proper
       <div className="pt-1 border-t border-[#E9ECEF]" />
 
       <div>
-        <label className="font-semibold text-[#141d23] block mb-2">Does this hotel already use a PMS?</label>
-        <div className="grid grid-cols-2 gap-2">
+        <label className="font-semibold text-[#141d23] block mb-1">Do you already manage bookings elsewhere?</label>
+        <p className="text-[10px] text-[#7f7668] mb-2">
+          "PMS" is the software a hotel uses to track reservations and room availability — eZee, Cloudbeds, or even
+          a paper register/spreadsheet all count. This just decides which screens Cabadra shows you next.
+        </p>
+        <div className="grid grid-cols-1 gap-2">
           <button
             type="button"
             onClick={() => setUsesPms('yes')}
-            className={`h-10 rounded-lg border text-xs font-bold transition-colors ${
-              usesPms === 'yes' ? 'border-[#765a25] bg-[#fff8ec] text-[#765a25]' : 'border-[#E9ECEF] text-[#4e463a] hover:border-[#765a25]'
+            className={`text-left px-3 py-2.5 rounded-lg border transition-colors ${
+              usesPms === 'yes' ? 'border-[#765a25] bg-[#fff8ec]' : 'border-[#E9ECEF] hover:border-[#765a25]'
             }`}
           >
-            Yes
+            <span className={`block text-xs font-bold ${usesPms === 'yes' ? 'text-[#765a25]' : 'text-[#141d23]'}`}>Yes, we already have one</span>
+            <span className="block text-[10px] text-[#7f7668] mt-0.5">Cabadra hides its own booking screens — you'll just link guests to rooms, and your PMS stays in charge of bookings.</span>
           </button>
           <button
             type="button"
             onClick={() => { setUsesPms('no'); setPmsChoice(''); setPmsOther(''); }}
-            className={`h-10 rounded-lg border text-xs font-bold transition-colors ${
-              usesPms === 'no' ? 'border-[#765a25] bg-[#fff8ec] text-[#765a25]' : 'border-[#E9ECEF] text-[#4e463a] hover:border-[#765a25]'
+            className={`text-left px-3 py-2.5 rounded-lg border transition-colors ${
+              usesPms === 'no' ? 'border-[#765a25] bg-[#fff8ec]' : 'border-[#E9ECEF] hover:border-[#765a25]'
             }`}
           >
-            No
+            <span className={`block text-xs font-bold ${usesPms === 'no' ? 'text-[#765a25]' : 'text-[#141d23]'}`}>No — set Cabadra up as our front desk</span>
+            <span className="block text-[10px] text-[#7f7668] mt-0.5">You'll get room booking and availability search too, not just the guest-experience side.</span>
           </button>
         </div>
 
@@ -155,16 +161,11 @@ export function NewPropertyForm({ onCreate, onCancel, submitLabel = 'Save Proper
                 className="w-full h-10 px-3 border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none"
               />
             )}
-            <p className="text-[10px] text-[#7f7668]">
-              Cabadra hides its own booking screens — you'll just link guests to rooms here, and your PMS stays in charge of bookings and availability.
-            </p>
           </div>
         )}
-
-        {usesPms === 'no' && (
-          <p className="text-[10px] text-[#7f7668] mt-2">No problem — Cabadra will be your hotel's front desk too.</p>
-        )}
       </div>
+
+      <p className="text-[10px] text-[#7f7668]">You can change this later from the property's Overview tab if it turns out wrong.</p>
 
       <p className="text-[11px] text-[#7f7668]">
         Rooms and a menu aren't created here yet — you'll add those separately once the property exists.

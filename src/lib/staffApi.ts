@@ -257,6 +257,31 @@ export async function deleteRoom(roomId: string): Promise<void> {
   if (error) throw error;
 }
 
+/**
+ * One row per room, instead of the add-room form 10+ times over — the
+ * actual pain point for a hotel with any real number of rooms. Same
+ * pattern as bulkAddMenuItems. type/price_per_night are NOT NULL at the
+ * DB level (0001_init.sql) even for a PMS-mode hotel that has no reason to
+ * tell Cabadra a room's rate or type — rather than relax that constraint,
+ * callers here just default them ('Room', 0) since neither is displayed
+ * or used for anything once a property is in PMS mode.
+ */
+export async function bulkAddRooms(propertyId: string, rooms: { number: string; type?: string; floor?: number; maxOccupancy?: number; pricePerNight?: number }[]): Promise<void> {
+  if (rooms.length === 0) return;
+  const rows = rooms.map(r => ({
+    id: `${propertyId}-${slugify(r.number)}`,
+    property_id: propertyId,
+    number: r.number,
+    type: r.type?.trim() || 'Room',
+    floor: r.floor ?? 1,
+    max_occupancy: r.maxOccupancy ?? 2,
+    status: 'ready',
+    price_per_night: r.pricePerNight ?? 0,
+  }));
+  const { error } = await supabase.from('rooms').insert(rows);
+  if (error) throw error;
+}
+
 export async function fetchMenuForProperty(propertyId: string): Promise<MenuItem[]> {
   const { data, error } = await supabase.from('menu_items').select('*').eq('property_id', propertyId).order('category');
   if (error) throw error;

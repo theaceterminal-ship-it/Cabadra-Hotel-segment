@@ -7,6 +7,7 @@ import {
   addRoom,
   updateRoom,
   deleteRoom,
+  bulkAddRooms,
   fetchMenuForProperty,
   addMenuItem,
   updateMenuItem,
@@ -43,6 +44,7 @@ import {
   DirectoryContact,
 } from '../lib/staffApi';
 import { ImageUploadField } from '../components/ImageUploadField';
+import { PresetSelect } from '../components/PresetSelect';
 import { formatCurrency } from '../lib/currency';
 import {
   ArrowLeft, Plus, Trash2, BedDouble, UtensilsCrossed, Users, Pencil,
@@ -203,7 +205,7 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
           ticketAnalytics={ticketAnalytics}
         />
       ) : tab === 'rooms' ? (
-        <RoomsTab propertyId={propertyId} currency={property?.currency ?? 'USD'} rooms={rooms} onChanged={handleReload} />
+        <RoomsTab propertyId={propertyId} currency={property?.currency ?? 'USD'} rooms={rooms} hasExternalPms={property?.hasExternalPms ?? false} onChanged={handleReload} />
       ) : tab === 'menu' ? (
         <MenuTab propertyId={propertyId} currency={property?.currency ?? 'USD'} menu={menu} onChanged={handleReload} />
       ) : tab === 'experiences' ? (
@@ -281,17 +283,20 @@ function OverviewTab({ property, imageUrl, setImageUrl, onSaveImage, savingImage
 
       <UpiSettingsCard property={property} />
 
-      <div className="bg-white rounded-xl border border-[#E9ECEF] p-5">
-        <h3 className="text-sm font-bold text-[#141d23] mb-3">Room Status</h3>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
-          {(['ready', 'occupied', 'occupied_vip', 'cleaning', 'dirty', 'maintenance'] as const).map(status => (
-            <div key={status} className="bg-[#f6faff] rounded-lg p-2 border border-[#E9ECEF]">
-              <div className="text-lg font-bold text-[#141d23]">{rooms.filter(r => r.status === status).length}</div>
-              <div className="text-[10px] text-[#7f7668] capitalize">{status.replace('_', ' ')}</div>
-            </div>
-          ))}
+      {/* Housekeeping status is the PMS's job once a property is in PMS mode — showing it here would just be a second, unmaintained copy of a number the PMS already owns. */}
+      {!property.hasExternalPms && (
+        <div className="bg-white rounded-xl border border-[#E9ECEF] p-5">
+          <h3 className="text-sm font-bold text-[#141d23] mb-3">Room Status</h3>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
+            {(['ready', 'occupied', 'occupied_vip', 'cleaning', 'dirty', 'maintenance'] as const).map(status => (
+              <div key={status} className="bg-[#f6faff] rounded-lg p-2 border border-[#E9ECEF]">
+                <div className="text-lg font-bold text-[#141d23]">{rooms.filter(r => r.status === status).length}</div>
+                <div className="text-[10px] text-[#7f7668] capitalize">{status.replace('_', ' ')}</div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -401,12 +406,41 @@ function StatCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-function RoomsTab({ propertyId, currency, rooms, onChanged }: { propertyId: string; currency: string; rooms: Room[]; onChanged: () => void }) {
+const ROOM_TYPE_PRESETS = ['Standard', 'Deluxe', 'Suite', 'Executive', 'Family Room', 'Studio', 'Villa', 'Presidential Suite'];
+
+function downloadRoomsCsvTemplate(hasExternalPms: boolean) {
+  const csv = hasExternalPms
+    ? Papa.unparse({ fields: ['number', 'floor'], data: [['101', '1'], ['102', '1'], ['201', '2']] })
+    : Papa.unparse({ fields: ROOMS_CSV_HEADERS, data: [['101', 'Standard', '1', '2', '95'], ['205', 'Deluxe', '2', '2', '140']] });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'cabadra-rooms-template.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+const ROOMS_CSV_HEADERS = ['number', 'type', 'floor', 'occupancy', 'price'];
+
+/**
+ * Typing every room in one at a time is the thing that made this tab feel
+ * "too hectic" for anything past a handful of rooms — CSV import (same
+ * pattern as MenuTab's) is the real fix for a 10+ room property. The
+ * manual form stays for the odd one-off addition, and collapses to just a
+ * room number for a PMS-mode property (0024_pms_mode.sql) — type/floor/
+ * price/occupancy are the PMS's concern there, not something Cabadra
+ * needs to ask for (bulkAddRooms/addRoom default them harmlessly either
+ * way, so the DB's NOT NULL columns are always satisfied).
+ */
+function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChanged }: { propertyId: string; currency: string; rooms: Room[]; hasExternalPms: boolean; onChanged: () => void }) {
   const emptyForm = { number: '', type: '', floor: '1', occupancy: '2', price: '', image: '' };
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<string | null>(null);
+  const csvInputRef = React.useRef<HTMLInputElement>(null);
 
   const startEdit = (r: Room) => {
     setEditingId(r.id);
@@ -416,13 +450,15 @@ function RoomsTab({ propertyId, currency, rooms, onChanged }: { propertyId: stri
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.number.trim() || !form.type.trim() || !form.price.trim()) return;
+    if (!form.number.trim() || (!hasExternalPms && (!form.type.trim() || !form.price.trim()))) return;
     setSubmitting(true);
     setFormError(null);
     try {
       const payload = {
-        number: form.number.trim(), type: form.type.trim(),
-        floor: parseInt(form.floor) || 1, maxOccupancy: parseInt(form.occupancy) || 2, pricePerNight: parseFloat(form.price) || 0,
+        number: form.number.trim(), type: hasExternalPms ? 'Room' : form.type.trim(),
+        floor: parseInt(form.floor) || 1,
+        maxOccupancy: hasExternalPms ? 2 : (parseInt(form.occupancy) || 2),
+        pricePerNight: hasExternalPms ? 0 : (parseFloat(form.price) || 0),
         image: form.image.trim() || undefined,
       };
       if (editingId) {
@@ -449,35 +485,100 @@ function RoomsTab({ propertyId, currency, rooms, onChanged }: { propertyId: stri
     }
   };
 
+  const handleCsvSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    setImporting(true);
+    setImportResult(null);
+    setFormError(null);
+    Papa.parse<Record<string, string>>(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        try {
+          if (!results.meta.fields?.includes('number')) {
+            throw new Error('CSV is missing the required "number" column. Download the template for the exact format.');
+          }
+          const roomRows = results.data
+            .filter(row => row.number?.trim())
+            .map(row => ({
+              number: row.number.trim(),
+              type: row.type?.trim() || undefined,
+              floor: row.floor ? parseInt(row.floor) || 1 : undefined,
+              maxOccupancy: row.occupancy ? parseInt(row.occupancy) || 2 : undefined,
+              pricePerNight: row.price ? parseFloat(row.price) || 0 : undefined,
+            }));
+          if (roomRows.length === 0) throw new Error('No valid rows found in that CSV.');
+          await bulkAddRooms(propertyId, roomRows);
+          setImportResult(`Imported ${roomRows.length} room${roomRows.length === 1 ? '' : 's'}.`);
+          onChanged();
+        } catch (err) {
+          setFormError(err instanceof Error ? err.message : 'Import failed.');
+        } finally {
+          setImporting(false);
+        }
+      },
+      error: (err) => {
+        setFormError(err.message);
+        setImporting(false);
+      },
+    });
+  };
+
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2 bg-[#ecf5fe] p-3 rounded-lg border border-[#E9ECEF]">
+        <span className="text-xs font-bold text-[#141d23]">Bulk import — the fast way to add 10+ rooms:</span>
+        <button type="button" onClick={() => downloadRoomsCsvTemplate(hasExternalPms)} className="h-8 px-3 rounded bg-white border border-[#E9ECEF] text-[#4e463a] text-[11px] font-semibold hover:bg-gray-50 flex items-center gap-1.5">
+          <Download className="w-3 h-3" /> Download Template
+        </button>
+        <input ref={csvInputRef} type="file" accept=".csv" onChange={handleCsvSelected} className="hidden" />
+        <button type="button" onClick={() => csvInputRef.current?.click()} disabled={importing} className="h-8 px-3 rounded bg-[#765a25] text-white text-[11px] font-bold hover:bg-[#5c4210] disabled:opacity-60 flex items-center gap-1.5">
+          <Upload className="w-3 h-3" /> {importing ? 'Importing…' : 'Import CSV'}
+        </button>
+        {importResult && <span className="text-[11px] text-[#2D6A4F] font-semibold">{importResult}</span>}
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-2 bg-[#f6faff] p-3 rounded-lg border border-[#E9ECEF]">
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        <div className={`grid grid-cols-2 ${hasExternalPms ? 'sm:grid-cols-2 max-w-xs' : 'sm:grid-cols-5'} gap-2`}>
           <div>
-            <label className={labelCls}>Number</label>
+            <label className={labelCls}>Room Number</label>
             <input value={form.number} onChange={e => setForm(f => ({ ...f, number: e.target.value }))} placeholder="101" className={inputCls} />
           </div>
-          <div>
-            <label className={labelCls}>Type</label>
-            <input value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} placeholder="King Suite" className={inputCls} />
-          </div>
-          <div>
-            <label className={labelCls}>Floor</label>
-            <input type="number" value={form.floor} onChange={e => setForm(f => ({ ...f, floor: e.target.value }))} className={inputCls} />
-          </div>
-          <div>
-            <label className={labelCls}>Sleeps</label>
-            <input type="number" min={1} value={form.occupancy} onChange={e => setForm(f => ({ ...f, occupancy: e.target.value }))} placeholder="2" className={inputCls} />
-          </div>
-          <div>
-            <label className={labelCls}>Price/night ({currency})</label>
-            <input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="195" className={inputCls} />
-          </div>
+          {hasExternalPms ? (
+            <div>
+              <label className={labelCls}>Floor (optional)</label>
+              <input type="number" value={form.floor} onChange={e => setForm(f => ({ ...f, floor: e.target.value }))} className={inputCls} />
+            </div>
+          ) : (
+            <>
+              <div>
+                <label className={labelCls}>Type</label>
+                <PresetSelect presets={ROOM_TYPE_PRESETS} value={form.type} onChange={v => setForm(f => ({ ...f, type: v }))} className={inputCls} placeholder="King Suite" />
+              </div>
+              <div>
+                <label className={labelCls}>Floor</label>
+                <input type="number" value={form.floor} onChange={e => setForm(f => ({ ...f, floor: e.target.value }))} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Sleeps</label>
+                <input type="number" min={1} value={form.occupancy} onChange={e => setForm(f => ({ ...f, occupancy: e.target.value }))} placeholder="2" className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Price/night ({currency})</label>
+                <input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="195" className={inputCls} />
+              </div>
+            </>
+          )}
         </div>
         <div className="flex gap-2 items-end">
-          <div className="flex-1">
-            <ImageUploadField label="Photo (optional)" value={form.image} onChange={url => setForm(f => ({ ...f, image: url }))} />
-          </div>
+          {!hasExternalPms && (
+            <div className="flex-1">
+              <ImageUploadField label="Photo (optional)" value={form.image} onChange={url => setForm(f => ({ ...f, image: url }))} />
+            </div>
+          )}
           <button type="submit" disabled={submitting} className="h-9 px-4 rounded-lg bg-[#765a25] text-white text-xs font-bold flex items-center justify-center gap-1 hover:bg-[#5c4210] disabled:opacity-60 whitespace-nowrap">
             {editingId ? 'Save Changes' : <><Plus className="w-3.5 h-3.5" /> Add</>}
           </button>
@@ -492,12 +593,14 @@ function RoomsTab({ propertyId, currency, rooms, onChanged }: { propertyId: stri
 
       <div className="space-y-1.5">
         {rooms.length === 0 ? (
-          <p className="text-xs text-[#7f7668] text-center py-6">No rooms yet — add one above.</p>
+          <p className="text-xs text-[#7f7668] text-center py-6">No rooms yet — add one above or import a CSV.</p>
         ) : (
           rooms.map(r => (
             <div key={r.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs ${editingId === r.id ? 'border-[#765a25] bg-[#fff8ec]' : 'border-[#E9ECEF]'}`}>
               <span className="font-semibold text-[#141d23]">Room {r.number}</span>
-              <span className="text-[#7f7668]">{r.type} · Floor {r.floor} · Sleeps {r.maxOccupancy} · {formatCurrency(r.pricePerNight, currency)}/night</span>
+              <span className="text-[#7f7668]">
+                {hasExternalPms ? `Floor ${r.floor}` : `${r.type} · Floor ${r.floor} · Sleeps ${r.maxOccupancy} · ${formatCurrency(r.pricePerNight, currency)}/night`}
+              </span>
               <div className="flex items-center gap-1">
                 <button onClick={() => startEdit(r)} className="text-[#765a25] hover:text-[#5c4210] p-1">
                   <Pencil className="w-3.5 h-3.5" />
@@ -712,6 +815,11 @@ function MenuTab({ propertyId, currency, menu, onChanged }: { propertyId: string
 }
 
 /** The guest home page's "Curated For You" cards — owner-managed instead of hardcoded demo copy. Same shape/flow as MenuTab, minus category/veg/CSV, plus a free-text unit label ("per couple", "per person", "per hour"). */
+const EXPERIENCE_PRESETS = [
+  'Sunset Cruise', 'City Tour', 'Spa Package', 'Cooking Class', 'Wine Tasting',
+  'Adventure Activity', 'Cultural Show', 'Airport Transfer', 'Photography Session', 'Wellness Retreat',
+];
+
 function ExperiencesTab({ propertyId, currency, experiences, onChanged }: { propertyId: string; currency: string; experiences: Experience[]; onChanged: () => void }) {
   const emptyForm = { name: '', description: '', price: '', unitLabel: 'per person', image: '' };
   const [form, setForm] = useState(emptyForm);
@@ -770,7 +878,7 @@ function ExperiencesTab({ propertyId, currency, experiences, onChanged }: { prop
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <div className="col-span-2">
             <label className={labelCls}>Name</label>
-            <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Sunset Yacht Cruise" className={inputCls} />
+            <PresetSelect presets={EXPERIENCE_PRESETS} value={form.name} onChange={v => setForm(f => ({ ...f, name: v }))} className={inputCls} placeholder="Sunset Yacht Cruise" />
           </div>
           <div>
             <label className={labelCls}>Price ({currency})</label>
@@ -832,10 +940,28 @@ const DEPARTMENTS: { value: ServiceCategory['department']; label: string }[] = [
   { value: 'concierge', label: 'Concierge' },
 ];
 
+/** Picking one of these fills name, description AND department (and, for Airport Transfer, the route-picker form type) in one tap — three decisions collapsed to one for the common cases, same as the room/experience presets. "Other" still opens a blank form for anything property-specific. */
+const SERVICE_PRESETS: { name: string; description: string; department: ServiceCategory['department']; categoryType: ServiceCategory['categoryType'] }[] = [
+  { name: 'Housekeeping Request', description: 'Extra towels, linens, amenities', department: 'housekeeping', categoryType: 'general' },
+  { name: 'Spa & Wellness', description: 'Massages & sauna', department: 'amenities', categoryType: 'general' },
+  { name: 'Airport Transfer', description: 'Pickup & drop', department: 'concierge', categoryType: 'transportation' },
+  { name: 'Laundry & Dry Cleaning', description: 'Same-day service', department: 'housekeeping', categoryType: 'general' },
+  { name: 'In-Room Dining Extras', description: 'Beyond the room-service menu', department: 'concierge', categoryType: 'general' },
+  { name: 'Late Checkout', description: 'Subject to availability', department: 'concierge', categoryType: 'general' },
+  { name: 'Business Center', description: 'Printing, meeting room, Wi-Fi support', department: 'amenities', categoryType: 'general' },
+  { name: 'Pool & Gym Access', description: 'Hours & towel service', department: 'amenities', categoryType: 'general' },
+  { name: 'Car Rental', description: 'Self-drive or with driver', department: 'concierge', categoryType: 'general' },
+  { name: 'Tour Desk', description: 'Local sightseeing & bookings', department: 'concierge', categoryType: 'general' },
+  { name: 'Babysitting / Childcare', description: 'On request, advance notice preferred', department: 'concierge', categoryType: 'general' },
+  { name: 'Maintenance Issue', description: 'AC, plumbing, electrical', department: 'maintenance', categoryType: 'general' },
+];
+const SERVICE_CUSTOM = '__custom__';
+
 /** The guest home page's "At Your Service" grid — owner-managed instead of a fixed Housekeeping/Amenities/Spa/Transfers set every property showed identically. Department decides which Live Ops queue a resulting request lands in. */
 function ServicesTab({ propertyId, currency, services, onChanged }: { propertyId: string; currency: string; services: ServiceCategory[]; onChanged: () => void }) {
   const emptyForm = { name: '', description: '', department: 'concierge' as ServiceCategory['department'], categoryType: 'general' as ServiceCategory['categoryType'] };
   const [form, setForm] = useState(emptyForm);
+  const [customMode, setCustomMode] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -843,8 +969,15 @@ function ServicesTab({ propertyId, currency, services, onChanged }: { propertyId
   const startEdit = (s: ServiceCategory) => {
     setEditingId(s.id);
     setForm({ name: s.name, description: s.description, department: s.department, categoryType: s.categoryType });
+    setCustomMode(!SERVICE_PRESETS.some(p => p.name === s.name));
   };
-  const cancelEdit = () => { setEditingId(null); setForm(emptyForm); };
+  const cancelEdit = () => { setEditingId(null); setForm(emptyForm); setCustomMode(false); };
+
+  const handlePresetChange = (name: string) => {
+    if (name === SERVICE_CUSTOM) { setCustomMode(true); setForm(f => ({ ...f, name: '' })); return; }
+    const preset = SERVICE_PRESETS.find(p => p.name === name);
+    if (preset) setForm({ name: preset.name, description: preset.description, department: preset.department, categoryType: preset.categoryType });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -889,7 +1022,20 @@ function ServicesTab({ propertyId, currency, services, onChanged }: { propertyId
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <div>
             <label className={labelCls}>Name</label>
-            <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Spa & Wellness" className={inputCls} />
+            {customMode ? (
+              <div className="space-y-1">
+                <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Spa & Wellness" className={inputCls} autoFocus />
+                <button type="button" onClick={() => { setCustomMode(false); setForm(f => ({ ...f, name: '' })); }} className="text-[10px] font-semibold text-[#765a25] hover:underline">
+                  Pick from list instead
+                </button>
+              </div>
+            ) : (
+              <select value={SERVICE_PRESETS.some(p => p.name === form.name) ? form.name : ''} onChange={e => handlePresetChange(e.target.value)} className={`${inputCls} bg-white`}>
+                <option value="" disabled>Select…</option>
+                {SERVICE_PRESETS.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
+                <option value={SERVICE_CUSTOM}>Other — type my own</option>
+              </select>
+            )}
           </div>
           <div>
             <label className={labelCls}>Routes To</label>
