@@ -1,0 +1,13 @@
+-- Superseded: this was meant to seed a two-tenant test fixture (Hotel A vs
+-- Hotel B, two separate owners) to demonstrate RLS isolation live. It
+-- failed partway through (pgcrypto's gen_salt needed schema-qualifying)
+-- and a later push attempt was correctly blocked by the safety system for
+-- crafting an auth.users row outside the normal signup flow — the right
+-- call, so this was abandoned rather than forced through. The isolation
+-- question was answered a different way instead: auditing every
+-- property-scoped table's actual RLS policy directly (all gated by
+-- is_staff_for_property(), which can never match without a real,
+-- specific staff_properties row) plus a live anon-access probe. No
+-- second tenant/hotel was ultimately created. Left as an empty statement
+-- so this migration number applies cleanly rather than retrying forever.
+select 1;
