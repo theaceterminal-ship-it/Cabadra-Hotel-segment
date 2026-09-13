@@ -16,6 +16,30 @@ function slugify(text: string): string {
   return text.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'item';
 }
 
+/**
+ * supabase-js's FunctionsHttpError.message is always the same generic
+ * "Edge Function returned a non-2xx status code" — it never surfaces what
+ * the function actually said, which is exactly the body every function
+ * here returns ({success:false, message}). This reads the real reason off
+ * error.context (the raw Response) so a caller isn't left guessing "is it
+ * not deployed?" when the function deployed fine and just rejected the
+ * request for a real reason (not signed in, not an owner, bad input...).
+ */
+async function extractFunctionErrorMessage(error: unknown, fallback: string): Promise<string> {
+  const context = (error as { context?: Response })?.context;
+  if (context && typeof context.json === 'function') {
+    try {
+      const body = await context.json();
+      if (body && typeof body.message === 'string') return body.message;
+    } catch {
+      // Body wasn't JSON (e.g. the function genuinely isn't deployed, or a
+      // gateway error) — fall through to the generic message below.
+    }
+  }
+  const raw = error instanceof Error ? error.message : String(error);
+  return `${fallback} (${raw})`;
+}
+
 /** "Departing today" / "Departing in N days", matching the original mock copy's style. */
 function formatCheckoutInfo(checkOutIso: string): string {
   const checkOut = new Date(checkOutIso);
@@ -896,10 +920,7 @@ export async function sendStaffInviteEmail(propertyId: string, email: string, ro
     body: { propertyId, email, role },
   });
   if (error) {
-    return {
-      success: false,
-      message: `Couldn't reach the invite service (${error.message}). Has supabase/functions/invite-staff been deployed? Run: supabase functions deploy invite-staff`,
-    };
+    return { success: false, message: await extractFunctionErrorMessage(error, "Couldn't reach the invite service") };
   }
   return data as { success: boolean; message: string };
 }
@@ -913,7 +934,7 @@ export async function sendStaffInviteEmail(propertyId: string, email: string, ro
  */
 export async function redeemAccessLink(token: string): Promise<string> {
   const { data, error } = await supabase.functions.invoke('redeem-access-link', { body: { token } });
-  if (error) throw new Error(`Couldn't reach the access-link service (${error.message}).`);
+  if (error) throw new Error(await extractFunctionErrorMessage(error, "Couldn't reach the access-link service"));
   const result = data as { success: boolean; tokenHash?: string; message?: string };
   if (!result.success || !result.tokenHash) throw new Error(result.message ?? 'This link is invalid or has been revoked.');
   return result.tokenHash;
@@ -931,7 +952,7 @@ export async function provisionAccessLink(propertyId: string, regenerate = false
   const { data, error } = await supabase.functions.invoke('provision-access-link', {
     body: { propertyId, role, regenerate },
   });
-  if (error) throw new Error(`Couldn't reach the access-link service (${error.message}). Has supabase/functions/provision-access-link been deployed? Run: supabase functions deploy provision-access-link`);
+  if (error) throw new Error(await extractFunctionErrorMessage(error, "Couldn't reach the access-link service"));
   const result = data as { success: boolean; token?: string; message?: string };
   if (!result.success || !result.token) throw new Error(result.message ?? 'Failed to create access link.');
   return result.token;
