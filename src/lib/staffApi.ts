@@ -904,6 +904,39 @@ export async function sendStaffInviteEmail(propertyId: string, email: string, ro
   return data as { success: boolean; message: string };
 }
 
+/**
+ * Redeems an /access/:token link — called with nobody signed in yet (that's
+ * the whole point), so this can't be an RPC gated by is_staff_for_property.
+ * Returns a token_hash the caller then passes straight to
+ * supabase.auth.verifyOtp({token_hash, type: 'magiclink'}) to actually
+ * complete the sign-in client-side. See AccessLinkPage.tsx.
+ */
+export async function redeemAccessLink(token: string): Promise<string> {
+  const { data, error } = await supabase.functions.invoke('redeem-access-link', { body: { token } });
+  if (error) throw new Error(`Couldn't reach the access-link service (${error.message}).`);
+  const result = data as { success: boolean; tokenHash?: string; message?: string };
+  if (!result.success || !result.tokenHash) throw new Error(result.message ?? 'This link is invalid or has been revoked.');
+  return result.tokenHash;
+}
+
+/** The existing no-login reception link for a property, if one's been provisioned — a direct table read (RLS: owners only) rather than another Edge Function round-trip just to display it. */
+export async function fetchAccessLink(propertyId: string, role: 'receptionist' = 'receptionist'): Promise<string | null> {
+  const { data, error } = await supabase.from('property_access_links').select('id').eq('property_id', propertyId).eq('role', role).maybeSingle();
+  if (error) throw error;
+  return data?.id ?? null;
+}
+
+/** Creates the property's no-login reception link (or returns the existing one) via provision-access-link — an Admin API operation, so it can't happen client-side. Pass regenerate:true to invalidate the old link and mint a fresh one. */
+export async function provisionAccessLink(propertyId: string, regenerate = false, role: 'receptionist' = 'receptionist'): Promise<string> {
+  const { data, error } = await supabase.functions.invoke('provision-access-link', {
+    body: { propertyId, role, regenerate },
+  });
+  if (error) throw new Error(`Couldn't reach the access-link service (${error.message}). Has supabase/functions/provision-access-link been deployed? Run: supabase functions deploy provision-access-link`);
+  const result = data as { success: boolean; token?: string; message?: string };
+  if (!result.success || !result.token) throw new Error(result.message ?? 'Failed to create access link.');
+  return result.token;
+}
+
 export interface PendingInvite {
   email: string;
   role: 'owner' | 'receptionist';

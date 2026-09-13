@@ -35,6 +35,8 @@ import {
   fetchStaffDirectory,
   addDirectoryContact,
   deleteDirectoryContact,
+  fetchAccessLink,
+  provisionAccessLink,
   StaffMember,
   TicketSizeAnalytics,
   PendingInvite,
@@ -49,6 +51,7 @@ import { formatCurrency } from '../lib/currency';
 import {
   ArrowLeft, Plus, Trash2, BedDouble, UtensilsCrossed, Users, Pencil,
   LayoutDashboard, Upload, Download, AlertTriangle, Sparkles, ConciergeBell,
+  Link2, RefreshCw, Copy, Check,
 } from 'lucide-react';
 
 const inputCls = "w-full h-9 px-2 text-xs border border-[#E9ECEF] rounded focus:border-[#765a25] focus:outline-none";
@@ -1182,6 +1185,91 @@ function TransportRoutesManager({ propertyId, currency }: { propertyId: string; 
   );
 }
 
+/**
+ * The primary way reception gets access now — no account, no password, no
+ * invite email to click. Opening the link silently signs the browser into
+ * a dedicated shared account (via a fresh one-time magic link minted on
+ * every open, see redeem-access-link) that already has real reception
+ * access through the same staff_properties/RLS every other role uses.
+ * Trade-off, by design: it's one shared link, not a named per-person
+ * login — anyone with the link has full reception access on this
+ * property, and actions show up as one account rather than a named
+ * person. The email-invite flow below still exists for anyone who wants
+ * individually-revocable, named logins instead.
+ */
+function AccessLinkCard({ propertyId }: { propertyId: string }) {
+  const [link, setLink] = useState<string | null | 'loading'>('loading');
+  const [working, setWorking] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchAccessLink(propertyId).then(setLink).catch(() => setLink(null));
+  }, [propertyId]);
+
+  const linkUrl = link && link !== 'loading' ? `${window.location.origin}/access/${link}` : null;
+
+  const handleGenerate = async (regenerate: boolean) => {
+    setWorking(true);
+    setError(null);
+    try {
+      const token = await provisionAccessLink(propertyId, regenerate);
+      setLink(token);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create access link.');
+    } finally {
+      setWorking(false);
+    }
+  };
+
+  const handleCopy = () => {
+    if (!linkUrl) return;
+    navigator.clipboard.writeText(linkUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-[#E9ECEF] p-5 space-y-3">
+      <div className="flex items-center gap-2">
+        <Link2 className="w-4 h-4 text-[#765a25]" />
+        <h3 className="text-sm font-bold text-[#141d23]">Reception Access Link</h3>
+      </div>
+      <p className="text-xs text-[#7f7668]">
+        Bookmark this on your front-desk computer. Opening it goes straight into Reception — no login, ever.
+        Anyone with the link has full reception access, so treat it like a key, not a password to share casually.
+      </p>
+
+      {link === 'loading' ? (
+        <p className="text-xs text-[#7f7668]">Loading…</p>
+      ) : linkUrl ? (
+        <div className="flex flex-col sm:flex-row gap-2">
+          <input readOnly value={linkUrl} onFocus={e => e.target.select()} className={`${inputCls} font-mono flex-1`} />
+          <div className="flex gap-2">
+            <button onClick={handleCopy} className="h-9 px-3 rounded-lg bg-[#765a25] text-white text-xs font-bold hover:bg-[#5c4210] flex items-center gap-1.5 whitespace-nowrap">
+              {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />} {copied ? 'Copied' : 'Copy'}
+            </button>
+            <button onClick={() => handleGenerate(true)} disabled={working} className="h-9 px-3 rounded-lg border border-[#E9ECEF] text-[#4e463a] text-xs font-semibold hover:bg-gray-50 disabled:opacity-60 flex items-center gap-1.5 whitespace-nowrap">
+              <RefreshCw className="w-3.5 h-3.5" /> {working ? 'Rotating…' : 'Regenerate'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={() => handleGenerate(false)} disabled={working} className="h-9 px-4 rounded-lg bg-[#765a25] text-white text-xs font-bold hover:bg-[#5c4210] disabled:opacity-60">
+          {working ? 'Creating…' : 'Create Reception Link'}
+        </button>
+      )}
+      {error && <p className="text-xs text-red-600">{error}</p>}
+      {linkUrl && (
+        <p className="text-[10px] text-[#7f7668]">
+          Regenerating makes the old link stop working immediately — use that if it's ever shared with the wrong person.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function StaffTab({ propertyId, staff, pendingInvites, onChanged }: { propertyId: string; staff: StaffMember[]; pendingInvites: PendingInvite[]; onChanged: () => void }) {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<'owner' | 'receptionist'>('receptionist');
@@ -1254,6 +1342,14 @@ function StaffTab({ propertyId, staff, pendingInvites, onChanged }: { propertyId
 
   return (
     <div className="space-y-4">
+      <AccessLinkCard propertyId={propertyId} />
+
+      <div className="flex items-center gap-3 pt-1">
+        <div className="flex-1 h-px bg-[#E9ECEF]" />
+        <span className="text-[10px] font-bold text-[#7f7668] uppercase tracking-wider">Or invite a named account instead</span>
+        <div className="flex-1 h-px bg-[#E9ECEF]" />
+      </div>
+
       <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-2 items-end bg-[#f6faff] p-3 rounded-lg border border-[#E9ECEF]">
         <div className="flex-1 w-full">
           <label className={labelCls}>Grant access by email</label>
