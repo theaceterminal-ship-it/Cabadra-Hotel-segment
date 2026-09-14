@@ -26,8 +26,8 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ navItems, activeId, onNavigate, onSignOut }) => {
   return (
     <aside className="shrink-0 h-screen sticky top-0 w-20 bg-surface flex flex-col items-center py-5 gap-6">
-      <div className="w-10 h-10 rounded-full border-2 border-on-primary/70 flex items-center justify-center shrink-0" title="Cabadra">
-        <span className="w-2.5 h-2.5 rounded-full bg-on-primary/70" />
+      <div className="w-10 h-10 rounded-full border-2 border-on-surface-strong-muted flex items-center justify-center shrink-0" title="Cabadra">
+        <span className="w-2.5 h-2.5 rounded-full bg-on-surface-strong-muted" />
       </div>
 
       <nav className="flex-1 flex flex-col items-center gap-2">
@@ -40,7 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ navItems, activeId, onNavigate
               onClick={() => onNavigate(item.id)}
               title={item.label}
               className={`relative w-11 h-11 shrink-0 rounded-full flex items-center justify-center transition-colors ${
-                active ? 'bg-primary text-on-primary shadow-md' : 'text-on-primary/70 hover:bg-primary-container/30 hover:text-on-primary'
+                active ? 'bg-primary text-on-primary shadow-md' : 'text-on-surface-strong-muted hover:bg-primary-container/30 hover:text-on-surface-strong'
               }`}
             >
               <Icon className="w-4.5 h-4.5" />
@@ -57,7 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ navItems, activeId, onNavigate
       <button
         onClick={onSignOut}
         title="Sign out"
-        className="w-11 h-11 shrink-0 rounded-full flex items-center justify-center text-on-primary/70 hover:bg-primary-container/30 hover:text-on-primary transition-colors"
+        className="w-11 h-11 shrink-0 rounded-full flex items-center justify-center text-on-surface-strong-muted hover:bg-primary-container/30 hover:text-on-surface-strong transition-colors"
       >
         <LogOut className="w-4.5 h-4.5" />
       </button>
