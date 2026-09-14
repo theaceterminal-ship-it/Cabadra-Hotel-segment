@@ -41,8 +41,6 @@ interface GuestHomeProps {
   onBookExperience: (name: string, price: number) => Promise<void>;
 }
 
-const DEFAULT_HERO_IMAGE = 'https://lh3.googleusercontent.com/aida-public/AB6AXuApNU48JgNCtMBN-62dVkxqySJJot6g74LTZFb76CgYauRB7gZ9OBq6UNLjzWLklzLHF0WxdgSVGi7Btvz2FX9Mz9zjzCgeZm0rXMOfzC3JTMboHzUDMShFpBOSyLDvadLUW5LGJT_7r1ZGmlxCfr1XsthTQ3KOUDw2bafbxI8uzbxrQaFylTmBaNgb8QFn0NxK7Vb9s_Z23jOcyZE4TIqg5mD8gQgrgMPSzcxD_g2CHheeE2JR0Cop';
-
 const SERVICE_ICONS: Record<string, typeof Sparkles> = {
   bed: BedDouble, sparkles: Sparkles, heart: Heart, car: Car, wrench: Wrench, message: MessageCircle,
 };
@@ -143,19 +141,23 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
           </div>
         )}
 
-        {/* Hero Section */}
-        <section 
+        {/* Hero Section — a real property photo once the owner's uploaded
+            one; a plain brand-gradient otherwise, never a generic stock
+            photo standing in for a hotel that hasn't added their own yet. */}
+        <section
           id="guest-hero-banner"
-          className="relative rounded-2xl overflow-hidden h-64 md:h-96 shadow-[0_4px_24px_rgba(0,0,0,0.1)] group"
+          className={`relative rounded-2xl overflow-hidden h-64 md:h-96 shadow-[0_4px_24px_rgba(0,0,0,0.1)] group ${!propertyImage ? 'bg-gradient-to-br from-primary to-primary-hover' : ''}`}
         >
-          <div 
-            className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-            style={{
-              backgroundImage: `url('${propertyImage || DEFAULT_HERO_IMAGE}')`
-            }}
-          ></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
-          
+          {propertyImage && (
+            <>
+              <div
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                style={{ backgroundImage: `url('${propertyImage}')` }}
+              ></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
+            </>
+          )}
+
           <div className="absolute top-4 right-4 md:top-6 md:right-6 bg-black/35 backdrop-blur-sm rounded-xl px-3.5 py-2 text-right text-white">
             <p className="text-lg md:text-xl font-bold font-mono tabular-nums leading-none">
               {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
