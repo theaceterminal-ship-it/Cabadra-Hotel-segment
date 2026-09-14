@@ -5,7 +5,6 @@ import { fetchGuestContext, GuestContext, submitGuestRequest, bookGuestExperienc
 import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { GuestHome } from '../components/GuestHome';
 import { RoomDiningView } from '../components/RoomDiningView';
-import { NewRequestModal, NewRequestSubmission } from '../components/NewRequestModal';
 import { SupabaseSetupNeeded } from '../components/SupabaseSetupNeeded';
 import { OrderStatusBar } from '../components/OrderStatusBar';
 
@@ -25,7 +24,6 @@ export default function GuestApp() {
   const [context, setContext] = useState<GuestContext | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<Extract<AppView, 'guest_home' | 'room_dining'>>('guest_home');
-  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
 
   // Guests never get the dark-mode toggle staff have (useTheme, per this
   // app's own bg-surface/on-surface tokens) — but the same browser could
@@ -64,10 +62,6 @@ export default function GuestApp() {
     if (target === 'guest_home' || target === 'room_dining') setView(target);
   };
 
-  const handleConciergeSubmit = async (submission: NewRequestSubmission) => {
-    await submitGuestRequest(token, submission.title, submission.priority);
-  };
-
   return (
     <>
       <OrderStatusBar token={token} currency={context.property.currency} />
@@ -83,7 +77,6 @@ export default function GuestApp() {
           serviceCategories={context.serviceCategories}
           transportRoutes={context.transportRoutes}
           onNavigate={handleNavigate}
-          onOpenNewRequest={() => setIsRequestModalOpen(true)}
           onSubmitConciergeRequest={(title, department) => submitGuestRequest(token, title, 'Standard', department).then(() => {})}
           onBookExperience={(name, price) => bookGuestExperience(token, name, price).then(() => {})}
         />
@@ -99,12 +92,6 @@ export default function GuestApp() {
           onPlaceOrder={() => {}}
         />
       )}
-      <NewRequestModal
-        isOpen={isRequestModalOpen}
-        onClose={() => setIsRequestModalOpen(false)}
-        mode="guest"
-        onSubmit={handleConciergeSubmit}
-      />
     </>
   );
 }

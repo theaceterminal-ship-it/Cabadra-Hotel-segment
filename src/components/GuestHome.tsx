@@ -34,7 +34,6 @@ interface GuestHomeProps {
   /** The route catalog behind any 'transportation'-type service category — a guest picks from these instead of typing a destination out by hand. */
   transportRoutes: GuestTransportRoute[];
   onNavigate: (view: AppView) => void;
-  onOpenNewRequest: () => void;
   /** Real submission (guest_submit_request), tagged with the service's department so it routes to the right team instead of Reception guessing from the title. */
   onSubmitConciergeRequest: (title: string, department: Department) => Promise<void>;
   /** Real submission (guest_book_experience) for the curated-experience "Reserve Now" buttons. */
@@ -59,7 +58,6 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
   serviceCategories,
   transportRoutes,
   onNavigate,
-  onOpenNewRequest,
   onSubmitConciergeRequest,
   onBookExperience,
 }) => {
@@ -184,12 +182,6 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
         <section id="at-your-service-section" className="space-y-4">
           <div className="flex justify-between items-center px-1">
             <h2 className="text-xl font-bold text-on-surface">At Your Service</h2>
-            <button
-              onClick={onOpenNewRequest}
-              className="text-xs font-bold text-primary hover:underline"
-            >
-              + Custom Concierge Request
-            </button>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
