@@ -60,24 +60,24 @@ export const ActiveDeliveries: React.FC<ActiveDeliveriesProps> = ({ propertyId, 
   };
 
   return (
-    <div id="active-deliveries-canvas" className="w-full min-h-screen flex flex-col bg-[#f6faff] p-4 sm:p-6 lg:p-8">
+    <div id="active-deliveries-canvas" className="w-full min-h-screen flex flex-col bg-surface p-4 sm:p-6 lg:p-8">
       <div className="max-w-xl mx-auto w-full flex-grow flex flex-col space-y-6">
         {/* Top Header */}
-        <header className="flex justify-between items-center pb-4 border-b border-[#E9ECEF]">
+        <header className="flex justify-between items-center pb-4 border-b border-outline-variant">
           <div className="flex items-center gap-2">
             <button
               id="btn-back-from-delivery"
               onClick={() => onNavigate('reception')}
-              className="p-2 rounded-full hover:bg-[#ecf5fe] text-[#765a25] transition-colors cursor-pointer"
+              className="p-2 rounded-full hover:bg-surface-container-low text-primary transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <h1 className="text-xl md:text-2xl font-bold text-[#765a25]">Active Deliveries</h1>
+            <h1 className="text-xl md:text-2xl font-bold text-primary">Active Deliveries</h1>
           </div>
 
           <button
             onClick={load}
-            className="h-9 px-3 rounded-lg bg-white border border-[#E9ECEF] text-[#4e463a] text-xs font-semibold hover:bg-[#ecf5fe] transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+            className="h-9 px-3 rounded-lg bg-surface-container-lowest border border-outline-variant text-on-surface-variant text-xs font-semibold hover:bg-surface-container-low transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span>Refresh</span>
@@ -86,7 +86,7 @@ export const ActiveDeliveries: React.FC<ActiveDeliveriesProps> = ({ propertyId, 
 
         {/* Success Confirmation Toast */}
         {justDelivered && (
-          <div className="bg-[#2D6A4F] text-white p-4 rounded-xl shadow-lg flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="bg-success text-on-success p-4 rounded-xl shadow-lg flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
             <CheckCheck className="w-6 h-6 shrink-0" />
             <div>
               <p className="font-bold text-sm">Delivery Completed!</p>
@@ -96,12 +96,12 @@ export const ActiveDeliveries: React.FC<ActiveDeliveriesProps> = ({ propertyId, 
         )}
 
         {loading ? (
-          <div className="p-8 text-center text-sm text-[#4e463a]">Loading…</div>
+          <div className="p-8 text-center text-sm text-on-surface-variant">Loading…</div>
         ) : orders.length === 0 ? (
-          <div className="p-10 text-center bg-white rounded-2xl border border-[#E9ECEF] flex flex-col items-center gap-2">
+          <div className="p-10 text-center bg-surface-container-lowest rounded-2xl border border-outline-variant flex flex-col items-center gap-2">
             <PackageCheck className="w-10 h-10 text-[#9ea0a1]" />
-            <p className="text-sm font-semibold text-[#4e463a]">No deliveries waiting</p>
-            <p className="text-xs text-[#7f7668]">Orders marked "Ready" on the Kitchen KDS board show up here.</p>
+            <p className="text-sm font-semibold text-on-surface-variant">No deliveries waiting</p>
+            <p className="text-xs text-outline">Orders marked "Ready" on the Kitchen KDS board show up here.</p>
           </div>
         ) : (
           orders.map(order => {
@@ -110,41 +110,41 @@ export const ActiveDeliveries: React.FC<ActiveDeliveriesProps> = ({ propertyId, 
               <div
                 key={order.id}
                 id={`delivery-job-card-${order.id}`}
-                className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#E9ECEF] overflow-hidden flex flex-col"
+                className="bg-surface-container-lowest rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-outline-variant overflow-hidden flex flex-col"
               >
-                <div className="bg-[#ecf5fe] p-5 border-b border-[#E9ECEF] flex justify-between items-start">
+                <div className="bg-surface-container-low p-5 border-b border-outline-variant flex justify-between items-start">
                   <div>
-                    <h2 className="text-2xl font-bold text-[#141d23] mb-0.5 flex items-center gap-2">
-                      <MapPin className="w-5 h-5 text-[#765a25] fill-[#765a25]" />
+                    <h2 className="text-2xl font-bold text-on-surface mb-0.5 flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-primary fill-primary" />
                       <span>Room {roomNumber}</span>
                     </h2>
-                    <p className="text-xs text-[#4e463a]">Order #{order.id.slice(0, 4)}</p>
+                    <p className="text-xs text-on-surface-variant">Order #{order.id.slice(0, 4)}</p>
                   </div>
-                  <div className="bg-[#D4A373]/20 text-[#765a25] px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5">
+                  <div className="bg-warning/20 text-primary px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5" />
                     <span>{elapsedLabel(order.createdAt)}</span>
                   </div>
                 </div>
 
                 <div className="p-5 flex flex-col gap-4">
-                  <div className="border border-[#E9ECEF] rounded-xl p-4 bg-[#f6faff]">
-                    <h3 className="text-[11px] font-bold text-[#4e463a] uppercase tracking-wider mb-2.5">
+                  <div className="border border-outline-variant rounded-xl p-4 bg-surface-container-low">
+                    <h3 className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-2.5">
                       Items ({order.items.length})
                     </h3>
-                    <ul className="space-y-2 text-sm text-[#141d23]">
+                    <ul className="space-y-2 text-sm text-on-surface">
                       {order.items.map((item, idx) => (
                         <li key={idx} className="flex justify-between items-center font-medium">
                           <span>{item.name}</span>
-                          <span className="font-bold text-[#765a25]">x{item.quantity}</span>
+                          <span className="font-bold text-primary">x{item.quantity}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
 
                   {order.items.some(i => i.fromRecommendation) && (
-                    <div className="bg-[#4A6274]/10 rounded-xl p-4 flex gap-3 items-start border border-[#4A6274]/20">
-                      <Info className="w-5 h-5 text-[#4A6274] shrink-0 mt-0.5" />
-                      <p className="text-xs font-medium text-[#141d23]">
+                    <div className="bg-info/10 rounded-xl p-4 flex gap-3 items-start border border-info/20">
+                      <Info className="w-5 h-5 text-info shrink-0 mt-0.5" />
+                      <p className="text-xs font-medium text-on-surface">
                         Includes an item the guest added from a recommendation.
                       </p>
                     </div>
@@ -154,7 +154,7 @@ export const ActiveDeliveries: React.FC<ActiveDeliveriesProps> = ({ propertyId, 
                 <div className="p-5 pt-0">
                   <button
                     onClick={() => handleMarkDelivered(order)}
-                    className="h-14 w-full bg-[#765a25] text-white hover:bg-[#5c4210] font-bold text-base rounded-xl shadow-md flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer"
+                    className="h-14 w-full bg-primary text-on-primary hover:bg-primary-hover font-bold text-base rounded-xl shadow-md flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer"
                   >
                     <CheckCircle2 className="w-6 h-6" />
                     <span>Mark Delivered</span>

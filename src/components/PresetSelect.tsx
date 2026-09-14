@@ -40,7 +40,7 @@ export function PresetSelect({ presets, value, onChange, className, placeholder 
         <button
           type="button"
           onClick={() => { setCustomMode(false); onChange(''); }}
-          className="text-[10px] font-semibold text-[#765a25] hover:underline"
+          className="text-[10px] font-semibold text-primary hover:underline"
         >
           Pick from list instead
         </button>
@@ -55,7 +55,7 @@ export function PresetSelect({ presets, value, onChange, className, placeholder 
         if (e.target.value === CUSTOM) { setCustomMode(true); onChange(''); }
         else onChange(e.target.value);
       }}
-      className={`${className} bg-white`}
+      className={`${className} bg-surface-container-lowest`}
     >
       <option value="" disabled>Select…</option>
       {presets.map(p => <option key={p} value={p}>{p}</option>)}

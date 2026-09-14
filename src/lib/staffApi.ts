@@ -64,7 +64,7 @@ function timeAgo(iso: string): string {
   return `${Math.round(hours / 24)}d ago`;
 }
 
-interface PropertyStats {
+export interface PropertyStats {
   totalRooms: number;
   occupiedRooms: number;
   ordersToday: number;
@@ -72,6 +72,13 @@ interface PropertyStats {
   totalRevenue: number;
   avgOrderValue: number;
   openRequests: number;
+}
+
+/** Reception's own dashboard needs today's sales + occupancy for one property — reuses the same RPC fetchStaffProperties calls per-property, RLS-scoped so a receptionist can call it for their own property same as an owner can. */
+export async function fetchPropertyStats(propertyId: string): Promise<PropertyStats> {
+  const { data, error } = await supabase.rpc('staff_property_stats', { p_property_id: propertyId });
+  if (error) throw error;
+  return data as PropertyStats;
 }
 
 export async function fetchStaffProperties(): Promise<Property[]> {

@@ -69,52 +69,52 @@ export function NewPropertyForm({ onCreate, onCancel, submitLabel = 'Save Proper
   return (
     <form onSubmit={handleSubmit} className="space-y-4 text-xs">
       <div>
-        <label className="font-semibold text-[#141d23] block mb-1">Hotel Name</label>
+        <label className="font-semibold text-on-surface block mb-1">Hotel Name</label>
         <input
           type="text"
           required
           placeholder="e.g., The Bellagio Suite"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full h-10 px-3 border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none"
+          className="w-full h-10 px-3 border border-outline-variant rounded-lg focus:border-primary focus:outline-none"
         />
       </div>
 
       <div>
-        <label className="font-semibold text-[#141d23] block mb-1">Location / City</label>
+        <label className="font-semibold text-on-surface block mb-1">Location / City</label>
         <input
           type="text"
           required
           placeholder="e.g., Beverly Hills, CA"
           value={location}
           onChange={(e) => setLocation(e.target.value)}
-          className="w-full h-10 px-3 border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none"
+          className="w-full h-10 px-3 border border-outline-variant rounded-lg focus:border-primary focus:outline-none"
         />
       </div>
 
       <div>
-        <label className="font-semibold text-[#141d23] block mb-1">Country</label>
+        <label className="font-semibold text-on-surface block mb-1">Country</label>
         <select
           value={country}
           onChange={(e) => setCountry(e.target.value)}
-          className="w-full h-10 px-3 border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none bg-white"
+          className="w-full h-10 px-3 border border-outline-variant rounded-lg focus:border-primary focus:outline-none bg-surface-container-lowest"
         >
           {COUNTRIES.map(c => (
             <option key={c.code} value={c.code}>{c.name} ({c.currency})</option>
           ))}
         </select>
-        <p className="text-[10px] text-[#7f7668] mt-1">
+        <p className="text-[10px] text-outline mt-1">
           Sets this property's currency to {currencyForCountry(country)}. Can't be changed after creation.
         </p>
       </div>
 
       <ImageUploadField label="Photo (optional)" value={image} onChange={setImage} />
 
-      <div className="pt-1 border-t border-[#E9ECEF]" />
+      <div className="pt-1 border-t border-outline-variant" />
 
       <div>
-        <label className="font-semibold text-[#141d23] block mb-1">Do you already manage bookings elsewhere?</label>
-        <p className="text-[10px] text-[#7f7668] mb-2">
+        <label className="font-semibold text-on-surface block mb-1">Do you already manage bookings elsewhere?</label>
+        <p className="text-[10px] text-outline mb-2">
           "PMS" is the software a hotel uses to track reservations and room availability — eZee, Cloudbeds, or even
           a paper register/spreadsheet all count. This just decides which screens Cabadra shows you next.
         </p>
@@ -123,31 +123,31 @@ export function NewPropertyForm({ onCreate, onCancel, submitLabel = 'Save Proper
             type="button"
             onClick={() => setUsesPms('yes')}
             className={`text-left px-3 py-2.5 rounded-lg border transition-colors ${
-              usesPms === 'yes' ? 'border-[#765a25] bg-[#fff8ec]' : 'border-[#E9ECEF] hover:border-[#765a25]'
+              usesPms === 'yes' ? 'border-primary bg-highlight' : 'border-outline-variant hover:border-primary'
             }`}
           >
-            <span className={`block text-xs font-bold ${usesPms === 'yes' ? 'text-[#765a25]' : 'text-[#141d23]'}`}>Yes, we already have one</span>
-            <span className="block text-[10px] text-[#7f7668] mt-0.5">Cabadra hides its own booking screens — you'll just link guests to rooms, and your PMS stays in charge of bookings.</span>
+            <span className={`block text-xs font-bold ${usesPms === 'yes' ? 'text-primary' : 'text-on-surface'}`}>Yes, we already have one</span>
+            <span className="block text-[10px] text-outline mt-0.5">Cabadra hides its own booking screens — you'll just link guests to rooms, and your PMS stays in charge of bookings.</span>
           </button>
           <button
             type="button"
             onClick={() => { setUsesPms('no'); setPmsChoice(''); setPmsOther(''); }}
             className={`text-left px-3 py-2.5 rounded-lg border transition-colors ${
-              usesPms === 'no' ? 'border-[#765a25] bg-[#fff8ec]' : 'border-[#E9ECEF] hover:border-[#765a25]'
+              usesPms === 'no' ? 'border-primary bg-highlight' : 'border-outline-variant hover:border-primary'
             }`}
           >
-            <span className={`block text-xs font-bold ${usesPms === 'no' ? 'text-[#765a25]' : 'text-[#141d23]'}`}>No — set Cabadra up as our front desk</span>
-            <span className="block text-[10px] text-[#7f7668] mt-0.5">You'll get room booking and availability search too, not just the guest-experience side.</span>
+            <span className={`block text-xs font-bold ${usesPms === 'no' ? 'text-primary' : 'text-on-surface'}`}>No — set Cabadra up as our front desk</span>
+            <span className="block text-[10px] text-outline mt-0.5">You'll get room booking and availability search too, not just the guest-experience side.</span>
           </button>
         </div>
 
         {usesPms === 'yes' && (
           <div className="mt-3 space-y-2">
-            <label className="font-semibold text-[#141d23] block">Which one?</label>
+            <label className="font-semibold text-on-surface block">Which one?</label>
             <select
               value={pmsChoice}
               onChange={(e) => setPmsChoice(e.target.value)}
-              className="w-full h-10 px-3 border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none bg-white"
+              className="w-full h-10 px-3 border border-outline-variant rounded-lg focus:border-primary focus:outline-none bg-surface-container-lowest"
             >
               <option value="">Select…</option>
               {PMS_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
@@ -158,31 +158,31 @@ export function NewPropertyForm({ onCreate, onCancel, submitLabel = 'Save Proper
                 placeholder="Name it"
                 value={pmsOther}
                 onChange={(e) => setPmsOther(e.target.value)}
-                className="w-full h-10 px-3 border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none"
+                className="w-full h-10 px-3 border border-outline-variant rounded-lg focus:border-primary focus:outline-none"
               />
             )}
           </div>
         )}
       </div>
 
-      <p className="text-[10px] text-[#7f7668]">You can change this later from the property's Overview tab if it turns out wrong.</p>
+      <p className="text-[10px] text-outline">You can change this later from the property's Overview tab if it turns out wrong.</p>
 
-      <p className="text-[11px] text-[#7f7668]">
+      <p className="text-[11px] text-outline">
         Rooms and a menu aren't created here yet — you'll add those separately once the property exists.
       </p>
 
       {error && <p className="text-red-600">{error}</p>}
 
-      <div className={`flex ${onCancel ? 'justify-end' : 'justify-stretch'} gap-2 pt-4 border-t border-[#E9ECEF]`}>
+      <div className={`flex ${onCancel ? 'justify-end' : 'justify-stretch'} gap-2 pt-4 border-t border-outline-variant`}>
         {onCancel && (
-          <button type="button" onClick={onCancel} className="px-4 py-2 border border-[#E9ECEF] rounded-lg text-[#4e463a] font-medium">
+          <button type="button" onClick={onCancel} className="px-4 py-2 border border-outline-variant rounded-lg text-on-surface-variant font-medium">
             Cancel
           </button>
         )}
         <button
           type="submit"
           disabled={creating || !name.trim() || !usesPms}
-          className={`${onCancel ? '' : 'w-full'} px-5 py-2 h-10 bg-[#765a25] text-white rounded-lg font-semibold hover:bg-[#5c4210] disabled:opacity-60`}
+          className={`${onCancel ? '' : 'w-full'} px-5 py-2 h-10 bg-primary text-on-primary rounded-lg font-semibold hover:bg-primary-hover disabled:opacity-60`}
         >
           {creating ? 'Creating…' : submitLabel}
         </button>

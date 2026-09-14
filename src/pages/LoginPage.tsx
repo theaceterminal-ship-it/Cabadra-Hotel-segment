@@ -83,10 +83,10 @@ export default function LoginPage({ roleLabel }: LoginPageProps) {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#f6faff] p-6">
-      <div className="w-full max-w-sm bg-white rounded-2xl border border-[#E9ECEF] shadow-sm p-6">
-        <h1 className="text-lg font-bold text-[#141d23] mb-1">{roleLabel ? `${roleLabel} sign in` : 'Sign in to Cabadra'}</h1>
-        <p className="text-xs text-[#7f7668] mb-5">
+    <div className="min-h-screen w-full flex items-center justify-center bg-surface p-6">
+      <div className="w-full max-w-sm bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-6">
+        <h1 className="text-lg font-bold text-on-surface mb-1">{roleLabel ? `${roleLabel} sign in` : 'Sign in to Cabadra'}</h1>
+        <p className="text-xs text-outline mb-5">
           {roleLabel ? 'Cabadra staff access — not for guests.' : 'For hotel owners and staff — not for guests.'}
         </p>
 
@@ -94,7 +94,7 @@ export default function LoginPage({ roleLabel }: LoginPageProps) {
           type="button"
           onClick={handleGoogleSignIn}
           disabled={googleLoading}
-          className="w-full h-10 border border-[#E9ECEF] rounded-lg text-sm font-semibold text-[#141d23] hover:bg-[#f6faff] transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+          className="w-full h-10 border border-outline-variant rounded-lg text-sm font-semibold text-on-surface hover:bg-surface-container-low transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
         >
           <svg className="w-4 h-4" viewBox="0 0 18 18">
             <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.57 2.7-3.88 2.7-6.62Z" />
@@ -106,36 +106,36 @@ export default function LoginPage({ roleLabel }: LoginPageProps) {
         </button>
 
         <div className="flex items-center gap-3 my-4">
-          <div className="flex-1 h-px bg-[#E9ECEF]" />
-          <span className="text-[11px] text-[#7f7668] font-semibold uppercase tracking-wider">or</span>
-          <div className="flex-1 h-px bg-[#E9ECEF]" />
+          <div className="flex-1 h-px bg-outline-variant" />
+          <span className="text-[11px] text-outline font-semibold uppercase tracking-wider">or</span>
+          <div className="flex-1 h-px bg-outline-variant" />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="text-xs font-semibold text-[#141d23] block mb-1">Email</label>
+            <label className="text-xs font-semibold text-on-surface block mb-1">Email</label>
             <input
               type="email"
               required
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full h-10 px-3 border border-[#E9ECEF] rounded-lg text-sm focus:border-[#765a25] focus:outline-none"
+              className="w-full h-10 px-3 border border-outline-variant rounded-lg text-sm focus:border-primary focus:outline-none"
             />
           </div>
           <div>
-            <label className="text-xs font-semibold text-[#141d23] block mb-1">Password</label>
+            <label className="text-xs font-semibold text-on-surface block mb-1">Password</label>
             <input
               type="password"
               required
               minLength={6}
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full h-10 px-3 border border-[#E9ECEF] rounded-lg text-sm focus:border-[#765a25] focus:outline-none"
+              className="w-full h-10 px-3 border border-outline-variant rounded-lg text-sm focus:border-primary focus:outline-none"
             />
           </div>
 
           {status && (
-            <p className={`text-xs ${status.type === 'error' ? 'text-red-600' : 'text-[#4e463a]'}`}>
+            <p className={`text-xs ${status.type === 'error' ? 'text-red-600' : 'text-on-surface-variant'}`}>
               {status.message}
             </p>
           )}
@@ -143,7 +143,7 @@ export default function LoginPage({ roleLabel }: LoginPageProps) {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full h-10 bg-[#765a25] text-white rounded-lg text-sm font-bold hover:bg-[#5c4210] transition-colors disabled:opacity-60"
+            className="w-full h-10 bg-primary text-on-primary rounded-lg text-sm font-bold hover:bg-primary-hover transition-colors disabled:opacity-60"
           >
             {submitting ? 'Please wait…' : mode === 'sign_in' ? 'Sign in' : 'Create account'}
           </button>
@@ -151,7 +151,7 @@ export default function LoginPage({ roleLabel }: LoginPageProps) {
 
         <button
           onClick={() => { setMode(m => (m === 'sign_in' ? 'sign_up' : 'sign_in')); setStatus(null); }}
-          className="w-full text-center text-xs text-[#765a25] font-semibold mt-4 hover:underline"
+          className="w-full text-center text-xs text-primary font-semibold mt-4 hover:underline"
         >
           {mode === 'sign_in' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
         </button>

@@ -22,6 +22,8 @@ import {
   fetchStaffDirectory,
   DirectoryContact,
   fetchPropertyMeta,
+  fetchPropertyStats,
+  PropertyStats,
 } from '../lib/staffApi';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { Sidebar, SidebarNavItem } from '../components/Sidebar';
@@ -33,12 +35,12 @@ import { ActiveDeliveries } from '../components/ActiveDeliveries';
 import { NewRequestModal } from '../components/NewRequestModal';
 import { SupabaseSetupNeeded } from '../components/SupabaseSetupNeeded';
 import { NotificationBell } from '../components/NotificationBell';
+import { ThemeToggle } from '../components/ThemeToggle';
+import { useTheme } from '../hooks/useTheme';
 import { useNotifications } from '../hooks/useNotifications';
 import LoginPage from './LoginPage';
 
 type ReceptionTab = 'dashboard' | 'rooms_floors' | 'live_ops' | 'kitchen_kds' | 'active_deliveries';
-
-const SIDEBAR_COLLAPSED_KEY = 'cabadra:reception-sidebar-collapsed';
 
 function supabaseOrderToKdsOrder(order: StaffOrder, previouslySeen?: KdsOrder): KdsOrder {
   const roomNumber = order.roomId.split('-').pop() ?? order.roomId;
@@ -72,9 +74,7 @@ export default function ReceptionApp() {
   const { loading, session, assignments } = useAuth();
   const [view, setView] = useState<ReceptionTab>('dashboard');
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    try { return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true'; } catch { return false; }
-  });
+  const [theme, setTheme] = useTheme();
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [urgentRequests, setUrgentRequests] = useState<UrgentRequest[]>([]);
@@ -86,18 +86,11 @@ export default function ReceptionApp() {
   const [propertyName, setPropertyName] = useState('');
   const [upiId, setUpiId] = useState<string | undefined>(undefined);
   const [hasExternalPms, setHasExternalPms] = useState(false);
+  const [stats, setStats] = useState<PropertyStats | null>(null);
   const syncInFlight = useRef(false);
 
   const propertyId = assignments.find(a => a.role === 'receptionist')?.propertyId;
   const { notifications, unreadCount, markRead, markAllRead } = useNotifications(propertyId);
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed(prev => {
-      const next = !prev;
-      try { localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next)); } catch { /* private-mode storage can throw — collapsing still works for this session */ }
-      return next;
-    });
-  };
 
   const reloadRoomsAndArrivals = async (pid: string) => {
     try {
@@ -107,6 +100,9 @@ export default function ReceptionApp() {
     } catch (err) {
       console.warn('Failed to load rooms/arrivals from Supabase:', err);
     }
+    // Occupancy/sales-today ride along with every room reload — checkin,
+    // checkout, and order updates all already call this.
+    fetchPropertyStats(pid).then(setStats).catch(err => console.warn('Failed to load property stats:', err));
   };
 
   const reloadRequests = async (pid: string) => {
@@ -263,20 +259,20 @@ export default function ReceptionApp() {
   }, [propertyId]);
 
   if (!isSupabaseConfigured) return <SupabaseSetupNeeded />;
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#f6faff] text-sm text-[#4e463a]">Loading…</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-surface text-sm text-on-surface-strong">Loading…</div>;
   if (!session) return <LoginPage roleLabel="Reception" />;
 
   if (!propertyId) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f6faff] p-6">
+      <div className="min-h-screen flex items-center justify-center bg-surface p-6">
         <div className="max-w-md text-center space-y-3">
-          <h1 className="text-lg font-bold text-[#141d23]">No property assigned yet</h1>
-          <p className="text-sm text-[#4e463a]">
+          <h1 className="text-lg font-bold text-on-surface">No property assigned yet</h1>
+          <p className="text-sm text-on-surface-variant">
             You're signed in, but this account isn't linked to a hotel yet. Reception access isn't self-serve —
             ask your hotel's owner to invite this email from their property's Staff tab, and you'll land here
             automatically once they do.
           </p>
-          <button onClick={() => signOut()} className="text-xs font-semibold text-[#765a25] hover:underline">Sign out</button>
+          <button onClick={() => signOut()} className="text-xs font-semibold text-primary hover:underline">Sign out</button>
         </div>
       </div>
     );
@@ -295,40 +291,37 @@ export default function ReceptionApp() {
   ];
 
   return (
-    <div className="min-h-screen w-full bg-[#f6faff] flex">
+    <div className="min-h-screen w-full bg-surface flex">
       <Sidebar
-        title="Cabadra Reception"
         navItems={navItems}
         activeId={view}
         onNavigate={(id) => setView(id as ReceptionTab)}
-        collapsed={sidebarCollapsed}
-        onToggleCollapsed={toggleSidebar}
         onSignOut={() => signOut()}
       />
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <div className="h-14 bg-white border-b border-[#E9ECEF] flex items-center justify-end px-4 sm:px-6 shrink-0">
+        <div className="h-14 flex items-center justify-end gap-3 px-4 sm:px-6 shrink-0">
+          <ThemeToggle theme={theme} onChange={setTheme} />
           <NotificationBell notifications={notifications} unreadCount={unreadCount} onMarkRead={markRead} onMarkAllRead={markAllRead} />
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto pt-0">
           {view === 'dashboard' && (
             <ReceptionDashboard
               propertyId={propertyId}
+              propertyName={propertyName}
               currency={currency}
               hasExternalPms={hasExternalPms}
               rooms={rooms}
               urgentRequests={urgentRequests.filter(r => r.status === 'open')}
               upcomingArrivals={upcomingArrivals}
               tasks={tasks}
-              kdsOrders={kdsOrders}
-              notifications={notifications}
+              stats={stats}
               onResolveUrgentRequest={handleResolveUrgentRequest}
               onCheckInGuest={handleCheckInGuest}
               onCancelBooking={handleCancelBooking}
               onRefreshRooms={() => propertyId && reloadRoomsAndArrivals(propertyId)}
               onOpenNewRequest={() => setIsRequestModalOpen(true)}
-              onMarkNotificationRead={markRead}
               onNavigate={(v: AppView) => setView(v as ReceptionTab)}
             />
           )}

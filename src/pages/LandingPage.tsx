@@ -26,7 +26,7 @@ export default function LandingPage() {
   const { loading, session, assignments } = useAuth();
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-[#f6faff] text-sm text-[#4e463a]">Loading…</div>;
+    return <div className="min-h-screen flex items-center justify-center bg-surface text-sm text-on-surface-strong">Loading…</div>;
   }
 
   if (!session) {

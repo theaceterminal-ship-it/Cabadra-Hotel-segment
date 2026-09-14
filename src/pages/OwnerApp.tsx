@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { LayoutDashboard, Building2 } from 'lucide-react';
 import { AppView, Property } from '../types';
 import { useAuth, signOut } from '../hooks/useAuth';
 import { fetchStaffProperties, createProperty } from '../lib/staffApi';
@@ -9,6 +10,9 @@ import { PropertiesPortfolio } from '../components/PropertiesPortfolio';
 import { NewPropertyForm, NewPropertyInput } from '../components/NewPropertyForm';
 import { SupabaseSetupNeeded } from '../components/SupabaseSetupNeeded';
 import { NotificationBell } from '../components/NotificationBell';
+import { Sidebar, SidebarNavItem } from '../components/Sidebar';
+import { ThemeToggle } from '../components/ThemeToggle';
+import { useTheme } from '../hooks/useTheme';
 import { usePortfolioNotifications } from '../hooks/useNotifications';
 import PropertyDetailPage from './PropertyDetailPage';
 import LoginPage from './LoginPage';
@@ -22,6 +26,7 @@ export default function OwnerApp() {
   const { loading, session, assignments, refreshAssignments } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [theme, setTheme] = useTheme();
   const [properties, setProperties] = useState<Property[]>([]);
   const [, setSelectedPropertyId] = useState<string>('');
 
@@ -70,12 +75,12 @@ export default function OwnerApp() {
   // account always has this door open.
   if (ownedPropertyIds.length === 0) {
     return (
-      <div className="min-h-screen w-full bg-[#f6faff] flex items-center justify-center p-4 sm:p-6">
-        <div className="w-full max-w-md bg-white rounded-2xl border border-[#E9ECEF] shadow-sm p-6">
-          <h1 className="text-xl font-bold text-[#141d23]">Welcome to Cabadra</h1>
-          <p className="text-sm text-[#7f7668] mt-1 mb-5">Let's set up your first hotel — this takes about a minute.</p>
+      <div className="min-h-screen w-full bg-surface flex items-center justify-center p-4 sm:p-6">
+        <div className="w-full max-w-md bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-6">
+          <h1 className="text-xl font-bold text-on-surface">Welcome to Cabadra</h1>
+          <p className="text-sm text-outline mt-1 mb-5">Let's set up your first hotel — this takes about a minute.</p>
           <NewPropertyForm onCreate={handleAddProperty} submitLabel="Create Hotel" />
-          <button onClick={() => signOut()} className="w-full text-center text-xs font-semibold text-[#7f7668] hover:text-[#141d23] mt-4">
+          <button onClick={() => signOut()} className="w-full text-center text-xs font-semibold text-outline hover:text-on-surface mt-4">
             Sign out
           </button>
         </div>
@@ -84,73 +89,67 @@ export default function OwnerApp() {
   }
 
   const isOverview = location.pathname === '/owner' || location.pathname === '/owner/';
-  const isProperties = location.pathname.startsWith('/owner/properties');
+
+  const navItems: SidebarNavItem[] = [
+    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'properties', label: 'Properties', icon: Building2 },
+  ];
 
   return (
-    <div className="min-h-screen w-full bg-[#f6faff]">
-      <nav className="bg-white border-b border-[#E9ECEF] px-4 sm:px-6 h-14 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <span className="font-bold text-[#765a25]">Cabadra Owner</span>
-          <button
-            onClick={() => navigate('/owner')}
-            className={`text-xs font-semibold px-3 py-1.5 rounded-lg ${isOverview ? 'bg-[#ecf5fe] text-[#765a25]' : 'text-[#4e463a]'}`}
-          >
-            Overview
-          </button>
-          <button
-            onClick={() => navigate('/owner/properties')}
-            className={`text-xs font-semibold px-3 py-1.5 rounded-lg ${isProperties ? 'bg-[#ecf5fe] text-[#765a25]' : 'text-[#4e463a]'}`}
-          >
-            Properties
-          </button>
-        </div>
-        <div className="flex items-center gap-2">
-          <NotificationBell notifications={notifications} unreadCount={unreadCount} onMarkRead={markRead} />
-          <button onClick={() => signOut()} className="text-xs font-semibold text-[#7f7668] hover:text-[#141d23]">
-            Sign out
-          </button>
-        </div>
-      </nav>
+    <div className="min-h-screen w-full bg-surface flex">
+      <Sidebar
+        navItems={navItems}
+        activeId={isOverview ? 'overview' : 'properties'}
+        onNavigate={(id) => navigate(id === 'overview' ? '/owner' : '/owner/properties')}
+        onSignOut={() => signOut()}
+      />
 
-      <Routes>
-        <Route
-          index
-          element={
-            <OwnerOverview
-              properties={properties}
-              onNavigate={handleLegacyNavigate}
-              onSelectProperty={setSelectedPropertyId}
-            />
-          }
-        />
-        <Route
-          path="properties"
-          element={
-            <PropertiesPortfolio
-              properties={properties}
-              onSelectProperty={setSelectedPropertyId}
-              onNavigate={handleLegacyNavigate}
-              onAddProperty={handleAddProperty}
-            />
-          }
-        />
-        <Route
-          path="properties/:propertyId"
-          element={<PropertyDetailPage properties={properties} onChanged={reloadProperties} />}
-        />
-      </Routes>
+      <div className="flex-1 min-w-0">
+        <div className="h-14 flex items-center justify-end gap-3 px-4 sm:px-6">
+          <ThemeToggle theme={theme} onChange={setTheme} />
+          <NotificationBell notifications={notifications} unreadCount={unreadCount} onMarkRead={markRead} />
+        </div>
+
+        <Routes>
+          <Route
+            index
+            element={
+              <OwnerOverview
+                properties={properties}
+                onNavigate={handleLegacyNavigate}
+                onSelectProperty={setSelectedPropertyId}
+              />
+            }
+          />
+          <Route
+            path="properties"
+            element={
+              <PropertiesPortfolio
+                properties={properties}
+                onSelectProperty={setSelectedPropertyId}
+                onNavigate={handleLegacyNavigate}
+                onAddProperty={handleAddProperty}
+              />
+            }
+          />
+          <Route
+            path="properties/:propertyId"
+            element={<PropertyDetailPage properties={properties} onChanged={reloadProperties} />}
+          />
+        </Routes>
+      </div>
     </div>
   );
 }
 
 function CenteredMessage({ title, body, onSignOut }: { title: string; body: string; onSignOut?: () => void }) {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#f6faff] p-6">
+    <div className="min-h-screen w-full flex items-center justify-center bg-surface p-6">
       <div className="max-w-md text-center space-y-3">
-        <h1 className="text-lg font-bold text-[#141d23]">{title}</h1>
-        {body && <p className="text-sm text-[#4e463a]">{body}</p>}
+        <h1 className="text-lg font-bold text-on-surface">{title}</h1>
+        {body && <p className="text-sm text-on-surface-variant">{body}</p>}
         {onSignOut && (
-          <button onClick={onSignOut} className="text-xs font-semibold text-[#765a25] hover:underline">
+          <button onClick={onSignOut} className="text-xs font-semibold text-primary hover:underline">
             Sign out
           </button>
         )}

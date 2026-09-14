@@ -54,8 +54,8 @@ import {
   Link2, RefreshCw, Copy, Check,
 } from 'lucide-react';
 
-const inputCls = "w-full h-9 px-2 text-xs border border-[#E9ECEF] rounded focus:border-[#765a25] focus:outline-none";
-const labelCls = "text-[10px] font-bold text-[#4e463a] block mb-1";
+const inputCls = "w-full h-9 px-2 text-xs border border-outline-variant rounded focus:border-primary focus:outline-none";
+const labelCls = "text-[10px] font-bold text-on-surface-variant block mb-1";
 
 interface PropertyDetailPageProps {
   properties: Property[];
@@ -140,8 +140,8 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
   if (!property && !loading) {
     return (
       <div className="max-w-2xl mx-auto p-8 text-center">
-        <p className="text-sm text-[#4e463a]">Property not found, or you don't have access to it.</p>
-        <button onClick={() => navigate('/owner/properties')} className="mt-3 text-sm font-semibold text-[#765a25] hover:underline">
+        <p className="text-sm text-on-surface-variant">Property not found, or you don't have access to it.</p>
+        <button onClick={() => navigate('/owner/properties')} className="mt-3 text-sm font-semibold text-primary hover:underline">
           Back to Properties
         </button>
       </div>
@@ -161,7 +161,7 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
     <div className="w-full max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       <button
         onClick={() => navigate('/owner/properties')}
-        className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#765a25] hover:underline cursor-pointer w-fit"
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline cursor-pointer w-fit"
       >
         <ArrowLeft className="w-4 h-4" />
         <span>Back to Properties</span>
@@ -169,13 +169,13 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
 
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-semibold text-[#141d23]">{property?.name ?? propertyId}</h1>
-          <p className="text-sm text-[#4e463a] mt-1">{property?.location}</p>
+          <h1 className="text-2xl md:text-3xl font-semibold text-on-surface">{property?.name ?? propertyId}</h1>
+          <p className="text-sm text-on-surface-variant mt-1">{property?.location}</p>
         </div>
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 border-b border-[#E9ECEF] overflow-x-auto">
+      <div className="flex gap-1 border-b border-outline-variant overflow-x-auto">
         {tabs.map(t => {
           const Icon = t.icon;
           return (
@@ -183,7 +183,7 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`px-4 py-2.5 text-xs font-bold flex items-center gap-1.5 border-b-2 whitespace-nowrap transition-colors ${
-                tab === t.id ? 'border-[#765a25] text-[#765a25]' : 'border-transparent text-[#7f7668] hover:text-[#4e463a]'
+                tab === t.id ? 'border-primary text-primary' : 'border-transparent text-outline hover:text-on-surface-variant'
               }`}
             >
               <Icon className="w-3.5 h-3.5" /> {t.label}
@@ -193,7 +193,7 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
       </div>
 
       {loading ? (
-        <p className="text-sm text-[#7f7668] text-center py-12">Loading…</p>
+        <p className="text-sm text-outline text-center py-12">Loading…</p>
       ) : error ? (
         <p className="text-sm text-red-600 text-center py-12">{error}</p>
       ) : tab === 'overview' ? (
@@ -231,9 +231,9 @@ function OverviewTab({ property, imageUrl, setImageUrl, onSaveImage, savingImage
   return (
     <div className="space-y-6">
       {!hasReceptionist && (
-        <div className="flex items-start gap-3 p-4 rounded-lg bg-[#fff8ec] border border-[#f0dfb8]">
-          <AlertTriangle className="w-4 h-4 text-[#765a25] shrink-0 mt-0.5" />
-          <p className="text-xs text-[#4e463a]">
+        <div className="flex items-start gap-3 p-4 rounded-lg bg-highlight border border-warning">
+          <AlertTriangle className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+          <p className="text-xs text-on-surface-variant">
             No receptionist assigned to this property yet — day-to-day check-ins, room status, and the kitchen board need
             someone with reception access. Grant it from the <strong>Staff</strong> tab.
           </p>
@@ -248,26 +248,26 @@ function OverviewTab({ property, imageUrl, setImageUrl, onSaveImage, savingImage
       </div>
 
       {ticketAnalytics && ticketAnalytics.ordersTotal > 0 && (
-        <div className="bg-[#fff8ec] rounded-xl p-5 border border-[#f0dfb8] flex flex-wrap items-center gap-6 justify-between">
+        <div className="bg-highlight rounded-xl p-5 border border-warning flex flex-wrap items-center gap-6 justify-between">
           <div>
-            <span className="text-xs font-semibold text-[#765a25] uppercase tracking-wider">Recommendation Engine Impact</span>
-            <p className="text-xs text-[#7f7668] mt-1">{ticketAnalytics.ordersTotal} order{ticketAnalytics.ordersTotal === 1 ? '' : 's'} total</p>
+            <span className="text-xs font-semibold text-primary uppercase tracking-wider">Recommendation Engine Impact</span>
+            <p className="text-xs text-outline mt-1">{ticketAnalytics.ordersTotal} order{ticketAnalytics.ordersTotal === 1 ? '' : 's'} total</p>
           </div>
           <div className="flex gap-8">
             <div>
-              <div className="text-xl font-bold text-[#2D6A4F]">{formatCurrency(ticketAnalytics.avgOrderValueWithRecommendation, property.currency)}</div>
-              <div className="text-[11px] text-[#4e463a]">Avg · with recommendation</div>
+              <div className="text-xl font-bold text-success">{formatCurrency(ticketAnalytics.avgOrderValueWithRecommendation, property.currency)}</div>
+              <div className="text-[11px] text-on-surface-variant">Avg · with recommendation</div>
             </div>
             <div>
-              <div className="text-xl font-bold text-[#141d23]">{formatCurrency(ticketAnalytics.avgOrderValueWithoutRecommendation, property.currency)}</div>
-              <div className="text-[11px] text-[#4e463a]">Avg · without</div>
+              <div className="text-xl font-bold text-on-surface">{formatCurrency(ticketAnalytics.avgOrderValueWithoutRecommendation, property.currency)}</div>
+              <div className="text-[11px] text-on-surface-variant">Avg · without</div>
             </div>
           </div>
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-[#E9ECEF] p-5 space-y-3">
-        <h3 className="text-sm font-bold text-[#141d23]">Property Photo</h3>
+      <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-5 space-y-3">
+        <h3 className="text-sm font-bold text-on-surface">Property Photo</h3>
         <div className="flex items-end gap-2 max-w-md">
           <div className="flex-1">
             <ImageUploadField label="" value={imageUrl} onChange={setImageUrl} />
@@ -275,7 +275,7 @@ function OverviewTab({ property, imageUrl, setImageUrl, onSaveImage, savingImage
           <button
             onClick={onSaveImage}
             disabled={savingImage || imageUrl === property.image}
-            className="h-9 px-3 rounded bg-[#765a25] text-white text-xs font-bold hover:bg-[#5c4210] disabled:opacity-40 whitespace-nowrap"
+            className="h-9 px-3 rounded bg-primary text-on-primary text-xs font-bold hover:bg-primary-hover disabled:opacity-40 whitespace-nowrap"
           >
             {savingImage ? 'Saving…' : 'Save'}
           </button>
@@ -288,13 +288,13 @@ function OverviewTab({ property, imageUrl, setImageUrl, onSaveImage, savingImage
 
       {/* Housekeeping status is the PMS's job once a property is in PMS mode — showing it here would just be a second, unmaintained copy of a number the PMS already owns. */}
       {!property.hasExternalPms && (
-        <div className="bg-white rounded-xl border border-[#E9ECEF] p-5">
-          <h3 className="text-sm font-bold text-[#141d23] mb-3">Room Status</h3>
+        <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-5">
+          <h3 className="text-sm font-bold text-on-surface mb-3">Room Status</h3>
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
             {(['ready', 'occupied', 'occupied_vip', 'cleaning', 'dirty', 'maintenance'] as const).map(status => (
-              <div key={status} className="bg-[#f6faff] rounded-lg p-2 border border-[#E9ECEF]">
-                <div className="text-lg font-bold text-[#141d23]">{rooms.filter(r => r.status === status).length}</div>
-                <div className="text-[10px] text-[#7f7668] capitalize">{status.replace('_', ' ')}</div>
+              <div key={status} className="bg-surface-container-low rounded-lg p-2 border border-outline-variant">
+                <div className="text-lg font-bold text-on-surface">{rooms.filter(r => r.status === status).length}</div>
+                <div className="text-[10px] text-outline capitalize">{status.replace('_', ' ')}</div>
               </div>
             ))}
           </div>
@@ -332,11 +332,11 @@ function PmsModeCard({ property }: { property: Property }) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-[#E9ECEF] p-5">
+    <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-bold text-[#141d23]">Does this hotel already use a PMS?</h3>
-          <p className="text-xs text-[#7f7668] mt-1 max-w-md">
+          <h3 className="text-sm font-bold text-on-surface">Does this hotel already use a PMS?</h3>
+          <p className="text-xs text-outline mt-1 max-w-md">
             {hasExternalPms
               ? 'On — Reception skips booking screens entirely. They just tap a room and add the guest’s name so the room’s QR code, folio and requests work for them.'
               : 'Off — Cabadra is the front desk here. Reception uses New Booking to search availability and book rooms.'}
@@ -348,10 +348,10 @@ function PmsModeCard({ property }: { property: Property }) {
           aria-checked={hasExternalPms}
           onClick={handleToggle}
           disabled={saving}
-          className={`shrink-0 w-12 h-7 rounded-full relative transition-colors disabled:opacity-60 ${hasExternalPms ? 'bg-[#765a25]' : 'bg-[#E9ECEF]'}`}
+          className={`shrink-0 w-12 h-7 rounded-full relative transition-colors disabled:opacity-60 ${hasExternalPms ? 'bg-primary' : 'bg-outline-variant'}`}
         >
           <span
-            className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-transform ${hasExternalPms ? 'translate-x-6' : 'translate-x-1'}`}
+            className={`absolute top-1 w-5 h-5 rounded-full bg-surface-container-lowest shadow transition-transform ${hasExternalPms ? 'translate-x-6' : 'translate-x-1'}`}
           />
         </button>
       </div>
@@ -380,9 +380,9 @@ function UpiSettingsCard({ property }: { property: Property }) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-[#E9ECEF] p-5 space-y-3">
-      <h3 className="text-sm font-bold text-[#141d23]">Payment (UPI)</h3>
-      <p className="text-xs text-[#7f7668]">Set once — Reception can show this as a QR at checkout or mid-stay for a guest paying by UPI. Folio settlement is still confirmed manually either way.</p>
+    <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-5 space-y-3">
+      <h3 className="text-sm font-bold text-on-surface">Payment (UPI)</h3>
+      <p className="text-xs text-outline">Set once — Reception can show this as a QR at checkout or mid-stay for a guest paying by UPI. Folio settlement is still confirmed manually either way.</p>
       <div className="flex items-end gap-2 max-w-md">
         <div className="flex-1">
           <label className={labelCls}>UPI ID</label>
@@ -391,7 +391,7 @@ function UpiSettingsCard({ property }: { property: Property }) {
         <button
           onClick={handleSave}
           disabled={saving || upiId === (property.upiId ?? '')}
-          className="h-9 px-3 rounded bg-[#765a25] text-white text-xs font-bold hover:bg-[#5c4210] disabled:opacity-40 whitespace-nowrap"
+          className="h-9 px-3 rounded bg-primary text-on-primary text-xs font-bold hover:bg-primary-hover disabled:opacity-40 whitespace-nowrap"
         >
           {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save'}
         </button>
@@ -402,9 +402,9 @@ function UpiSettingsCard({ property }: { property: Property }) {
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-white rounded-xl p-4 border border-[#E9ECEF]">
-      <div className="text-[10px] font-semibold text-[#4e463a] uppercase tracking-wider mb-1">{label}</div>
-      <div className="text-xl font-bold text-[#141d23]">{value}</div>
+    <div className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant">
+      <div className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider mb-1">{label}</div>
+      <div className="text-xl font-bold text-on-surface">{value}</div>
     </div>
   );
 }
@@ -532,19 +532,19 @@ function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChanged }: { 
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2 bg-[#ecf5fe] p-3 rounded-lg border border-[#E9ECEF]">
-        <span className="text-xs font-bold text-[#141d23]">Bulk import — the fast way to add 10+ rooms:</span>
-        <button type="button" onClick={() => downloadRoomsCsvTemplate(hasExternalPms)} className="h-8 px-3 rounded bg-white border border-[#E9ECEF] text-[#4e463a] text-[11px] font-semibold hover:bg-gray-50 flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-2 bg-surface-container-low p-3 rounded-lg border border-outline-variant">
+        <span className="text-xs font-bold text-on-surface">Bulk import — the fast way to add 10+ rooms:</span>
+        <button type="button" onClick={() => downloadRoomsCsvTemplate(hasExternalPms)} className="h-8 px-3 rounded bg-surface-container-lowest border border-outline-variant text-on-surface-variant text-[11px] font-semibold hover:bg-gray-50 flex items-center gap-1.5">
           <Download className="w-3 h-3" /> Download Template
         </button>
         <input ref={csvInputRef} type="file" accept=".csv" onChange={handleCsvSelected} className="hidden" />
-        <button type="button" onClick={() => csvInputRef.current?.click()} disabled={importing} className="h-8 px-3 rounded bg-[#765a25] text-white text-[11px] font-bold hover:bg-[#5c4210] disabled:opacity-60 flex items-center gap-1.5">
+        <button type="button" onClick={() => csvInputRef.current?.click()} disabled={importing} className="h-8 px-3 rounded bg-primary text-on-primary text-[11px] font-bold hover:bg-primary-hover disabled:opacity-60 flex items-center gap-1.5">
           <Upload className="w-3 h-3" /> {importing ? 'Importing…' : 'Import CSV'}
         </button>
-        {importResult && <span className="text-[11px] text-[#2D6A4F] font-semibold">{importResult}</span>}
+        {importResult && <span className="text-[11px] text-success font-semibold">{importResult}</span>}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-2 bg-[#f6faff] p-3 rounded-lg border border-[#E9ECEF]">
+      <form onSubmit={handleSubmit} className="space-y-2 bg-surface-container-low p-3 rounded-lg border border-outline-variant">
         <div className={`grid grid-cols-2 ${hasExternalPms ? 'sm:grid-cols-2 max-w-xs' : 'sm:grid-cols-5'} gap-2`}>
           <div>
             <label className={labelCls}>Room Number</label>
@@ -582,11 +582,11 @@ function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChanged }: { 
               <ImageUploadField label="Photo (optional)" value={form.image} onChange={url => setForm(f => ({ ...f, image: url }))} />
             </div>
           )}
-          <button type="submit" disabled={submitting} className="h-9 px-4 rounded-lg bg-[#765a25] text-white text-xs font-bold flex items-center justify-center gap-1 hover:bg-[#5c4210] disabled:opacity-60 whitespace-nowrap">
+          <button type="submit" disabled={submitting} className="h-9 px-4 rounded-lg bg-primary text-on-primary text-xs font-bold flex items-center justify-center gap-1 hover:bg-primary-hover disabled:opacity-60 whitespace-nowrap">
             {editingId ? 'Save Changes' : <><Plus className="w-3.5 h-3.5" /> Add</>}
           </button>
           {editingId && (
-            <button type="button" onClick={cancelEdit} className="h-9 px-3 rounded-lg border border-[#E9ECEF] text-xs font-semibold text-[#4e463a]">
+            <button type="button" onClick={cancelEdit} className="h-9 px-3 rounded-lg border border-outline-variant text-xs font-semibold text-on-surface-variant">
               Cancel
             </button>
           )}
@@ -596,19 +596,19 @@ function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChanged }: { 
 
       <div className="space-y-1.5">
         {rooms.length === 0 ? (
-          <p className="text-xs text-[#7f7668] text-center py-6">No rooms yet — add one above or import a CSV.</p>
+          <p className="text-xs text-outline text-center py-6">No rooms yet — add one above or import a CSV.</p>
         ) : (
           rooms.map(r => (
-            <div key={r.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs ${editingId === r.id ? 'border-[#765a25] bg-[#fff8ec]' : 'border-[#E9ECEF]'}`}>
-              <span className="font-semibold text-[#141d23]">Room {r.number}</span>
-              <span className="text-[#7f7668]">
+            <div key={r.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs ${editingId === r.id ? 'border-primary bg-highlight' : 'border-outline-variant'}`}>
+              <span className="font-semibold text-on-surface">Room {r.number}</span>
+              <span className="text-outline">
                 {hasExternalPms ? `Floor ${r.floor}` : `${r.type} · Floor ${r.floor} · Sleeps ${r.maxOccupancy} · ${formatCurrency(r.pricePerNight, currency)}/night`}
               </span>
               <div className="flex items-center gap-1">
-                <button onClick={() => startEdit(r)} className="text-[#765a25] hover:text-[#5c4210] p-1">
+                <button onClick={() => startEdit(r)} className="text-primary hover:text-primary-hover p-1">
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
-                <button onClick={() => handleDelete(r.id)} className="text-[#BC4749] hover:text-red-700 p-1">
+                <button onClick={() => handleDelete(r.id)} className="text-error hover:text-red-700 p-1">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -737,19 +737,19 @@ function MenuTab({ propertyId, currency, menu, onChanged }: { propertyId: string
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2 bg-[#ecf5fe] p-3 rounded-lg border border-[#E9ECEF]">
-        <span className="text-xs font-bold text-[#141d23]">Bulk import:</span>
-        <button type="button" onClick={downloadMenuCsvTemplate} className="h-8 px-3 rounded bg-white border border-[#E9ECEF] text-[#4e463a] text-[11px] font-semibold hover:bg-gray-50 flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-2 bg-surface-container-low p-3 rounded-lg border border-outline-variant">
+        <span className="text-xs font-bold text-on-surface">Bulk import:</span>
+        <button type="button" onClick={downloadMenuCsvTemplate} className="h-8 px-3 rounded bg-surface-container-lowest border border-outline-variant text-on-surface-variant text-[11px] font-semibold hover:bg-gray-50 flex items-center gap-1.5">
           <Download className="w-3 h-3" /> Download Template
         </button>
         <input ref={csvInputRef} type="file" accept=".csv" onChange={handleCsvSelected} className="hidden" />
-        <button type="button" onClick={() => csvInputRef.current?.click()} disabled={importing} className="h-8 px-3 rounded bg-[#765a25] text-white text-[11px] font-bold hover:bg-[#5c4210] disabled:opacity-60 flex items-center gap-1.5">
+        <button type="button" onClick={() => csvInputRef.current?.click()} disabled={importing} className="h-8 px-3 rounded bg-primary text-on-primary text-[11px] font-bold hover:bg-primary-hover disabled:opacity-60 flex items-center gap-1.5">
           <Upload className="w-3 h-3" /> {importing ? 'Importing…' : 'Import CSV'}
         </button>
-        {importResult && <span className="text-[11px] text-[#2D6A4F] font-semibold">{importResult}</span>}
+        {importResult && <span className="text-[11px] text-success font-semibold">{importResult}</span>}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-2 bg-[#f6faff] p-3 rounded-lg border border-[#E9ECEF]">
+      <form onSubmit={handleSubmit} className="space-y-2 bg-surface-container-low p-3 rounded-lg border border-outline-variant">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <div className="col-span-2">
             <label className={labelCls}>Item Name</label>
@@ -778,14 +778,14 @@ function MenuTab({ propertyId, currency, menu, onChanged }: { propertyId: string
           <div className="flex-1">
             <ImageUploadField label="Photo (optional)" value={form.image} onChange={url => setForm(f => ({ ...f, image: url }))} />
           </div>
-          <label className="flex items-center gap-1.5 text-[11px] font-semibold text-[#141d23] h-9">
-            <input type="checkbox" checked={form.isVeg} onChange={e => setForm(f => ({ ...f, isVeg: e.target.checked }))} className="accent-[#765a25]" /> Veg
+          <label className="flex items-center gap-1.5 text-[11px] font-semibold text-on-surface h-9">
+            <input type="checkbox" checked={form.isVeg} onChange={e => setForm(f => ({ ...f, isVeg: e.target.checked }))} className="accent-primary" /> Veg
           </label>
-          <button type="submit" disabled={submitting} className="h-9 px-4 rounded-lg bg-[#765a25] text-white text-xs font-bold flex items-center justify-center gap-1 hover:bg-[#5c4210] disabled:opacity-60 whitespace-nowrap">
+          <button type="submit" disabled={submitting} className="h-9 px-4 rounded-lg bg-primary text-on-primary text-xs font-bold flex items-center justify-center gap-1 hover:bg-primary-hover disabled:opacity-60 whitespace-nowrap">
             {editingId ? 'Save Changes' : <><Plus className="w-3.5 h-3.5" /> Add</>}
           </button>
           {editingId && (
-            <button type="button" onClick={cancelEdit} className="h-9 px-3 rounded-lg border border-[#E9ECEF] text-xs font-semibold text-[#4e463a]">
+            <button type="button" onClick={cancelEdit} className="h-9 px-3 rounded-lg border border-outline-variant text-xs font-semibold text-on-surface-variant">
               Cancel
             </button>
           )}
@@ -795,17 +795,17 @@ function MenuTab({ propertyId, currency, menu, onChanged }: { propertyId: string
 
       <div className="space-y-1.5">
         {menu.length === 0 ? (
-          <p className="text-xs text-[#7f7668] text-center py-6">No menu items yet — add one above or import a CSV.</p>
+          <p className="text-xs text-outline text-center py-6">No menu items yet — add one above or import a CSV.</p>
         ) : (
           menu.map(m => (
-            <div key={m.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs ${editingId === m.id ? 'border-[#765a25] bg-[#fff8ec]' : 'border-[#E9ECEF]'}`}>
-              <span className="font-semibold text-[#141d23]">{m.name}</span>
-              <span className="text-[#7f7668]">{m.category} · {formatCurrency(m.price, currency)} · {m.isVeg ? 'Veg' : 'Non-veg'}{m.prepTime ? ` · ${m.prepTime}` : ''}</span>
+            <div key={m.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs ${editingId === m.id ? 'border-primary bg-highlight' : 'border-outline-variant'}`}>
+              <span className="font-semibold text-on-surface">{m.name}</span>
+              <span className="text-outline">{m.category} · {formatCurrency(m.price, currency)} · {m.isVeg ? 'Veg' : 'Non-veg'}{m.prepTime ? ` · ${m.prepTime}` : ''}</span>
               <div className="flex items-center gap-1">
-                <button onClick={() => startEdit(m)} className="text-[#765a25] hover:text-[#5c4210] p-1">
+                <button onClick={() => startEdit(m)} className="text-primary hover:text-primary-hover p-1">
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
-                <button onClick={() => handleDelete(m.id)} className="text-[#BC4749] hover:text-red-700 p-1">
+                <button onClick={() => handleDelete(m.id)} className="text-error hover:text-red-700 p-1">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -873,11 +873,11 @@ function ExperiencesTab({ propertyId, currency, experiences, onChanged }: { prop
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-[#7f7668]">
+      <p className="text-xs text-outline">
         These show up as "Curated For You" cards on the guest home page. Nothing shows there until you add one here.
       </p>
 
-      <form onSubmit={handleSubmit} className="space-y-2 bg-[#f6faff] p-3 rounded-lg border border-[#E9ECEF]">
+      <form onSubmit={handleSubmit} className="space-y-2 bg-surface-container-low p-3 rounded-lg border border-outline-variant">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <div className="col-span-2">
             <label className={labelCls}>Name</label>
@@ -900,11 +900,11 @@ function ExperiencesTab({ propertyId, currency, experiences, onChanged }: { prop
           <div className="flex-1">
             <ImageUploadField label="Photo (optional)" value={form.image} onChange={url => setForm(f => ({ ...f, image: url }))} />
           </div>
-          <button type="submit" disabled={submitting} className="h-9 px-4 rounded-lg bg-[#765a25] text-white text-xs font-bold flex items-center justify-center gap-1 hover:bg-[#5c4210] disabled:opacity-60 whitespace-nowrap">
+          <button type="submit" disabled={submitting} className="h-9 px-4 rounded-lg bg-primary text-on-primary text-xs font-bold flex items-center justify-center gap-1 hover:bg-primary-hover disabled:opacity-60 whitespace-nowrap">
             {editingId ? 'Save Changes' : <><Plus className="w-3.5 h-3.5" /> Add</>}
           </button>
           {editingId && (
-            <button type="button" onClick={cancelEdit} className="h-9 px-3 rounded-lg border border-[#E9ECEF] text-xs font-semibold text-[#4e463a]">
+            <button type="button" onClick={cancelEdit} className="h-9 px-3 rounded-lg border border-outline-variant text-xs font-semibold text-on-surface-variant">
               Cancel
             </button>
           )}
@@ -914,17 +914,17 @@ function ExperiencesTab({ propertyId, currency, experiences, onChanged }: { prop
 
       <div className="space-y-1.5">
         {experiences.length === 0 ? (
-          <p className="text-xs text-[#7f7668] text-center py-6">No experiences yet — add one above.</p>
+          <p className="text-xs text-outline text-center py-6">No experiences yet — add one above.</p>
         ) : (
           experiences.map(exp => (
-            <div key={exp.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs ${editingId === exp.id ? 'border-[#765a25] bg-[#fff8ec]' : 'border-[#E9ECEF]'}`}>
-              <span className="font-semibold text-[#141d23]">{exp.name}</span>
-              <span className="text-[#7f7668]">{formatCurrency(exp.price, currency)} {exp.unitLabel}</span>
+            <div key={exp.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs ${editingId === exp.id ? 'border-primary bg-highlight' : 'border-outline-variant'}`}>
+              <span className="font-semibold text-on-surface">{exp.name}</span>
+              <span className="text-outline">{formatCurrency(exp.price, currency)} {exp.unitLabel}</span>
               <div className="flex items-center gap-1">
-                <button onClick={() => startEdit(exp)} className="text-[#765a25] hover:text-[#5c4210] p-1">
+                <button onClick={() => startEdit(exp)} className="text-primary hover:text-primary-hover p-1">
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
-                <button onClick={() => handleDelete(exp.id)} className="text-[#BC4749] hover:text-red-700 p-1">
+                <button onClick={() => handleDelete(exp.id)} className="text-error hover:text-red-700 p-1">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -1015,25 +1015,25 @@ function ServicesTab({ propertyId, currency, services, onChanged }: { propertyId
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-[#7f7668]">
+      <p className="text-xs text-outline">
         These show up as "At Your Service" cards on the guest home page — add whatever this property actually
         offers (housekeeping, spa, airport transfers, business center...). A guest's request is tagged with the
         department here, so it routes straight to the right Live Ops queue instead of Reception guessing from a title.
       </p>
 
-      <form onSubmit={handleSubmit} className="space-y-2 bg-[#f6faff] p-3 rounded-lg border border-[#E9ECEF]">
+      <form onSubmit={handleSubmit} className="space-y-2 bg-surface-container-low p-3 rounded-lg border border-outline-variant">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <div>
             <label className={labelCls}>Name</label>
             {customMode ? (
               <div className="space-y-1">
                 <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Spa & Wellness" className={inputCls} autoFocus />
-                <button type="button" onClick={() => { setCustomMode(false); setForm(f => ({ ...f, name: '' })); }} className="text-[10px] font-semibold text-[#765a25] hover:underline">
+                <button type="button" onClick={() => { setCustomMode(false); setForm(f => ({ ...f, name: '' })); }} className="text-[10px] font-semibold text-primary hover:underline">
                   Pick from list instead
                 </button>
               </div>
             ) : (
-              <select value={SERVICE_PRESETS.some(p => p.name === form.name) ? form.name : ''} onChange={e => handlePresetChange(e.target.value)} className={`${inputCls} bg-white`}>
+              <select value={SERVICE_PRESETS.some(p => p.name === form.name) ? form.name : ''} onChange={e => handlePresetChange(e.target.value)} className={`${inputCls} bg-surface-container-lowest`}>
                 <option value="" disabled>Select…</option>
                 {SERVICE_PRESETS.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
                 <option value={SERVICE_CUSTOM}>Other — type my own</option>
@@ -1042,7 +1042,7 @@ function ServicesTab({ propertyId, currency, services, onChanged }: { propertyId
           </div>
           <div>
             <label className={labelCls}>Routes To</label>
-            <select value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value as ServiceCategory['department'] }))} className={`${inputCls} bg-white`}>
+            <select value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value as ServiceCategory['department'] }))} className={`${inputCls} bg-surface-container-lowest`}>
               {DEPARTMENTS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
             </select>
           </div>
@@ -1052,18 +1052,18 @@ function ServicesTab({ propertyId, currency, services, onChanged }: { propertyId
           </div>
           <div>
             <label className={labelCls}>Guest Form Type</label>
-            <select value={form.categoryType} onChange={e => setForm(f => ({ ...f, categoryType: e.target.value as ServiceCategory['categoryType'] }))} className={`${inputCls} bg-white`}>
+            <select value={form.categoryType} onChange={e => setForm(f => ({ ...f, categoryType: e.target.value as ServiceCategory['categoryType'] }))} className={`${inputCls} bg-surface-container-lowest`}>
               <option value="general">Free-text note</option>
               <option value="transportation">Route picker (below)</option>
             </select>
           </div>
         </div>
         <div className="flex gap-2 items-end justify-end">
-          <button type="submit" disabled={submitting} className="h-9 px-4 rounded-lg bg-[#765a25] text-white text-xs font-bold flex items-center justify-center gap-1 hover:bg-[#5c4210] disabled:opacity-60 whitespace-nowrap">
+          <button type="submit" disabled={submitting} className="h-9 px-4 rounded-lg bg-primary text-on-primary text-xs font-bold flex items-center justify-center gap-1 hover:bg-primary-hover disabled:opacity-60 whitespace-nowrap">
             {editingId ? 'Save Changes' : <><Plus className="w-3.5 h-3.5" /> Add</>}
           </button>
           {editingId && (
-            <button type="button" onClick={cancelEdit} className="h-9 px-3 rounded-lg border border-[#E9ECEF] text-xs font-semibold text-[#4e463a]">
+            <button type="button" onClick={cancelEdit} className="h-9 px-3 rounded-lg border border-outline-variant text-xs font-semibold text-on-surface-variant">
               Cancel
             </button>
           )}
@@ -1073,20 +1073,20 @@ function ServicesTab({ propertyId, currency, services, onChanged }: { propertyId
 
       <div className="space-y-1.5">
         {services.length === 0 ? (
-          <p className="text-xs text-[#7f7668] text-center py-6">No services yet — the guest home page's "At Your Service" section stays empty until you add one.</p>
+          <p className="text-xs text-outline text-center py-6">No services yet — the guest home page's "At Your Service" section stays empty until you add one.</p>
         ) : (
           services.map(s => (
-            <div key={s.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs ${editingId === s.id ? 'border-[#765a25] bg-[#fff8ec]' : 'border-[#E9ECEF]'}`}>
-              <span className="font-semibold text-[#141d23]">{s.name}</span>
-              <span className="text-[#7f7668] capitalize">
+            <div key={s.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs ${editingId === s.id ? 'border-primary bg-highlight' : 'border-outline-variant'}`}>
+              <span className="font-semibold text-on-surface">{s.name}</span>
+              <span className="text-outline capitalize">
                 {s.description}{s.description ? ' · ' : ''}routes to {s.department}
                 {s.categoryType === 'transportation' && ' · route picker'}
               </span>
               <div className="flex items-center gap-1">
-                <button onClick={() => startEdit(s)} className="text-[#765a25] hover:text-[#5c4210] p-1">
+                <button onClick={() => startEdit(s)} className="text-primary hover:text-primary-hover p-1">
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
-                <button onClick={() => handleDelete(s.id)} className="text-[#BC4749] hover:text-red-700 p-1">
+                <button onClick={() => handleDelete(s.id)} className="text-error hover:text-red-700 p-1">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -1139,11 +1139,11 @@ function TransportRoutesManager({ propertyId, currency }: { propertyId: string; 
   };
 
   return (
-    <div className="border-t border-[#E9ECEF] pt-4 space-y-3">
-      <h3 className="text-sm font-bold text-[#141d23]">Transport Routes</h3>
-      <p className="text-xs text-[#7f7668]">Where this property actually takes guests — the guest sees these as a searchable pick list, not a blank box.</p>
+    <div className="border-t border-outline-variant pt-4 space-y-3">
+      <h3 className="text-sm font-bold text-on-surface">Transport Routes</h3>
+      <p className="text-xs text-outline">Where this property actually takes guests — the guest sees these as a searchable pick list, not a blank box.</p>
 
-      <form onSubmit={handleAdd} className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end bg-[#f6faff] p-3 rounded-lg border border-[#E9ECEF]">
+      <form onSubmit={handleAdd} className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end bg-surface-container-low p-3 rounded-lg border border-outline-variant">
         <div>
           <label className={labelCls}>From</label>
           <input value={form.from} onChange={e => setForm(f => ({ ...f, from: e.target.value }))} placeholder="Hotel" className={inputCls} />
@@ -1160,7 +1160,7 @@ function TransportRoutesManager({ propertyId, currency }: { propertyId: string; 
           <label className={labelCls}>Unit</label>
           <input value={form.priceUnit} onChange={e => setForm(f => ({ ...f, priceUnit: e.target.value }))} placeholder="per trip" className={inputCls} />
         </div>
-        <button type="submit" disabled={submitting} className="h-9 rounded-lg bg-[#765a25] text-white text-xs font-bold hover:bg-[#5c4210] disabled:opacity-60 flex items-center justify-center gap-1">
+        <button type="submit" disabled={submitting} className="h-9 rounded-lg bg-primary text-on-primary text-xs font-bold hover:bg-primary-hover disabled:opacity-60 flex items-center justify-center gap-1">
           <Plus className="w-3.5 h-3.5" /> Add
         </button>
       </form>
@@ -1168,13 +1168,13 @@ function TransportRoutesManager({ propertyId, currency }: { propertyId: string; 
 
       <div className="space-y-1.5">
         {loading ? null : routes.length === 0 ? (
-          <p className="text-xs text-[#7f7668] text-center py-4">No routes yet.</p>
+          <p className="text-xs text-outline text-center py-4">No routes yet.</p>
         ) : (
           routes.map(r => (
-            <div key={r.id} className="flex items-center justify-between px-3 py-2 rounded-lg border border-[#E9ECEF] text-xs">
-              <span className="font-semibold text-[#141d23]">{r.from} → {r.to}</span>
-              <span className="text-[#7f7668]">{formatCurrency(r.price, currency)} {r.priceUnit}</span>
-              <button onClick={() => handleDelete(r.id)} className="text-[#BC4749] hover:text-red-700 p-1">
+            <div key={r.id} className="flex items-center justify-between px-3 py-2 rounded-lg border border-outline-variant text-xs">
+              <span className="font-semibold text-on-surface">{r.from} → {r.to}</span>
+              <span className="text-outline">{formatCurrency(r.price, currency)} {r.priceUnit}</span>
+              <button onClick={() => handleDelete(r.id)} className="text-error hover:text-red-700 p-1">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -1231,38 +1231,38 @@ function AccessLinkCard({ propertyId }: { propertyId: string }) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-[#E9ECEF] p-5 space-y-3">
+    <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-5 space-y-3">
       <div className="flex items-center gap-2">
-        <Link2 className="w-4 h-4 text-[#765a25]" />
-        <h3 className="text-sm font-bold text-[#141d23]">Reception Access Link</h3>
+        <Link2 className="w-4 h-4 text-primary" />
+        <h3 className="text-sm font-bold text-on-surface">Reception Access Link</h3>
       </div>
-      <p className="text-xs text-[#7f7668]">
+      <p className="text-xs text-outline">
         Bookmark this on your front-desk computer. Opening it goes straight into Reception — no login, ever.
         Anyone with the link has full reception access, so treat it like a key, not a password to share casually.
       </p>
 
       {link === 'loading' ? (
-        <p className="text-xs text-[#7f7668]">Loading…</p>
+        <p className="text-xs text-outline">Loading…</p>
       ) : linkUrl ? (
         <div className="flex flex-col sm:flex-row gap-2">
           <input readOnly value={linkUrl} onFocus={e => e.target.select()} className={`${inputCls} font-mono flex-1`} />
           <div className="flex gap-2">
-            <button onClick={handleCopy} className="h-9 px-3 rounded-lg bg-[#765a25] text-white text-xs font-bold hover:bg-[#5c4210] flex items-center gap-1.5 whitespace-nowrap">
+            <button onClick={handleCopy} className="h-9 px-3 rounded-lg bg-primary text-on-primary text-xs font-bold hover:bg-primary-hover flex items-center gap-1.5 whitespace-nowrap">
               {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />} {copied ? 'Copied' : 'Copy'}
             </button>
-            <button onClick={() => handleGenerate(true)} disabled={working} className="h-9 px-3 rounded-lg border border-[#E9ECEF] text-[#4e463a] text-xs font-semibold hover:bg-gray-50 disabled:opacity-60 flex items-center gap-1.5 whitespace-nowrap">
+            <button onClick={() => handleGenerate(true)} disabled={working} className="h-9 px-3 rounded-lg border border-outline-variant text-on-surface-variant text-xs font-semibold hover:bg-gray-50 disabled:opacity-60 flex items-center gap-1.5 whitespace-nowrap">
               <RefreshCw className="w-3.5 h-3.5" /> {working ? 'Rotating…' : 'Regenerate'}
             </button>
           </div>
         </div>
       ) : (
-        <button onClick={() => handleGenerate(false)} disabled={working} className="h-9 px-4 rounded-lg bg-[#765a25] text-white text-xs font-bold hover:bg-[#5c4210] disabled:opacity-60">
+        <button onClick={() => handleGenerate(false)} disabled={working} className="h-9 px-4 rounded-lg bg-primary text-on-primary text-xs font-bold hover:bg-primary-hover disabled:opacity-60">
           {working ? 'Creating…' : 'Create Reception Link'}
         </button>
       )}
       {error && <p className="text-xs text-red-600">{error}</p>}
       {linkUrl && (
-        <p className="text-[10px] text-[#7f7668]">
+        <p className="text-[10px] text-outline">
           Regenerating makes the old link stop working immediately — use that if it's ever shared with the wrong person.
         </p>
       )}
@@ -1345,40 +1345,40 @@ function StaffTab({ propertyId, staff, pendingInvites, onChanged }: { propertyId
       <AccessLinkCard propertyId={propertyId} />
 
       <div className="flex items-center gap-3 pt-1">
-        <div className="flex-1 h-px bg-[#E9ECEF]" />
-        <span className="text-[10px] font-bold text-[#7f7668] uppercase tracking-wider">Or invite a named account instead</span>
-        <div className="flex-1 h-px bg-[#E9ECEF]" />
+        <div className="flex-1 h-px bg-outline-variant" />
+        <span className="text-[10px] font-bold text-outline uppercase tracking-wider">Or invite a named account instead</span>
+        <div className="flex-1 h-px bg-outline-variant" />
       </div>
 
-      <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-2 items-end bg-[#f6faff] p-3 rounded-lg border border-[#E9ECEF]">
+      <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-2 items-end bg-surface-container-low p-3 rounded-lg border border-outline-variant">
         <div className="flex-1 w-full">
           <label className={labelCls}>Grant access by email</label>
           <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="colleague@hotel.com" className={inputCls} />
-          <p className="text-[10px] text-[#7f7668] mt-1">Already have an account? This grants access instantly. New email? You'll get the option to send a real invite next.</p>
+          <p className="text-[10px] text-outline mt-1">Already have an account? This grants access instantly. New email? You'll get the option to send a real invite next.</p>
         </div>
-        <select value={role} onChange={e => setRole(e.target.value as 'owner' | 'receptionist')} className={`${inputCls} w-32 bg-white`}>
+        <select value={role} onChange={e => setRole(e.target.value as 'owner' | 'receptionist')} className={`${inputCls} w-32 bg-surface-container-lowest`}>
           <option value="receptionist">Receptionist</option>
           <option value="owner">Owner</option>
         </select>
-        <button type="submit" disabled={submitting} className="h-9 px-4 rounded-lg bg-[#765a25] text-white text-xs font-bold hover:bg-[#5c4210] disabled:opacity-60 whitespace-nowrap">
+        <button type="submit" disabled={submitting} className="h-9 px-4 rounded-lg bg-primary text-on-primary text-xs font-bold hover:bg-primary-hover disabled:opacity-60 whitespace-nowrap">
           {submitting ? 'Checking…' : 'Grant Access'}
         </button>
       </form>
 
       {message && (
-        <p className={`text-xs ${message.type === 'error' ? 'text-red-600' : 'text-[#2D6A4F]'}`}>{message.text}</p>
+        <p className={`text-xs ${message.type === 'error' ? 'text-red-600' : 'text-success'}`}>{message.text}</p>
       )}
 
       {noAccountFor && (
-        <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-[#fff8ec] border border-[#f0dfb8]">
-          <p className="text-xs text-[#4e463a]">
+        <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-highlight border border-warning">
+          <p className="text-xs text-on-surface-variant">
             No account yet for <strong>{noAccountFor.email}</strong>. Send them a real invite email — they'll get {noAccountFor.role} access
             the moment they set a password.
           </p>
           <button
             onClick={handleSendInviteEmail}
             disabled={sendingInvite}
-            className="h-8 px-3 rounded-lg bg-[#765a25] text-white text-[11px] font-bold hover:bg-[#5c4210] disabled:opacity-60 whitespace-nowrap"
+            className="h-8 px-3 rounded-lg bg-primary text-on-primary text-[11px] font-bold hover:bg-primary-hover disabled:opacity-60 whitespace-nowrap"
           >
             {sendingInvite ? 'Sending…' : 'Send Invite Email'}
           </button>
@@ -1389,10 +1389,10 @@ function StaffTab({ propertyId, staff, pendingInvites, onChanged }: { propertyId
         <div className="space-y-1.5">
           <label className={labelCls}>Pending invites</label>
           {pendingInvites.map(p => (
-            <div key={p.email} className="flex items-center justify-between px-3 py-2 rounded-lg border border-dashed border-[#E9ECEF] text-xs">
-              <span className="font-semibold text-[#141d23]">{p.email}</span>
-              <span className="capitalize px-2 py-0.5 rounded bg-[#fff8ec] text-[#765a25] font-bold text-[10px]">{p.role} · invited</span>
-              <button onClick={() => handleCancelPending(p.email)} className="text-[#BC4749] hover:text-red-700 p-1">
+            <div key={p.email} className="flex items-center justify-between px-3 py-2 rounded-lg border border-dashed border-outline-variant text-xs">
+              <span className="font-semibold text-on-surface">{p.email}</span>
+              <span className="capitalize px-2 py-0.5 rounded bg-highlight text-primary font-bold text-[10px]">{p.role} · invited</span>
+              <button onClick={() => handleCancelPending(p.email)} className="text-error hover:text-red-700 p-1">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -1402,13 +1402,13 @@ function StaffTab({ propertyId, staff, pendingInvites, onChanged }: { propertyId
 
       <div className="space-y-1.5">
         {staff.length === 0 ? (
-          <p className="text-xs text-[#7f7668] text-center py-6">No staff records visible — run supabase/migrations/0005_staff_mgmt_and_media.sql if this looks wrong.</p>
+          <p className="text-xs text-outline text-center py-6">No staff records visible — run supabase/migrations/0005_staff_mgmt_and_media.sql if this looks wrong.</p>
         ) : (
           staff.map(s => (
-            <div key={s.userId} className="flex items-center justify-between px-3 py-2 rounded-lg border border-[#E9ECEF] text-xs">
-              <span className="font-semibold text-[#141d23]">{s.email}</span>
-              <span className="capitalize px-2 py-0.5 rounded bg-[#ecf5fe] text-[#765a25] font-bold text-[10px]">{s.role}</span>
-              <button onClick={() => handleRevoke(s.userId)} className="text-[#BC4749] hover:text-red-700 p-1">
+            <div key={s.userId} className="flex items-center justify-between px-3 py-2 rounded-lg border border-outline-variant text-xs">
+              <span className="font-semibold text-on-surface">{s.email}</span>
+              <span className="capitalize px-2 py-0.5 rounded bg-surface-container-low text-primary font-bold text-[10px]">{s.role}</span>
+              <button onClick={() => handleRevoke(s.userId)} className="text-error hover:text-red-700 p-1">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -1462,13 +1462,13 @@ function DirectoryContacts({ propertyId }: { propertyId: string }) {
   };
 
   return (
-    <div className="border-t border-[#E9ECEF] pt-4 space-y-3">
-      <h3 className="text-sm font-bold text-[#141d23]">Department Contacts</h3>
-      <p className="text-xs text-[#7f7668]">
+    <div className="border-t border-outline-variant pt-4 space-y-3">
+      <h3 className="text-sm font-bold text-on-surface">Department Contacts</h3>
+      <p className="text-xs text-outline">
         Who Live Ops tasks actually get assigned to — a name and phone number per department, not a login. Reception sees these directly on the Live Ops board.
       </p>
 
-      <form onSubmit={handleAdd} className="grid grid-cols-2 sm:grid-cols-4 gap-2 items-end bg-[#f6faff] p-3 rounded-lg border border-[#E9ECEF]">
+      <form onSubmit={handleAdd} className="grid grid-cols-2 sm:grid-cols-4 gap-2 items-end bg-surface-container-low p-3 rounded-lg border border-outline-variant">
         <div>
           <label className={labelCls}>Name</label>
           <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Priya" className={inputCls} />
@@ -1479,11 +1479,11 @@ function DirectoryContacts({ propertyId }: { propertyId: string }) {
         </div>
         <div>
           <label className={labelCls}>Department</label>
-          <select value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value as DirectoryContact['department'] }))} className={`${inputCls} bg-white`}>
+          <select value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value as DirectoryContact['department'] }))} className={`${inputCls} bg-surface-container-lowest`}>
             {(Object.keys(DEPT_LABELS) as DirectoryContact['department'][]).map(d => <option key={d} value={d}>{DEPT_LABELS[d]}</option>)}
           </select>
         </div>
-        <button type="submit" disabled={submitting} className="h-9 rounded-lg bg-[#765a25] text-white text-xs font-bold hover:bg-[#5c4210] disabled:opacity-60 flex items-center justify-center gap-1">
+        <button type="submit" disabled={submitting} className="h-9 rounded-lg bg-primary text-on-primary text-xs font-bold hover:bg-primary-hover disabled:opacity-60 flex items-center justify-center gap-1">
           <Plus className="w-3.5 h-3.5" /> Add
         </button>
       </form>
@@ -1491,13 +1491,13 @@ function DirectoryContacts({ propertyId }: { propertyId: string }) {
 
       <div className="space-y-1.5">
         {loading ? null : contacts.length === 0 ? (
-          <p className="text-xs text-[#7f7668] text-center py-4">No contacts yet.</p>
+          <p className="text-xs text-outline text-center py-4">No contacts yet.</p>
         ) : (
           contacts.map(c => (
-            <div key={c.id} className="flex items-center justify-between px-3 py-2 rounded-lg border border-[#E9ECEF] text-xs">
-              <span className="font-semibold text-[#141d23]">{c.name}</span>
-              <span className="text-[#7f7668]">{c.phone} · {DEPT_LABELS[c.department]}</span>
-              <button onClick={() => handleDelete(c.id)} className="text-[#BC4749] hover:text-red-700 p-1">
+            <div key={c.id} className="flex items-center justify-between px-3 py-2 rounded-lg border border-outline-variant text-xs">
+              <span className="font-semibold text-on-surface">{c.name}</span>
+              <span className="text-outline">{c.phone} · {DEPT_LABELS[c.department]}</span>
+              <button onClick={() => handleDelete(c.id)} className="text-error hover:text-red-700 p-1">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>

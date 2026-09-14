@@ -145,32 +145,32 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, r
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-[60]">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#E9ECEF] space-y-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between pb-3 border-b border-[#E9ECEF]">
+      <div className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between pb-3 border-b border-outline-variant">
           <div className="flex items-center gap-2">
-            <Receipt className="w-5 h-5 text-[#765a25]" />
+            <Receipt className="w-5 h-5 text-primary" />
             <div>
-              <h3 className="text-lg font-bold text-[#141d23]">Room {roomNumber} · Folio</h3>
-              {guestName && <p className="text-[11px] text-[#7f7668]">{guestName}</p>}
+              <h3 className="text-lg font-bold text-on-surface">Room {roomNumber} · Folio</h3>
+              {guestName && <p className="text-[11px] text-outline">{guestName}</p>}
             </div>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1"><X className="w-5 h-5" /></button>
         </div>
 
         {loading ? (
-          <p className="text-sm text-[#7f7668] text-center py-8">Loading folio…</p>
+          <p className="text-sm text-outline text-center py-8">Loading folio…</p>
         ) : result ? (
           <div className="text-center py-6 space-y-2">
-            <p className="text-2xl font-bold text-[#2D6A4F]">{formatCurrency(result.amountCharged, currency)} settled</p>
-            <p className="text-xs text-[#4e463a]">Charged via {method.toUpperCase()}. Room {roomNumber} is now marked for cleaning.</p>
-            <button onClick={onClose} className="mt-3 px-5 py-2 bg-[#141d23] text-white rounded-lg text-xs font-semibold">Done</button>
+            <p className="text-2xl font-bold text-success">{formatCurrency(result.amountCharged, currency)} settled</p>
+            <p className="text-xs text-on-surface-variant">Charged via {method.toUpperCase()}. Room {roomNumber} is now marked for cleaning.</p>
+            <button onClick={onClose} className="mt-3 px-5 py-2 bg-on-surface text-inverse-on-surface rounded-lg text-xs font-semibold">Done</button>
           </div>
         ) : folio ? (
           <>
             {/* Activity timeline — every charge and payment, oldest first, so it reads as "what happened when" rather than a jumbled bill */}
-            <div className="max-h-56 overflow-y-auto divide-y divide-[#E9ECEF] border border-[#E9ECEF] rounded-lg">
+            <div className="max-h-56 overflow-y-auto divide-y divide-outline-variant border border-outline-variant rounded-lg">
               {folio.charges.length === 0 ? (
-                <p className="text-xs text-[#7f7668] text-center py-6">No activity on this stay yet.</p>
+                <p className="text-xs text-outline text-center py-6">No activity on this stay yet.</p>
               ) : (
                 [...folio.charges]
                   .sort((a, b) => a.postedAt.localeCompare(b.postedAt))
@@ -179,16 +179,16 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, r
                     return (
                       <div key={c.id} className="flex items-center justify-between px-3 py-2 text-xs">
                         <div className="min-w-0 flex items-center gap-2">
-                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isPayment ? 'bg-[#2D6A4F]' : 'bg-[#765a25]'}`} />
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isPayment ? 'bg-success' : 'bg-primary'}`} />
                           <div className="min-w-0">
-                            <p className="font-semibold text-[#141d23] truncate">{c.description}</p>
-                            <p className="text-[10px] text-[#7f7668]">
+                            <p className="font-semibold text-on-surface truncate">{c.description}</p>
+                            <p className="text-[10px] text-outline">
                               {new Date(c.postedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                               {isPayment ? ' · payment received' : ` · ${c.category.replace('_', ' ')}`}
                             </p>
                           </div>
                         </div>
-                        <span className={`font-bold shrink-0 ml-2 ${isPayment ? 'text-[#2D6A4F]' : c.settled ? 'text-[#7f7668] line-through' : 'text-[#141d23]'}`}>
+                        <span className={`font-bold shrink-0 ml-2 ${isPayment ? 'text-success' : c.settled ? 'text-outline line-through' : 'text-on-surface'}`}>
                           {isPayment ? '−' : ''}{formatCurrency(Math.abs(c.amount), currency)}
                         </span>
                       </div>
@@ -198,36 +198,36 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, r
             </div>
 
             <div className="flex items-center justify-between px-1">
-              <span className="text-sm font-bold text-[#141d23]">Balance due</span>
-              <span className="text-xl font-bold text-[#141d23]">{formatCurrency(folio.totalOutstanding, currency)}</span>
+              <span className="text-sm font-bold text-on-surface">Balance due</span>
+              <span className="text-xl font-bold text-on-surface">{formatCurrency(folio.totalOutstanding, currency)}</span>
             </div>
 
             {folio.status === 'checked_in' && (
               <>
                 {/* Record a payment any time — a deposit at check-in, a mid-stay UPI payment — not only at final checkout */}
                 {showPaymentForm ? (
-                  <form onSubmit={handleRecordPayment} className="bg-[#f6faff] p-3 rounded-lg border border-[#E9ECEF] space-y-2">
+                  <form onSubmit={handleRecordPayment} className="bg-surface-container-low p-3 rounded-lg border border-outline-variant space-y-2">
                     <div className="grid grid-cols-2 gap-2">
-                      <input type="number" step="0.01" required autoFocus value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} placeholder="Amount" className="h-9 px-2.5 text-xs border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none" />
-                      <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value as typeof paymentMethod)} className="h-9 px-2 text-xs border border-[#E9ECEF] rounded-lg bg-white">
+                      <input type="number" step="0.01" required autoFocus value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} placeholder="Amount" className="h-9 px-2.5 text-xs border border-outline-variant rounded-lg focus:border-primary focus:outline-none" />
+                      <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value as typeof paymentMethod)} className="h-9 px-2 text-xs border border-outline-variant rounded-lg bg-surface-container-lowest">
                         {PAYMENT_METHODS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
                       </select>
                     </div>
-                    <input value={paymentNote} onChange={e => setPaymentNote(e.target.value)} placeholder="e.g. Advance at check-in" className="w-full h-9 px-2.5 text-xs border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none" />
+                    <input value={paymentNote} onChange={e => setPaymentNote(e.target.value)} placeholder="e.g. Advance at check-in" className="w-full h-9 px-2.5 text-xs border border-outline-variant rounded-lg focus:border-primary focus:outline-none" />
                     <div className="flex justify-end gap-2">
-                      <button type="button" onClick={() => setShowPaymentForm(false)} className="h-8 px-3 rounded-lg border border-[#E9ECEF] text-xs font-semibold text-[#4e463a]">Cancel</button>
-                      <button type="submit" disabled={recordingPayment} className="h-8 px-3 rounded-lg bg-[#2D6A4F] text-white text-xs font-bold disabled:opacity-60">
+                      <button type="button" onClick={() => setShowPaymentForm(false)} className="h-8 px-3 rounded-lg border border-outline-variant text-xs font-semibold text-on-surface-variant">Cancel</button>
+                      <button type="submit" disabled={recordingPayment} className="h-8 px-3 rounded-lg bg-success text-on-success text-xs font-bold disabled:opacity-60">
                         {recordingPayment ? 'Saving…' : 'Record Payment'}
                       </button>
                     </div>
                   </form>
                 ) : (
                   <div className="flex gap-2">
-                    <button onClick={() => setShowPaymentForm(true)} className="flex-1 h-9 rounded-lg border border-[#2D6A4F] text-[#2D6A4F] text-xs font-bold hover:bg-[#2D6A4F]/5 flex items-center justify-center gap-1.5">
+                    <button onClick={() => setShowPaymentForm(true)} className="flex-1 h-9 rounded-lg border border-success text-success text-xs font-bold hover:bg-success/5 flex items-center justify-center gap-1.5">
                       <Plus className="w-3.5 h-3.5" /> Record Payment
                     </button>
                     {upiId && (
-                      <button onClick={handleShowUpiQr} className="flex-1 h-9 rounded-lg border border-[#E9ECEF] text-[#4e463a] text-xs font-bold hover:border-[#765a25] hover:text-[#765a25] flex items-center justify-center gap-1.5">
+                      <button onClick={handleShowUpiQr} className="flex-1 h-9 rounded-lg border border-outline-variant text-on-surface-variant text-xs font-bold hover:border-primary hover:text-primary flex items-center justify-center gap-1.5">
                         <QrCode className="w-3.5 h-3.5" /> Show UPI QR
                       </button>
                     )}
@@ -235,14 +235,14 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, r
                 )}
 
                 <div>
-                  <label className="text-[10px] font-bold text-[#4e463a] block mb-1.5">Settle remaining balance via</label>
+                  <label className="text-[10px] font-bold text-on-surface-variant block mb-1.5">Settle remaining balance via</label>
                   <div className="grid grid-cols-4 gap-1.5">
                     {PAYMENT_METHODS.map(m => (
                       <button
                         key={m.id}
                         onClick={() => setMethod(m.id)}
                         className={`h-8 rounded-lg border text-[11px] font-bold transition-colors ${
-                          method === m.id ? 'bg-[#765a25] text-white border-[#765a25]' : 'bg-white border-[#E9ECEF] text-[#4e463a] hover:border-[#765a25]'
+                          method === m.id ? 'bg-primary text-on-primary border-primary' : 'bg-surface-container-lowest border-outline-variant text-on-surface-variant hover:border-primary'
                         }`}
                       >
                         {m.label}
@@ -255,7 +255,7 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, r
                   value={billMessage}
                   onChange={(e) => setBillMessage(e.target.value)}
                   placeholder="Message printed on the bill (optional)"
-                  className="w-full h-9 px-2.5 text-xs border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none"
+                  className="w-full h-9 px-2.5 text-xs border border-outline-variant rounded-lg focus:border-primary focus:outline-none"
                 />
 
                 {error && <p className="text-xs text-red-600">{error}</p>}
@@ -263,7 +263,7 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, r
                 <div className="flex gap-2">
                   <button
                     onClick={handlePrintBill}
-                    className="h-11 px-3.5 rounded-lg border border-[#E9ECEF] text-[#4e463a] hover:border-[#765a25] hover:text-[#765a25] flex items-center justify-center shrink-0"
+                    className="h-11 px-3.5 rounded-lg border border-outline-variant text-on-surface-variant hover:border-primary hover:text-primary flex items-center justify-center shrink-0"
                     title="Print bill"
                   >
                     <Printer className="w-4 h-4" />
@@ -271,7 +271,7 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, r
                   <button
                     onClick={handleCheckout}
                     disabled={settling}
-                    className="flex-1 h-11 rounded-lg bg-[#765a25] text-white font-semibold text-sm hover:bg-[#5c4210] disabled:opacity-60"
+                    className="flex-1 h-11 rounded-lg bg-primary text-on-primary font-semibold text-sm hover:bg-primary-hover disabled:opacity-60"
                   >
                     {settling ? 'Settling…' : `Settle ${formatCurrency(folio.totalOutstanding, currency)} & Check Out`}
                   </button>
@@ -279,7 +279,7 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, r
               </>
             )}
             {folio.status !== 'checked_in' && (
-              <p className="text-xs text-[#7f7668] text-center">This reservation is {folio.status.replace('_', ' ')} — nothing to settle.</p>
+              <p className="text-xs text-outline text-center">This reservation is {folio.status.replace('_', ' ')} — nothing to settle.</p>
             )}
           </>
         ) : (
@@ -289,15 +289,15 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, r
 
       {showUpiQr && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-[70]" onClick={() => setShowUpiQr(false)}>
-          <div className="bg-white rounded-2xl max-w-xs w-full p-6 shadow-2xl border border-[#E9ECEF] text-center space-y-3" onClick={e => e.stopPropagation()}>
-            <h4 className="text-sm font-bold text-[#141d23]">Scan to pay {folio && formatCurrency(folio.totalOutstanding, currency)}</h4>
+          <div className="bg-surface-container-lowest rounded-2xl max-w-xs w-full p-6 shadow-2xl border border-outline-variant text-center space-y-3" onClick={e => e.stopPropagation()}>
+            <h4 className="text-sm font-bold text-on-surface">Scan to pay {folio && formatCurrency(folio.totalOutstanding, currency)}</h4>
             {upiQrDataUrl ? (
-              <img src={upiQrDataUrl} alt="UPI payment QR" className="w-48 h-48 mx-auto rounded-lg border border-[#E9ECEF]" />
+              <img src={upiQrDataUrl} alt="UPI payment QR" className="w-48 h-48 mx-auto rounded-lg border border-outline-variant" />
             ) : (
-              <div className="w-48 h-48 mx-auto rounded-lg border border-[#E9ECEF] bg-[#f6faff] animate-pulse" />
+              <div className="w-48 h-48 mx-auto rounded-lg border border-outline-variant bg-surface-container-low animate-pulse" />
             )}
-            <p className="text-[11px] text-[#7f7668]">Once confirmed, use "Record Payment" above so the folio reflects it.</p>
-            <button onClick={() => setShowUpiQr(false)} className="w-full h-9 rounded-lg bg-[#141d23] text-white text-xs font-semibold">Close</button>
+            <p className="text-[11px] text-outline">Once confirmed, use "Record Payment" above so the folio reflects it.</p>
+            <button onClick={() => setShowUpiQr(false)} className="w-full h-9 rounded-lg bg-on-surface text-inverse-on-surface text-xs font-semibold">Close</button>
           </div>
         </div>
       )}

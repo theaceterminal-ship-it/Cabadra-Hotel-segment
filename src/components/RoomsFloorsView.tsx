@@ -29,11 +29,11 @@ const CHECKINABLE_STATUSES: RoomStatus[] = ['ready', 'dirty', 'cleaning'];
 
 /** One room tile's look, keyed by status — kept as data instead of a JSX switch so a floor section is just `rooms.map(tile)`. */
 const STATUS_STYLE: Record<RoomStatus, { tile: string; text: string; icon: React.ComponentType<{ className?: string }> }> = {
-  ready: { tile: 'bg-white border border-[#E9ECEF] hover:border-[#765a25]', text: 'text-[#141d23]', icon: () => <div className="w-2.5 h-2.5 rounded-full bg-[#d2dbe4] border border-[#d1c5b5] mt-1" /> },
+  ready: { tile: 'bg-surface-container-lowest border border-outline-variant hover:border-primary', text: 'text-on-surface', icon: () => <div className="w-2.5 h-2.5 rounded-full bg-[#d2dbe4] border border-[#d1c5b5] mt-1" /> },
   occupied: { tile: 'bg-[#bd9b60] border-transparent', text: 'text-[#4a3301]', icon: User },
-  occupied_vip: { tile: 'bg-[#bd9b60] border-2 border-[#765a25] shadow-[0_0_15px_rgba(189,155,96,0.35)]', text: 'text-[#4a3301]', icon: Star },
+  occupied_vip: { tile: 'bg-[#bd9b60] border-2 border-primary shadow-[0_0_15px_rgba(189,155,96,0.35)]', text: 'text-[#4a3301]', icon: Star },
   cleaning: { tile: 'bg-[#e2e2e5] border-transparent', text: 'text-[#636467]', icon: Brush },
-  dirty: { tile: 'bg-[#ffdad6] border-transparent', text: 'text-[#93000a]', icon: AlertCircle },
+  dirty: { tile: 'bg-error-container border-transparent', text: 'text-on-error-container', icon: AlertCircle },
   maintenance: { tile: 'bg-[#9ea0a1] border-transparent', text: 'text-[#343738]', icon: Wrench },
 };
 
@@ -51,11 +51,11 @@ function RoomTileBody({ room, currency }: { room: Room; currency: string }) {
         </div>
       );
     case 'dirty':
-      return <p className="text-[10px] font-semibold truncate text-[#93000a]">{room.issueDescription || 'Requires service'}</p>;
+      return <p className="text-[10px] font-semibold truncate text-on-error-container">{room.issueDescription || 'Requires service'}</p>;
     case 'maintenance':
       return <p className="text-[10px] font-semibold truncate">ETA {room.maintenanceEta || 'TBD'}</p>;
     default:
-      return <p className="text-[10px] text-[#2D6A4F] font-semibold truncate">{formatCurrency(room.pricePerNight, currency)}</p>;
+      return <p className="text-[10px] text-success font-semibold truncate">{formatCurrency(room.pricePerNight, currency)}</p>;
   }
 }
 
@@ -104,8 +104,8 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
     <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-semibold text-[#141d23]">Rooms & Floors</h1>
-          <p className="text-sm text-[#4e463a] mt-1">
+          <h1 className="text-2xl md:text-3xl font-semibold text-on-surface">Rooms & Floors</h1>
+          <p className="text-sm text-on-surface-variant mt-1">
             {hasExternalPms
               ? 'Your PMS handles bookings — tap a ready room to check the guest in here and switch on their QR.'
               : 'Manage every room, and print a room-service QR for the door.'}
@@ -113,18 +113,18 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <div className="relative flex-1 sm:w-72">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#7f7668]" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-outline" />
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search room, type or guest..."
-              className="w-full h-10 pl-9 pr-3 bg-white border border-[#E9ECEF] rounded-lg text-xs focus:outline-none focus:border-[#765a25]"
+              className="w-full h-10 pl-9 pr-3 bg-surface-container-lowest border border-outline-variant rounded-lg text-xs focus:outline-none focus:border-primary"
             />
           </div>
           {!hasExternalPms && (
             <button
               onClick={() => setShowNewBooking(true)}
-              className="h-10 px-3 rounded-lg bg-[#765a25] text-white text-xs font-semibold hover:bg-[#5c4210] flex items-center gap-1.5 whitespace-nowrap shrink-0"
+              className="h-10 px-3 rounded-lg bg-primary text-on-primary text-xs font-semibold hover:bg-primary-hover flex items-center gap-1.5 whitespace-nowrap shrink-0"
             >
               <CalendarPlus className="w-4 h-4" /> New Booking
             </button>
@@ -147,7 +147,7 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
               key={key}
               onClick={() => setStatusFilter(statusFilter === key ? 'all' : (key as RoomStatus | 'all'))}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                statusFilter === key ? 'bg-[#765a25] text-white border-[#765a25]' : 'bg-white border-[#E9ECEF] text-[#4e463a] hover:border-[#765a25]'
+                statusFilter === key ? 'bg-primary text-on-primary border-primary' : 'bg-surface-container-lowest border-outline-variant text-on-surface-variant hover:border-primary'
               }`}
             >
               {label} ({counts[key]})
@@ -156,9 +156,9 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
         </div>
         {floors.length > 1 && (
           <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-[#7f7668] font-semibold">Jump to:</span>
+            <span className="text-outline font-semibold">Jump to:</span>
             {floors.map(fl => (
-              <button key={fl} onClick={() => scrollToFloor(fl)} className="px-2.5 py-1 rounded bg-[#ecf5fe] text-[#765a25] font-bold hover:bg-[#dbe4ed]">
+              <button key={fl} onClick={() => scrollToFloor(fl)} className="px-2.5 py-1 rounded bg-surface-container-low text-primary font-bold hover:bg-[#dbe4ed]">
                 {fl}
               </button>
             ))}
@@ -173,9 +173,9 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
           if (floorRooms.length === 0) return null;
           return (
             <section key={floor} id={`floor-section-${floor}`} className="scroll-mt-4">
-              <h2 className="text-sm font-bold text-[#141d23] mb-3 flex items-center gap-2">
+              <h2 className="text-sm font-bold text-on-surface mb-3 flex items-center gap-2">
                 Floor {floor}
-                <span className="text-[#7f7668] font-medium">({floorRooms.length} room{floorRooms.length === 1 ? '' : 's'})</span>
+                <span className="text-outline font-medium">({floorRooms.length} room{floorRooms.length === 1 ? '' : 's'})</span>
               </h2>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
                 {floorRooms.map(room => {
@@ -197,7 +197,7 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
                       <button
                         onClick={(e) => { e.stopPropagation(); setQrRoom(room); }}
                         title="Generate room-service QR"
-                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-white border border-[#E9ECEF] flex items-center justify-center text-[#765a25] hover:bg-[#fff8ec] shadow-2xs"
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-surface-container-lowest border border-outline-variant flex items-center justify-center text-primary hover:bg-highlight shadow-2xs"
                       >
                         <QrCode className="w-2.5 h-2.5" />
                       </button>
@@ -209,61 +209,61 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
           );
         })}
         {filteredRooms.length === 0 && (
-          <p className="text-sm text-[#7f7668] text-center py-16">No rooms match your search/filter.</p>
+          <p className="text-sm text-outline text-center py-16">No rooms match your search/filter.</p>
         )}
       </div>
 
       {/* Room Detail & Status Control Modal */}
       {selectedRoomForDetail && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#E9ECEF] space-y-4">
-            <div className="flex justify-between items-start pb-3 border-b border-[#E9ECEF]">
+          <div className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant space-y-4">
+            <div className="flex justify-between items-start pb-3 border-b border-outline-variant">
               <div>
-                <span className="text-[10px] font-bold text-[#765a25] uppercase tracking-wider">
+                <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
                   Floor {selectedRoomForDetail.floor} • Room Details
                 </span>
-                <h3 className="text-2xl font-bold text-[#141d23]">Room {selectedRoomForDetail.number}</h3>
-                <p className="text-xs text-[#7f7668]">{selectedRoomForDetail.type}</p>
+                <h3 className="text-2xl font-bold text-on-surface">Room {selectedRoomForDetail.number}</h3>
+                <p className="text-xs text-outline">{selectedRoomForDetail.type}</p>
               </div>
               <button onClick={() => setSelectedRoomForDetail(null)} className="text-gray-400 hover:text-gray-600 text-xl font-bold p-1">&times;</button>
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="bg-[#f6faff] p-3 rounded-lg border border-[#E9ECEF] space-y-1.5">
+              <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant space-y-1.5">
                 <div className="flex justify-between">
-                  <span className="text-[#7f7668]">Current Status:</span>
-                  <span className="font-bold text-[#141d23] uppercase">{selectedRoomForDetail.status}</span>
+                  <span className="text-outline">Current Status:</span>
+                  <span className="font-bold text-on-surface uppercase">{selectedRoomForDetail.status}</span>
                 </div>
                 {selectedRoomForDetail.guestName && (
                   <div className="flex justify-between">
-                    <span className="text-[#7f7668]">Guest Name:</span>
-                    <span className="font-bold text-[#141d23]">{selectedRoomForDetail.guestName}</span>
+                    <span className="text-outline">Guest Name:</span>
+                    <span className="font-bold text-on-surface">{selectedRoomForDetail.guestName}</span>
                   </div>
                 )}
                 {selectedRoomForDetail.notes && (
                   <div className="flex justify-between">
-                    <span className="text-[#7f7668]">Notes / Issue:</span>
-                    <span className="font-medium text-[#BC4749]">{selectedRoomForDetail.notes}</span>
+                    <span className="text-outline">Notes / Issue:</span>
+                    <span className="font-medium text-error">{selectedRoomForDetail.notes}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-[#7f7668]">Standard Rate:</span>
-                  <span className="font-bold text-[#2D6A4F]">{formatCurrency(selectedRoomForDetail.pricePerNight, currency)} / night</span>
+                  <span className="text-outline">Standard Rate:</span>
+                  <span className="font-bold text-success">{formatCurrency(selectedRoomForDetail.pricePerNight, currency)} / night</span>
                 </div>
               </div>
 
               {/* Guest profile — only exists once a real check-in created it (staff_checkin_new_guest); this is exactly what ties the room's durable QR to a specific person until checkout. */}
               {(selectedRoomForDetail.guestPhone || selectedRoomForDetail.guestEmail || selectedRoomForDetail.guestIdDocumentUrl) && (
-                <div className="bg-[#f6faff] p-3 rounded-lg border border-[#E9ECEF] space-y-1.5">
-                  <p className="text-[10px] font-bold text-[#4e463a] uppercase tracking-wider">Guest Profile</p>
+                <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant space-y-1.5">
+                  <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Guest Profile</p>
                   {selectedRoomForDetail.guestPhone && (
-                    <div className="flex items-center gap-1.5 text-[#141d23]"><Phone className="w-3 h-3 text-[#7f7668]" /> {selectedRoomForDetail.guestPhone}</div>
+                    <div className="flex items-center gap-1.5 text-on-surface"><Phone className="w-3 h-3 text-outline" /> {selectedRoomForDetail.guestPhone}</div>
                   )}
                   {selectedRoomForDetail.guestEmail && (
-                    <div className="flex items-center gap-1.5 text-[#141d23]"><Mail className="w-3 h-3 text-[#7f7668]" /> {selectedRoomForDetail.guestEmail}</div>
+                    <div className="flex items-center gap-1.5 text-on-surface"><Mail className="w-3 h-3 text-outline" /> {selectedRoomForDetail.guestEmail}</div>
                   )}
                   {selectedRoomForDetail.guestIdDocumentUrl && (
-                    <a href={selectedRoomForDetail.guestIdDocumentUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#765a25] font-semibold hover:underline">
+                    <a href={selectedRoomForDetail.guestIdDocumentUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-primary font-semibold hover:underline">
                       <FileText className="w-3 h-3" /> View ID document
                     </a>
                   )}
@@ -276,15 +276,15 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
                 <button
                   type="button"
                   onClick={() => setCheckInRoom(selectedRoomForDetail)}
-                  className="w-full h-10 rounded-lg bg-[#765a25] text-white text-xs font-bold hover:bg-[#5c4210] flex items-center justify-center gap-1.5"
+                  className="w-full h-10 rounded-lg bg-primary text-on-primary text-xs font-bold hover:bg-primary-hover flex items-center justify-center gap-1.5"
                 >
                   <UserPlus className="w-3.5 h-3.5" /> Check In Guest
                 </button>
               )}
 
               <div>
-                <label className="font-bold text-[#141d23] block mb-2">Housekeeping Status</label>
-                <p className="text-[10px] text-[#7f7668] mb-2">Occupancy is set by checking a guest in, not chosen here — these are the states a room moves through around a stay.</p>
+                <label className="font-bold text-on-surface block mb-2">Housekeeping Status</label>
+                <p className="text-[10px] text-outline mb-2">Occupancy is set by checking a guest in, not chosen here — these are the states a room moves through around a stay.</p>
                 <div className="grid grid-cols-2 gap-2">
                   {(['ready', 'cleaning', 'dirty', 'maintenance'] as RoomStatus[]).map((st) => (
                     <button
@@ -295,7 +295,7 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
                         setSelectedRoomForDetail({ ...selectedRoomForDetail, status: st });
                       }}
                       className={`p-2 rounded-lg border text-xs font-bold capitalize transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
-                        selectedRoomForDetail.status === st ? 'bg-[#765a25] text-white border-[#765a25]' : 'bg-white border-[#E9ECEF] text-[#4e463a] hover:bg-[#ecf5fe]'
+                        selectedRoomForDetail.status === st ? 'bg-primary text-on-primary border-primary' : 'bg-surface-container-lowest border-outline-variant text-on-surface-variant hover:bg-surface-container-low'
                       }`}
                     >
                       {st.replace('_', ' ')}
@@ -305,10 +305,10 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
               </div>
             </div>
 
-            <div className="flex justify-between items-center pt-3 border-t border-[#E9ECEF] gap-2">
+            <div className="flex justify-between items-center pt-3 border-t border-outline-variant gap-2">
               <button
                 onClick={() => setQrRoom(selectedRoomForDetail)}
-                className="h-9 px-3 rounded-lg border border-[#E9ECEF] text-[#4e463a] text-xs font-bold hover:border-[#765a25] hover:text-[#765a25] flex items-center gap-1.5 whitespace-nowrap"
+                className="h-9 px-3 rounded-lg border border-outline-variant text-on-surface-variant text-xs font-bold hover:border-primary hover:text-primary flex items-center gap-1.5 whitespace-nowrap"
               >
                 <QrCode className="w-3.5 h-3.5" /> Room QR
               </button>
@@ -316,12 +316,12 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
                 {selectedRoomForDetail.reservationId && (
                   <button
                     onClick={() => setShowFolio(true)}
-                    className="h-9 px-3 rounded-lg border border-[#765a25] text-[#765a25] text-xs font-bold hover:bg-[#fff8ec] flex items-center gap-1.5 whitespace-nowrap"
+                    className="h-9 px-3 rounded-lg border border-primary text-primary text-xs font-bold hover:bg-highlight flex items-center gap-1.5 whitespace-nowrap"
                   >
                     <Receipt className="w-3.5 h-3.5" /> Folio & Checkout
                   </button>
                 )}
-                <button onClick={() => setSelectedRoomForDetail(null)} className="px-4 py-2 bg-[#141d23] text-white rounded-lg text-xs font-semibold whitespace-nowrap">
+                <button onClick={() => setSelectedRoomForDetail(null)} className="px-4 py-2 bg-on-surface text-inverse-on-surface rounded-lg text-xs font-semibold whitespace-nowrap">
                   Done
                 </button>
               </div>

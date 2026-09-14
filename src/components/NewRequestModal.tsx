@@ -52,13 +52,13 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#E9ECEF] space-y-4">
-        <div className="flex justify-between items-center pb-3 border-b border-[#E9ECEF]">
+      <div className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant space-y-4">
+        <div className="flex justify-between items-center pb-3 border-b border-outline-variant">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-[#ffdad6] text-[#93000a] rounded-lg">
+            <div className="p-2 bg-error-container text-on-error-container rounded-lg">
               <Megaphone className="w-5 h-5" />
             </div>
-            <h3 className="font-bold text-lg text-[#141d23]">
+            <h3 className="font-bold text-lg text-on-surface">
               {mode === 'staff' ? 'Log Guest / Urgent Request' : 'Request Something'}
             </h3>
           </div>
@@ -70,36 +70,36 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           {mode === 'staff' && (
             <div>
-              <label className="font-bold text-[#141d23] block mb-1">Room Number</label>
+              <label className="font-bold text-on-surface block mb-1">Room Number</label>
               <input
                 type="text"
                 required
                 value={roomNumber}
                 onChange={(e) => setRoomNumber(e.target.value)}
                 placeholder="e.g. 304"
-                className="w-full h-10 px-3 border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none"
+                className="w-full h-10 px-3 border border-outline-variant rounded-lg focus:border-primary focus:outline-none"
               />
             </div>
           )}
 
           <div>
-            <label className="font-bold text-[#141d23] block mb-1">Request Summary</label>
+            <label className="font-bold text-on-surface block mb-1">Request Summary</label>
             <input
               type="text"
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Late Checkout Request, Extra Champagne Glasses..."
-              className="w-full h-10 px-3 border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none"
+              className="w-full h-10 px-3 border border-outline-variant rounded-lg focus:border-primary focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="font-bold text-[#141d23] block mb-1">Priority Level</label>
+            <label className="font-bold text-on-surface block mb-1">Priority Level</label>
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value as typeof priority)}
-              className="w-full h-10 px-3 border border-[#E9ECEF] rounded-lg bg-white focus:border-[#765a25] focus:outline-none"
+              className="w-full h-10 px-3 border border-outline-variant rounded-lg bg-surface-container-lowest focus:border-primary focus:outline-none"
             >
               <option value="High Priority">High Priority (Urgent Notification)</option>
               <option value="Standard">Standard</option>
@@ -108,31 +108,31 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
           </div>
 
           {mode === 'staff' && (
-            <div className="bg-[#ecf5fe] p-3 rounded-lg border border-[#E9ECEF]">
-              <label className="flex items-center gap-2 cursor-pointer font-medium text-[#141d23]">
+            <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant">
+              <label className="flex items-center gap-2 cursor-pointer font-medium text-on-surface">
                 <input
                   type="checkbox"
                   checked={autoDispatchTask}
                   onChange={(e) => setAutoDispatchTask(e.target.checked)}
-                  className="accent-[#765a25]"
+                  className="accent-primary"
                 />
                 <span>Auto-dispatch task to Live Ops Housekeeping board</span>
               </label>
             </div>
           )}
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-[#E9ECEF]">
+          <div className="flex justify-end gap-2 pt-3 border-t border-outline-variant">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-[#E9ECEF] rounded-lg text-[#4e463a] font-semibold"
+              className="px-4 py-2 border border-outline-variant rounded-lg text-on-surface-variant font-semibold"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-5 py-2 bg-[#765a25] text-white rounded-lg font-bold hover:bg-[#5c4210] disabled:opacity-60"
+              className="px-5 py-2 bg-primary text-on-primary rounded-lg font-bold hover:bg-primary-hover disabled:opacity-60"
             >
               {submitting ? 'Sending…' : mode === 'staff' ? 'Log Request' : 'Send Request'}
             </button>

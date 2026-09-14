@@ -1,102 +1,181 @@
 @import "tailwindcss";
 
+/*
+ * Cabadra staff theme — lavender/plum/lime, rebuilt from the TimeFrame
+ * reference. Every semantic token below is a real CSS custom property
+ * (Tailwind v4's @theme compiles to exactly that), so a component that
+ * uses the class names (bg-surface, text-on-surface, border-outline-variant,
+ * ...) instead of a literal hex gets dark mode automatically — the .dark
+ * block at the bottom just overrides the same variable names. Toggling
+ * dark mode is a `dark` class on <html> (see src/hooks/useTheme.ts), not
+ * prefers-color-scheme — this app has a real on/off switch, not an
+ * OS-follow.
+ *
+ * Room-status colors are deliberately their own token family
+ * (--color-room-*), not reused from the generic primary/success/error
+ * roles — "this room is occupied" and "this is the primary action button"
+ * are different meanings that happen to want similar visual weight, and
+ * conflating them is exactly the kind of thing that reads as accidental
+ * later. VIP alone keeps the old brand gold — every other status moved
+ * fully into the new purple family, so gold becomes a deliberately rare,
+ * special signal instead of the everyday accent it used to be.
+ */
+
 @theme {
-  --color-primary: #765a25;
-  --color-primary-container: #bd9b60;
+  --color-primary: #271c46;
+  --color-primary-hover: #1a1230;
   --color-on-primary: #ffffff;
-  --color-on-primary-container: #4a3301;
-  --color-primary-fixed: #ffdea9;
-  --color-primary-fixed-dim: #e6c183;
-  --color-inverse-primary: #e6c183;
-  --color-surface-tint: #765a25;
+  --color-primary-container: #8983be;
+  --color-on-primary-container: #271c46;
+  --color-primary-fixed: #8983be;
+  --color-primary-fixed-dim: #6a6494;
+  --color-inverse-primary: #c6f24e;
+  --color-surface-tint: #271c46;
+  /* A soft, low-saturation tint for "highlighted but not a solid button" —
+     active nav pill, selected-row background, callout banners. */
+  --color-highlight: #f0eefc;
+  --color-on-highlight: #271c46;
 
-  --color-surface: #f6faff;
-  --color-surface-dim: #d2dbe4;
-  --color-surface-bright: #f6faff;
+  --color-surface: #9992c9;
+  --color-surface-dim: #8981be;
+  --color-surface-bright: #9992c9;
   --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #ecf5fe;
-  --color-surface-container: #e6eff8;
-  --color-surface-container-high: #e0e9f2;
-  --color-surface-container-highest: #dbe4ed;
-  --color-surface-variant: #dbe4ed;
+  --color-surface-container-low: #f4f2fb;
+  --color-surface-container: #edeaf8;
+  --color-surface-container-high: #e5e1f4;
+  --color-surface-container-highest: #dbd5ee;
+  --color-surface-variant: #e5e1f4;
 
-  --color-on-surface: #141d23;
-  --color-on-surface-variant: #4e463a;
-  --color-inverse-surface: #293138;
-  --color-inverse-on-surface: #e9f2fb;
+  --color-on-surface: #1e1836;
+  --color-on-surface-variant: #6a6494;
+  --color-inverse-surface: #271c46;
+  --color-inverse-on-surface: #f4f2fb;
 
-  --color-outline: #7f7668;
-  --color-outline-variant: #d1c5b5;
+  --color-outline: #a79fd1;
+  --color-outline-variant: #dbd5ee;
 
-  --color-secondary: #5d5e61;
+  --color-secondary: #6a6494;
   --color-on-secondary: #ffffff;
-  --color-secondary-container: #e2e2e5;
-  --color-on-secondary-container: #636467;
-  --color-secondary-fixed: #e2e2e5;
-  --color-secondary-fixed-dim: #c6c6c9;
+  --color-secondary-container: #e5e1f4;
+  --color-on-secondary-container: #4a4470;
+  --color-secondary-fixed: #e5e1f4;
+  --color-secondary-fixed-dim: #dbd5ee;
 
-  --color-tertiary: #5c5f60;
+  --color-tertiary: #6a6494;
   --color-on-tertiary: #ffffff;
-  --color-tertiary-container: #9ea0a1;
-  --color-on-tertiary-container: #343738;
-  --color-tertiary-fixed: #e1e3e4;
-  --color-tertiary-fixed-dim: #c5c7c8;
+  --color-tertiary-container: #dbd5ee;
+  --color-on-tertiary-container: #4a4470;
+  --color-tertiary-fixed: #dbd5ee;
+  --color-tertiary-fixed-dim: #c9c1e8;
 
-  --color-error: #BC4749;
+  --color-error: #d64f6e;
   --color-on-error: #ffffff;
-  --color-error-container: #ffdad6;
-  --color-on-error-container: #93000a;
+  --color-error-container: #ffd9e1;
+  --color-on-error-container: #7c0a28;
 
-  --color-success: #2D6A4F;
-  --color-warning: #D4A373;
-  --color-info: #4A6274;
+  --color-success: #6a9c2e;
+  --color-on-success: #ffffff;
+  --color-warning: #b5793a;
+  --color-on-warning: #ffffff;
+  --color-info: #6a6494;
   --color-charcoal-dark: #121212;
-  --color-stone-gray: #E9ECEF;
-  --color-background: #f6faff;
-  --color-on-background: #141d23;
+  --color-stone-gray: #e5e1f4;
+  --color-background: #9992c9;
+  --color-on-background: #1e1836;
+
+  /* Text sitting directly on the bold --color-surface page background
+     (not inside a white/dark card) — surface is a saturated color in BOTH
+     themes (lavender / near-black), so this stays light in both, unlike
+     on-surface which correctly flips because surface-container flips. */
+  --color-on-surface-strong: #ffffff;
+  --color-on-surface-strong-muted: rgba(255, 255, 255, 0.7);
+
+  /* Room-status grid — the one place a bright, saturated color is the
+     whole point (a receptionist scanning the grid for "which is ready"). */
+  --color-room-ready: #c6f24e;
+  --color-room-ready-on: #1e1836;
+  --color-room-occupied: #271c46;
+  --color-room-occupied-on: #ffffff;
+  --color-room-vip: #bd9b60;
+  --color-room-vip-on: #3a2a00;
+  --color-room-cleaning: #d9a15c;
+  --color-room-cleaning-on: #3a2504;
+  --color-room-dirty: #d64f6e;
+  --color-room-dirty-on: #ffffff;
+  --color-room-maintenance: #8983be;
+  --color-room-maintenance-on: #ffffff;
 
   --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --spacing-touch-target: 44px;
 }
 
-body {
-  font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
-  background-color: var(--color-background);
-  color: var(--color-on-background);
-}
+.dark {
+  --color-primary: #c6f24e;
+  --color-primary-hover: #daf76e;
+  --color-on-primary: #1e1836;
+  --color-primary-container: #3d3161;
+  --color-on-primary-container: #e5e1f4;
+  --color-primary-fixed: #3d3161;
+  --color-primary-fixed-dim: #4a4470;
+  --color-inverse-primary: #271c46;
+  --color-surface-tint: #c6f24e;
+  --color-highlight: #2a2148;
+  --color-on-highlight: #f1effb;
 
-.material-symbols-outlined {
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-  vertical-align: middle;
-  display: inline-block;
-  line-height: 1;
-}
+  --color-surface: #14101f;
+  --color-surface-dim: #14101f;
+  --color-surface-bright: #241a3d;
+  --color-surface-container-lowest: #0f0c18;
+  --color-surface-container-low: #1c1730;
+  --color-surface-container: #211a38;
+  --color-surface-container-high: #2a2148;
+  --color-surface-container-highest: #332955;
+  --color-surface-variant: #332955;
 
-.fill-icon {
-  font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
-}
+  --color-on-surface: #f1effb;
+  --color-on-surface-variant: #b3abd9;
+  --color-inverse-surface: #e5e1f4;
+  --color-inverse-on-surface: #1e1836;
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #d2dbe4;
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #9ea0a1;
-}
+  --color-outline: #4a4470;
+  --color-outline-variant: #332955;
 
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+  --color-secondary: #b3abd9;
+  --color-on-secondary: #1e1836;
+  --color-secondary-container: #332955;
+  --color-on-secondary-container: #dbd5ee;
+  --color-secondary-fixed: #332955;
+  --color-secondary-fixed-dim: #3d3161;
 
+  --color-tertiary: #b3abd9;
+  --color-on-tertiary: #1e1836;
+  --color-tertiary-container: #332955;
+  --color-on-tertiary-container: #dbd5ee;
+
+  --color-error: #e37d95;
+  --color-on-error: #3a0414;
+  --color-error-container: #7c0a28;
+  --color-on-error-container: #ffd9e1;
+
+  --color-success: #9ad14e;
+  --color-on-success: #16260a;
+  --color-warning: #e3b57d;
+  --color-on-warning: #3a2504;
+  --color-info: #b3abd9;
+  --color-stone-gray: #332955;
+  --color-background: #14101f;
+  --color-on-background: #f1effb;
+
+  --color-room-ready: #9ad14e;
+  --color-room-ready-on: #16260a;
+  --color-room-occupied: #4a4470;
+  --color-room-occupied-on: #f1effb;
+  --color-room-vip: #bd9b60;
+  --color-room-vip-on: #2a1d00;
+  --color-room-cleaning: #e3b57d;
+  --color-room-cleaning-on: #3a2504;
+  --color-room-dirty: #e37d95;
+  --color-room-dirty-on: #3a0414;
+  --color-room-maintenance: #6a6494;
+  --color-room-maintenance-on: #f1effb;
+}

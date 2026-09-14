@@ -38,14 +38,14 @@ export function GuestLinkCard({ guestToken }: GuestLinkCardProps) {
   };
 
   return (
-    <div className="bg-[#f6faff] p-3 rounded-lg border border-[#E9ECEF] flex items-center gap-3">
-      {qrDataUrl && <img src={qrDataUrl} alt="Guest link QR code" className="w-16 h-16 rounded border border-[#E9ECEF] bg-white shrink-0" />}
+    <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant flex items-center gap-3">
+      {qrDataUrl && <img src={qrDataUrl} alt="Guest link QR code" className="w-16 h-16 rounded border border-outline-variant bg-surface-container-lowest shrink-0" />}
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-bold text-[#4e463a] uppercase tracking-wider mb-1">Guest Link</p>
-        <p className="text-[11px] text-[#7f7668] truncate mb-1.5">{url}</p>
+        <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Guest Link</p>
+        <p className="text-[11px] text-outline truncate mb-1.5">{url}</p>
         <button
           onClick={handleCopy}
-          className="h-7 px-2.5 rounded bg-[#765a25] text-white text-[11px] font-bold hover:bg-[#5c4210] flex items-center gap-1.5"
+          className="h-7 px-2.5 rounded bg-primary text-on-primary text-[11px] font-bold hover:bg-primary-hover flex items-center gap-1.5"
         >
           {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
           {copied ? 'Copied' : 'Copy Link'}

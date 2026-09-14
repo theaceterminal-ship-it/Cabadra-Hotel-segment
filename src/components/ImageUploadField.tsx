@@ -39,15 +39,15 @@ export function ImageUploadField({ label, value, onChange }: ImageUploadFieldPro
 
   return (
     <div>
-      <label className="text-[10px] font-bold text-[#4e463a] block mb-1">{label}</label>
+      <label className="text-[10px] font-bold text-on-surface-variant block mb-1">{label}</label>
       <div className="flex gap-1.5 items-center">
         {value && (
           <div className="relative shrink-0">
-            <img src={value} alt="" className="w-9 h-9 rounded object-cover border border-[#E9ECEF]" />
+            <img src={value} alt="" className="w-9 h-9 rounded object-cover border border-outline-variant" />
             <button
               type="button"
               onClick={() => onChange('')}
-              className="absolute -top-1.5 -right-1.5 bg-white rounded-full border border-[#E9ECEF] text-[#BC4749] shadow-2xs"
+              className="absolute -top-1.5 -right-1.5 bg-surface-container-lowest rounded-full border border-outline-variant text-error shadow-2xs"
             >
               <X className="w-3 h-3" />
             </button>
@@ -57,7 +57,7 @@ export function ImageUploadField({ label, value, onChange }: ImageUploadFieldPro
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder="https://..."
-          className="flex-1 h-9 px-2 text-xs border border-[#E9ECEF] rounded focus:border-[#765a25] focus:outline-none min-w-0"
+          className="flex-1 h-9 px-2 text-xs border border-outline-variant rounded focus:border-primary focus:outline-none min-w-0"
         />
         {isCloudinaryConfigured && (
           <>
@@ -66,7 +66,7 @@ export function ImageUploadField({ label, value, onChange }: ImageUploadFieldPro
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="h-9 px-2.5 rounded border border-[#E9ECEF] text-[#765a25] hover:bg-[#ecf5fe] disabled:opacity-50 shrink-0"
+              className="h-9 px-2.5 rounded border border-outline-variant text-primary hover:bg-surface-container-low disabled:opacity-50 shrink-0"
               title="Upload a photo"
             >
               <Upload className="w-3.5 h-3.5" />
@@ -74,7 +74,7 @@ export function ImageUploadField({ label, value, onChange }: ImageUploadFieldPro
           </>
         )}
       </div>
-      {uploading && <p className="text-[10px] text-[#7f7668] mt-1">Uploading…</p>}
+      {uploading && <p className="text-[10px] text-outline mt-1">Uploading…</p>}
       {error && <p className="text-[10px] text-red-600 mt-1">{error}</p>}
     </div>
   );

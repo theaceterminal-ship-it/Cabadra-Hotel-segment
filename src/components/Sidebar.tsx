@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronsLeft, ChevronsRight, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 
 export interface SidebarNavItem {
   id: string;
@@ -10,40 +10,27 @@ export interface SidebarNavItem {
 }
 
 interface SidebarProps {
-  title: string;
   navItems: SidebarNavItem[];
   activeId: string;
   onNavigate: (id: string) => void;
-  collapsed: boolean;
-  onToggleCollapsed: () => void;
   onSignOut: () => void;
 }
 
 /**
- * A collapsible left nav — the single source of navigation for a page,
- * replacing a top tab bar. Collapsed state persists per-browser via
- * localStorage (see ReceptionApp) since it's a per-user layout preference,
- * not app state anyone else needs to see.
+ * The icon-only rail from the TimeFrame reference — a fixed-width column
+ * of rounded circular icon buttons, active one filled solid, logo mark at
+ * top, sign-out at the bottom. Replaces the old collapsible text-label
+ * sidebar entirely: this design has no expanded state, on purpose — it's
+ * meant to stay this narrow always, same as the reference.
  */
-export const Sidebar: React.FC<SidebarProps> = ({ title, navItems, activeId, onNavigate, collapsed, onToggleCollapsed, onSignOut }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ navItems, activeId, onNavigate, onSignOut }) => {
   return (
-    <aside
-      className={`shrink-0 h-screen sticky top-0 bg-white border-r border-[#E9ECEF] flex flex-col transition-[width] duration-200 ${
-        collapsed ? 'w-16' : 'w-60'
-      }`}
-    >
-      <div className={`h-14 flex items-center border-b border-[#E9ECEF] shrink-0 ${collapsed ? 'justify-center px-0' : 'justify-between px-4'}`}>
-        {!collapsed && <span className="font-bold text-[#765a25] truncate">{title}</span>}
-        <button
-          onClick={onToggleCollapsed}
-          className="h-8 w-8 shrink-0 flex items-center justify-center rounded-lg text-[#7f7668] hover:bg-[#ecf5fe] hover:text-[#765a25] transition-colors"
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {collapsed ? <ChevronsRight className="w-4 h-4" /> : <ChevronsLeft className="w-4 h-4" />}
-        </button>
+    <aside className="shrink-0 h-screen sticky top-0 w-20 bg-surface flex flex-col items-center py-5 gap-6">
+      <div className="w-10 h-10 rounded-full border-2 border-on-primary/70 flex items-center justify-center shrink-0" title="Cabadra">
+        <span className="w-2.5 h-2.5 rounded-full bg-on-primary/70" />
       </div>
 
-      <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
+      <nav className="flex-1 flex flex-col items-center gap-2">
         {navItems.map(item => {
           const Icon = item.icon;
           const active = item.id === activeId;
@@ -51,39 +38,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ title, navItems, activeId, onN
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              title={collapsed ? item.label : undefined}
-              className={`w-full flex items-center gap-3 rounded-lg text-sm font-semibold transition-colors ${
-                collapsed ? 'justify-center h-11' : 'px-3 h-11'
-              } ${active ? 'bg-[#fff8ec] text-[#765a25]' : 'text-[#4e463a] hover:bg-[#ecf5fe]'}`}
+              title={item.label}
+              className={`relative w-11 h-11 shrink-0 rounded-full flex items-center justify-center transition-colors ${
+                active ? 'bg-primary text-on-primary shadow-md' : 'text-on-primary/70 hover:bg-primary-container/30 hover:text-on-primary'
+              }`}
             >
-              <span className="relative shrink-0">
-                <Icon className="w-4 h-4" />
-                {!!item.badge && (
-                  <span className={`absolute -top-1.5 flex items-center justify-center rounded-full bg-[#BC4749] text-white font-bold ${
-                    collapsed ? '-right-1.5 min-w-[14px] h-3.5 text-[8px] px-0.5' : '-right-1.5 min-w-[16px] h-4 text-[9px] px-1'
-                  }`}>
-                    {item.badge > 9 ? '9+' : item.badge}
-                  </span>
-                )}
-              </span>
-              {!collapsed && <span className="truncate">{item.label}</span>}
+              <Icon className="w-4.5 h-4.5" />
+              {!!item.badge && (
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-error text-on-error font-bold text-[9px] px-1">
+                  {item.badge > 9 ? '9+' : item.badge}
+                </span>
+              )}
             </button>
           );
         })}
       </nav>
 
-      <div className="p-2 border-t border-[#E9ECEF] shrink-0">
-        <button
-          onClick={onSignOut}
-          title={collapsed ? 'Sign out' : undefined}
-          className={`w-full flex items-center gap-3 rounded-lg text-sm font-semibold text-[#7f7668] hover:bg-[#ecf5fe] hover:text-[#141d23] transition-colors ${
-            collapsed ? 'justify-center h-11' : 'px-3 h-11'
-          }`}
-        >
-          <LogOut className="w-4 h-4 shrink-0" />
-          {!collapsed && <span>Sign out</span>}
-        </button>
-      </div>
+      <button
+        onClick={onSignOut}
+        title="Sign out"
+        className="w-11 h-11 shrink-0 rounded-full flex items-center justify-center text-on-primary/70 hover:bg-primary-container/30 hover:text-on-primary transition-colors"
+      >
+        <LogOut className="w-4.5 h-4.5" />
+      </button>
     </aside>
   );
 };

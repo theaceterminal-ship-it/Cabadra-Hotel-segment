@@ -16,8 +16,8 @@ interface NewBookingModalProps {
 
 type Step = 'search' | 'results' | 'details' | 'success';
 
-const inputCls = 'w-full h-10 px-3 text-sm border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none';
-const labelCls = 'text-[11px] font-bold text-[#4e463a] block mb-1';
+const inputCls = 'w-full h-10 px-3 text-sm border border-outline-variant rounded-lg focus:border-primary focus:outline-none';
+const labelCls = 'text-[11px] font-bold text-on-surface-variant block mb-1';
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -121,11 +121,11 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-[70]">
-      <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-[#E9ECEF] space-y-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between pb-3 border-b border-[#E9ECEF]">
+      <div className="bg-surface-container-lowest rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-outline-variant space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between pb-3 border-b border-outline-variant">
           <div>
-            <p className="text-[10px] font-bold text-[#765a25] uppercase tracking-wider">New Booking</p>
-            <h3 className="text-lg font-bold text-[#141d23]">
+            <p className="text-[10px] font-bold text-primary uppercase tracking-wider">New Booking</p>
+            <h3 className="text-lg font-bold text-on-surface">
               {step === 'search' && 'What does the guest need?'}
               {step === 'results' && 'Available Rooms'}
               {step === 'details' && `Assign Room ${selectedRoom?.number}`}
@@ -158,7 +158,7 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
               </div>
             </div>
             {isFutureBooking && (
-              <p className="text-[11px] text-[#765a25] bg-[#fff8ec] border border-[#f0dfb8] rounded-lg px-2.5 py-1.5">
+              <p className="text-[11px] text-primary bg-highlight border border-warning rounded-lg px-2.5 py-1.5">
                 Check-in is in the future — this creates an advance booking, not an immediate check-in. It'll show up in Upcoming Arrivals until they check in.
               </p>
             )}
@@ -169,14 +169,14 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
               </div>
               <div>
                 <label className={labelCls}><BedDouble className="w-3 h-3 inline mr-1" />Room Type</label>
-                <select value={roomType} onChange={e => setRoomType(e.target.value)} className={`${inputCls} bg-white`}>
+                <select value={roomType} onChange={e => setRoomType(e.target.value)} className={`${inputCls} bg-surface-container-lowest`}>
                   <option value="any">Any type</option>
                   {roomTypes.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
             </div>
             {searchError && <p className="text-xs text-red-600">{searchError}</p>}
-            <button type="submit" disabled={searching} className="w-full h-11 rounded-lg bg-[#765a25] text-white font-semibold text-sm hover:bg-[#5c4210] disabled:opacity-60 flex items-center justify-center gap-2">
+            <button type="submit" disabled={searching} className="w-full h-11 rounded-lg bg-primary text-on-primary font-semibold text-sm hover:bg-primary-hover disabled:opacity-60 flex items-center justify-center gap-2">
               <Search className="w-4 h-4" /> {searching ? 'Searching…' : 'Search Available Rooms'}
             </button>
           </form>
@@ -184,14 +184,14 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
 
         {step === 'results' && (
           <div className="space-y-3">
-            <button onClick={() => setStep('search')} className="text-xs font-semibold text-[#765a25] hover:underline flex items-center gap-1">
+            <button onClick={() => setStep('search')} className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
               <ArrowLeft className="w-3 h-3" /> Adjust search
             </button>
-            <p className="text-[11px] text-[#7f7668]">
+            <p className="text-[11px] text-outline">
               {checkIn} &rarr; {checkOut} · {partySize} guest{partySize === '1' ? '' : 's'}{roomType !== 'any' ? ` · ${roomType}` : ''}
             </p>
             {availableRooms.length === 0 ? (
-              <p className="text-sm text-[#7f7668] text-center py-10">
+              <p className="text-sm text-outline text-center py-10">
                 Nothing free for those dates that sleeps {partySize}+{roomType !== 'any' ? ` in "${roomType}"` : ''}. Try adjusting the search.
               </p>
             ) : (
@@ -200,15 +200,15 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
                   <button
                     key={room.id}
                     onClick={() => handlePickRoom(room)}
-                    className="w-full flex items-center justify-between p-3 rounded-lg border border-[#E9ECEF] hover:border-[#765a25] hover:bg-[#fff8ec] text-left transition-colors"
+                    className="w-full flex items-center justify-between p-3 rounded-lg border border-outline-variant hover:border-primary hover:bg-highlight text-left transition-colors"
                   >
                     <div>
-                      <p className="text-sm font-bold text-[#141d23]">Room {room.number} · {room.type}</p>
-                      <p className="text-[11px] text-[#7f7668]">Floor {room.floor} · Sleeps {room.maxOccupancy}</p>
+                      <p className="text-sm font-bold text-on-surface">Room {room.number} · {room.type}</p>
+                      <p className="text-[11px] text-outline">Floor {room.floor} · Sleeps {room.maxOccupancy}</p>
                     </div>
                     <div className="text-right shrink-0 ml-3">
-                      <p className="text-sm font-bold text-[#2D6A4F]">{formatCurrency(room.pricePerNight, currency)}</p>
-                      <p className="text-[10px] text-[#7f7668]">/ night</p>
+                      <p className="text-sm font-bold text-success">{formatCurrency(room.pricePerNight, currency)}</p>
+                      <p className="text-[10px] text-outline">/ night</p>
                     </div>
                   </button>
                 ))}
@@ -219,10 +219,10 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
 
         {step === 'details' && selectedRoom && (
           <form onSubmit={handleAssign} className="space-y-3">
-            <button type="button" onClick={() => setStep('results')} className="text-xs font-semibold text-[#765a25] hover:underline flex items-center gap-1">
+            <button type="button" onClick={() => setStep('results')} className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
               <ArrowLeft className="w-3 h-3" /> Choose a different room
             </button>
-            <div className="bg-[#f6faff] p-2.5 rounded-lg border border-[#E9ECEF] text-xs text-[#4e463a]">
+            <div className="bg-surface-container-low p-2.5 rounded-lg border border-outline-variant text-xs text-on-surface-variant">
               Room {selectedRoom.number} · {selectedRoom.type} · {formatCurrency(selectedRoom.pricePerNight, currency)}/night · {checkIn} &rarr; {checkOut}
             </div>
 
@@ -241,14 +241,14 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
               </div>
             </div>
             <ImageUploadField label="ID Document (optional)" value={idDocumentUrl} onChange={setIdDocumentUrl} />
-            <label className="flex items-center gap-2 text-xs font-semibold text-[#141d23]">
-              <input type="checkbox" checked={vip} onChange={e => setVip(e.target.checked)} className="accent-[#765a25]" />
+            <label className="flex items-center gap-2 text-xs font-semibold text-on-surface">
+              <input type="checkbox" checked={vip} onChange={e => setVip(e.target.checked)} className="accent-primary" />
               VIP guest
             </label>
 
             {error && <p className="text-xs text-red-600">{error}</p>}
 
-            <button type="submit" disabled={submitting || !name.trim()} className="w-full h-11 rounded-lg bg-[#765a25] text-white font-semibold text-sm hover:bg-[#5c4210] disabled:opacity-60 flex items-center justify-center gap-2">
+            <button type="submit" disabled={submitting || !name.trim()} className="w-full h-11 rounded-lg bg-primary text-on-primary font-semibold text-sm hover:bg-primary-hover disabled:opacity-60 flex items-center justify-center gap-2">
               <UserPlus className="w-4 h-4" />
               {submitting ? 'Saving…' : isFutureBooking ? `Reserve Room ${selectedRoom.number}` : `Assign Room ${selectedRoom.number}`}
             </button>
@@ -257,31 +257,31 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
 
         {step === 'success' && selectedRoom && (
           <div className="text-center py-4 space-y-3">
-            <CheckCircle2 className="w-12 h-12 text-[#2D6A4F] mx-auto" />
+            <CheckCircle2 className="w-12 h-12 text-success mx-auto" />
             {isFutureBooking ? (
               <>
-                <p className="text-base font-bold text-[#141d23]">Room {selectedRoom.number} reserved for {name}</p>
-                <p className="text-xs text-[#7f7668]">
+                <p className="text-base font-bold text-on-surface">Room {selectedRoom.number} reserved for {name}</p>
+                <p className="text-xs text-outline">
                   Arriving {checkIn}. It'll show in Upcoming Arrivals on the Dashboard — check them in from there when they arrive, or cancel it if plans change.
                 </p>
-                <button onClick={onClose} className="w-full h-10 rounded-lg bg-[#141d23] text-white text-xs font-semibold mt-2">
+                <button onClick={onClose} className="w-full h-10 rounded-lg bg-on-surface text-inverse-on-surface text-xs font-semibold mt-2">
                   Done
                 </button>
               </>
             ) : (
               <>
-                <p className="text-base font-bold text-[#141d23]">Room {selectedRoom.number} assigned to {name}</p>
-                <p className="text-xs text-[#7f7668]">
+                <p className="text-base font-bold text-on-surface">Room {selectedRoom.number} assigned to {name}</p>
+                <p className="text-xs text-outline">
                   Their folio starts now and runs through checkout — every order and request on this room belongs to them until then.
                 </p>
                 <div className="flex gap-2 pt-2">
                   <button
                     onClick={() => setShowQr(true)}
-                    className="flex-1 h-10 rounded-lg border border-[#765a25] text-[#765a25] text-xs font-bold hover:bg-[#fff8ec] flex items-center justify-center gap-1.5"
+                    className="flex-1 h-10 rounded-lg border border-primary text-primary text-xs font-bold hover:bg-highlight flex items-center justify-center gap-1.5"
                   >
                     <QrCode className="w-3.5 h-3.5" /> Room Key (QR)
                   </button>
-                  <button onClick={onClose} className="flex-1 h-10 rounded-lg bg-[#141d23] text-white text-xs font-semibold">
+                  <button onClick={onClose} className="flex-1 h-10 rounded-lg bg-on-surface text-inverse-on-surface text-xs font-semibold">
                     Done
                   </button>
                 </div>

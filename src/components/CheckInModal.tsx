@@ -19,8 +19,8 @@ function defaultCheckoutDate(): string {
   return d.toISOString().slice(0, 10);
 }
 
-const inputCls = 'w-full h-10 px-3 text-sm border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none';
-const labelCls = 'text-[11px] font-bold text-[#4e463a] block mb-1';
+const inputCls = 'w-full h-10 px-3 text-sm border border-outline-variant rounded-lg focus:border-primary focus:outline-none';
+const labelCls = 'text-[11px] font-bold text-on-surface-variant block mb-1';
 
 /**
  * The actual "assign this room to this person" step. Before this existed,
@@ -67,16 +67,16 @@ export function CheckInModal({ propertyId, room, source = 'built_in', onClose, o
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-[70]">
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#E9ECEF] space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-[#E9ECEF]">
+      <form onSubmit={handleSubmit} className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-outline-variant">
           <div className="flex items-center gap-2">
-            <UserPlus className="w-5 h-5 text-[#765a25]" />
-            <h3 className="text-lg font-bold text-[#141d23]">Check In — Room {room.number}</h3>
+            <UserPlus className="w-5 h-5 text-primary" />
+            <h3 className="text-lg font-bold text-on-surface">Check In — Room {room.number}</h3>
           </div>
           <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1"><X className="w-5 h-5" /></button>
         </div>
 
-        <p className="text-xs text-[#7f7668]">
+        <p className="text-xs text-outline">
           {source === 'imported'
             ? "This doesn't book the room — it just tells Cabadra who's staying in it, so their room QR, folio and requests work for them specifically until checkout."
             : "This creates the guest's profile and assigns them to this room — their room-service QR will work for them specifically until checkout."}
@@ -108,19 +108,19 @@ export function CheckInModal({ propertyId, room, source = 'built_in', onClose, o
             </div>
           </div>
           <ImageUploadField label="ID Document (optional)" value={idDocumentUrl} onChange={setIdDocumentUrl} />
-          <label className="flex items-center gap-2 text-xs font-semibold text-[#141d23]">
-            <input type="checkbox" checked={vip} onChange={e => setVip(e.target.checked)} className="accent-[#765a25]" />
+          <label className="flex items-center gap-2 text-xs font-semibold text-on-surface">
+            <input type="checkbox" checked={vip} onChange={e => setVip(e.target.checked)} className="accent-primary" />
             VIP guest
           </label>
         </div>
 
         {error && <p className="text-xs text-red-600">{error}</p>}
 
-        <div className="flex justify-end gap-2 pt-3 border-t border-[#E9ECEF]">
-          <button type="button" onClick={onClose} className="px-4 py-2 border border-[#E9ECEF] rounded-lg text-xs font-semibold text-[#4e463a]">
+        <div className="flex justify-end gap-2 pt-3 border-t border-outline-variant">
+          <button type="button" onClick={onClose} className="px-4 py-2 border border-outline-variant rounded-lg text-xs font-semibold text-on-surface-variant">
             Cancel
           </button>
-          <button type="submit" disabled={submitting || !name.trim()} className="px-5 py-2 bg-[#765a25] text-white rounded-lg text-xs font-bold hover:bg-[#5c4210] disabled:opacity-60">
+          <button type="submit" disabled={submitting || !name.trim()} className="px-5 py-2 bg-primary text-on-primary rounded-lg text-xs font-bold hover:bg-primary-hover disabled:opacity-60">
             {submitting ? 'Checking in…' : 'Check In & Assign Room'}
           </button>
         </div>
