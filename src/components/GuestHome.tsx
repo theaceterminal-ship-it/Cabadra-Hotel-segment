@@ -130,12 +130,12 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
   );
 
   return (
-    <div id="guest-home-canvas" className="w-full min-h-screen bg-[#f6faff] pb-24">
+    <div id="guest-home-canvas" className="w-full min-h-screen bg-surface pb-24">
       {/* Main Container */}
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
         {/* Booking Notification Toast */}
         {bookedExperience && (
-          <div className="bg-[#2D6A4F] text-white p-4 rounded-xl shadow-lg flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="bg-success text-on-success p-4 rounded-xl shadow-lg flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
             <Check className="w-5 h-5 shrink-0" />
             <p className="text-xs font-semibold">
               Reservation requested for <strong>{bookedExperience}</strong>! Our concierge is confirming details.
@@ -166,7 +166,7 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
           </div>
 
           <div className="absolute bottom-0 left-0 p-6 md:p-8 w-full text-white">
-            <p className="text-xs font-bold tracking-widest uppercase mb-1 opacity-90 text-[#ffdea9]">
+            <p className="text-xs font-bold tracking-widest uppercase mb-1 opacity-90 text-inverse-primary">
               Welcome, {guestName}{isVip ? ' ✦' : ''}
             </p>
             <h1 className="text-3xl md:text-5xl font-bold mb-1 tracking-tight text-white">
@@ -181,10 +181,10 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
         {/* Category Grid (Bento Style) */}
         <section id="at-your-service-section" className="space-y-4">
           <div className="flex justify-between items-center px-1">
-            <h2 className="text-xl font-bold text-[#141d23]">At Your Service</h2>
+            <h2 className="text-xl font-bold text-on-surface">At Your Service</h2>
             <button
               onClick={onOpenNewRequest}
-              className="text-xs font-bold text-[#765a25] hover:underline"
+              className="text-xs font-bold text-primary hover:underline"
             >
               + Custom Concierge Request
             </button>
@@ -195,7 +195,7 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
             <div
               id="service-card-dining"
               onClick={() => onNavigate('room_dining')}
-              className="col-span-2 row-span-2 relative rounded-2xl overflow-hidden cursor-pointer group shadow-sm border border-[#E9ECEF] hover:shadow-md transition-all h-60 md:h-80"
+              className="col-span-2 row-span-2 relative rounded-2xl overflow-hidden cursor-pointer group shadow-sm border border-outline-variant hover:shadow-md transition-all h-60 md:h-80"
             >
               <div 
                 className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
@@ -222,13 +222,13 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
                   key={cat.id}
                   id={`service-card-${cat.id}`}
                   onClick={() => setActiveModal(cat)}
-                  className="col-span-1 relative rounded-2xl overflow-hidden cursor-pointer group shadow-sm border border-[#E9ECEF] hover:shadow-md transition-all h-36 md:h-38 bg-white hover:bg-[#ecf5fe] flex flex-col items-center justify-center p-4 text-center"
+                  className="col-span-1 relative rounded-2xl overflow-hidden cursor-pointer group shadow-sm border border-outline-variant hover:shadow-md transition-all h-36 md:h-38 bg-surface-container-lowest hover:bg-surface-container-low flex flex-col items-center justify-center p-4 text-center"
                 >
-                  <div className="bg-[#765a25]/10 rounded-full p-3 mb-2 text-[#765a25] group-hover:scale-110 transition-transform">
+                  <div className="bg-primary/10 rounded-full p-3 mb-2 text-primary group-hover:scale-110 transition-transform">
                     <Icon className="w-6 h-6" />
                   </div>
-                  <h3 className="text-sm font-bold text-[#141d23]">{cat.name}</h3>
-                  {cat.description && <p className="text-[11px] text-[#7f7668] mt-0.5">{cat.description}</p>}
+                  <h3 className="text-sm font-bold text-on-surface">{cat.name}</h3>
+                  {cat.description && <p className="text-[11px] text-outline mt-0.5">{cat.description}</p>}
                 </div>
               );
             })}
@@ -238,29 +238,29 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
         {/* Featured Curated Experiences — owner-managed (Experiences tab), not hardcoded. Section just doesn't render until the owner adds one. */}
         {(experiences ?? []).length > 0 && (
           <section id="curated-experiences-section" className="space-y-4 pt-2">
-            <h2 className="text-xl font-bold text-[#141d23] px-1">Curated For You</h2>
+            <h2 className="text-xl font-bold text-on-surface px-1">Curated For You</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {experiences.map((exp) => (
                 <div
                   key={exp.id}
                   id={`exp-card-${exp.id}`}
-                  className="rounded-2xl border border-[#E9ECEF] overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row group"
+                  className="rounded-2xl border border-outline-variant overflow-hidden bg-surface-container-lowest shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row group"
                 >
                   <div
-                    className="h-44 sm:h-auto sm:w-48 bg-cover bg-center bg-[#ecf5fe] shrink-0 group-hover:scale-105 transition-transform duration-500"
+                    className="h-44 sm:h-auto sm:w-48 bg-cover bg-center bg-surface-container-low shrink-0 group-hover:scale-105 transition-transform duration-500"
                     style={exp.image ? { backgroundImage: `url('${exp.image}')` } : undefined}
                   ></div>
                   <div className="p-5 flex flex-col justify-between flex-grow">
                     <div>
-                      <h3 className="text-lg font-bold text-[#141d23] mb-1">{exp.name}</h3>
-                      <p className="text-xs text-[#4e463a] leading-relaxed">{exp.description}</p>
+                      <h3 className="text-lg font-bold text-on-surface mb-1">{exp.name}</h3>
+                      <p className="text-xs text-on-surface-variant leading-relaxed">{exp.description}</p>
                     </div>
-                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#E9ECEF]">
-                      <span className="text-sm font-bold text-[#765a25]">{formatCurrency(exp.price, currency)} {exp.unitLabel}</span>
+                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-outline-variant">
+                      <span className="text-sm font-bold text-primary">{formatCurrency(exp.price, currency)} {exp.unitLabel}</span>
                       <button
                         onClick={() => handleBookExperience(exp.name, exp.price)}
-                        className="px-4 py-2 bg-[#765a25] text-white rounded-lg text-xs font-bold hover:bg-[#5c4210] transition-colors cursor-pointer"
+                        className="px-4 py-2 bg-primary text-on-primary rounded-lg text-xs font-bold hover:bg-primary-hover transition-colors cursor-pointer"
                       >
                         Reserve Now
                       </button>
@@ -276,9 +276,9 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
       {/* Service Request Modal — one generic form for any owner-defined category, tagged with its department on submit */}
       {activeModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#E9ECEF]">
-            <div className="flex justify-between items-center pb-3 border-b border-[#E9ECEF] mb-4">
-              <h3 className="text-lg font-bold text-[#141d23]">
+          <div className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant">
+            <div className="flex justify-between items-center pb-3 border-b border-outline-variant mb-4">
+              <h3 className="text-lg font-bold text-on-surface">
                 Request {activeModal.name} (Room {roomNumber})
               </h3>
               <button
@@ -289,36 +289,36 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
               </button>
             </div>
 
-            {activeModal.description && <p className="text-xs text-[#4e463a] mb-3">{activeModal.description}</p>}
+            {activeModal.description && <p className="text-xs text-on-surface-variant mb-3">{activeModal.description}</p>}
 
             {activeModal.categoryType === 'transportation' ? (
               <>
-                <label className="text-[11px] font-bold text-[#4e463a] block mb-1">Where to?</label>
+                <label className="text-[11px] font-bold text-on-surface-variant block mb-1">Where to?</label>
                 <div className="relative mb-2">
-                  <MapPin className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[#7f7668]" />
+                  <MapPin className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-outline" />
                   <input
                     value={routeSearch}
                     onChange={(e) => setRouteSearch(e.target.value)}
                     placeholder="Search a destination..."
-                    className="w-full h-9 pl-8 pr-2.5 text-xs border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none"
+                    className="w-full h-9 pl-8 pr-2.5 text-xs border border-outline-variant rounded-lg focus:border-primary focus:outline-none"
                   />
                 </div>
                 <div className="space-y-1.5 max-h-48 overflow-y-auto mb-4">
                   {filteredRoutes.length === 0 ? (
-                    <p className="text-xs text-[#7f7668] text-center py-6">No routes match — ask the front desk directly.</p>
+                    <p className="text-xs text-outline text-center py-6">No routes match — ask the front desk directly.</p>
                   ) : (
                     filteredRoutes.map(route => (
                       <label
                         key={route.id}
                         className={`flex items-center justify-between gap-2 p-2.5 rounded-lg border cursor-pointer text-xs ${
-                          selectedRouteId === route.id ? 'border-[#765a25] bg-[#fff8ec]' : 'border-[#E9ECEF] hover:bg-[#f6faff]'
+                          selectedRouteId === route.id ? 'border-primary bg-highlight' : 'border-outline-variant hover:bg-surface-container-low'
                         }`}
                       >
                         <span className="flex items-center gap-2">
-                          <input type="radio" name="route" checked={selectedRouteId === route.id} onChange={() => setSelectedRouteId(route.id)} className="accent-[#765a25]" />
-                          {route.from} <Car className="w-3 h-3 text-[#7f7668]" /> {route.to}
+                          <input type="radio" name="route" checked={selectedRouteId === route.id} onChange={() => setSelectedRouteId(route.id)} className="accent-primary" />
+                          {route.from} <Car className="w-3 h-3 text-outline" /> {route.to}
                         </span>
-                        <span className="font-bold text-[#765a25] shrink-0">{formatCurrency(route.price, currency)} {route.priceUnit}</span>
+                        <span className="font-bold text-primary shrink-0">{formatCurrency(route.price, currency)} {route.priceUnit}</span>
                       </label>
                     ))
                   )}
@@ -326,13 +326,13 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
               </>
             ) : (
               <>
-                <label className="text-[11px] font-bold text-[#4e463a] block mb-1">Anything specific? (optional)</label>
+                <label className="text-[11px] font-bold text-on-surface-variant block mb-1">Anything specific? (optional)</label>
                 <textarea
                   rows={3}
                   value={requestNote}
                   onChange={(e) => setRequestNote(e.target.value)}
                   placeholder="e.g. Extra pillows, 3pm arrival, allergic to lavender..."
-                  className="w-full p-2.5 text-xs border border-[#E9ECEF] rounded-lg focus:border-[#765a25] focus:outline-none resize-none mb-4"
+                  className="w-full p-2.5 text-xs border border-outline-variant rounded-lg focus:border-primary focus:outline-none resize-none mb-4"
                 />
               </>
             )}
@@ -340,14 +340,14 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => { setActiveModal(null); setRequestNote(''); setSelectedRouteId(''); setRouteSearch(''); }}
-                className="px-4 py-2 border border-[#E9ECEF] rounded-lg text-xs font-semibold text-[#4e463a]"
+                className="px-4 py-2 border border-outline-variant rounded-lg text-xs font-semibold text-on-surface-variant"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmitServiceRequest}
                 disabled={submittingRequest || (activeModal.categoryType === 'transportation' && !selectedRouteId)}
-                className="px-5 py-2 bg-[#765a25] text-white rounded-lg text-xs font-bold hover:bg-[#5c4210] disabled:opacity-60"
+                className="px-5 py-2 bg-primary text-on-primary rounded-lg text-xs font-bold hover:bg-primary-hover disabled:opacity-60"
               >
                 {submittingRequest ? 'Sending…' : 'Confirm Request'}
               </button>

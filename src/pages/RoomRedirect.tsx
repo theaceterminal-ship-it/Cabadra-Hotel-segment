@@ -21,16 +21,20 @@ export default function RoomRedirect() {
       .catch(err => setError(err instanceof Error ? err.message : 'This room is not available right now.'));
   }, [roomId, navigate]);
 
+  useEffect(() => {
+    document.documentElement.classList.remove('dark');
+  }, []);
+
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#f6faff] p-6">
+    <div className="min-h-screen w-full flex items-center justify-center bg-surface p-6">
       <div className="max-w-sm text-center space-y-2">
         {error ? (
           <>
-            <h1 className="text-lg font-bold text-[#141d23]">No one's checked in here yet</h1>
-            <p className="text-sm text-[#4e463a]">This room doesn't have an active guest right now. Please check with the front desk.</p>
+            <h1 className="text-lg font-bold text-on-surface-strong">No one's checked in here yet</h1>
+            <p className="text-sm text-on-surface-strong-muted">This room doesn't have an active guest right now. Please check with the front desk.</p>
           </>
         ) : (
-          <p className="text-sm text-[#4e463a]">Opening your room…</p>
+          <p className="text-sm text-on-surface-strong-muted">Opening your room…</p>
         )}
       </div>
     </div>

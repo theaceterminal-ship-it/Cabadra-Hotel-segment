@@ -59,15 +59,15 @@ export function OrderStatusBar({ token, currency }: OrderStatusBarProps) {
   if (order.status === 'rejected') {
     return (
       <div className="fixed top-0 inset-x-0 z-40 flex justify-center px-3 pt-3 pointer-events-none">
-        <div className="pointer-events-auto w-full max-w-md bg-white rounded-2xl shadow-lg border border-[#ffdad6] overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="pointer-events-auto w-full max-w-md bg-surface-container-lowest rounded-2xl shadow-lg border border-error-container overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="p-4 flex items-start gap-3">
-            <div className="w-9 h-9 rounded-full bg-[#BC4749] text-white flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-full bg-error text-on-error flex items-center justify-center shrink-0">
               <AlertTriangle className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold text-[#93000a]">Order #{order.id.slice(0, 4)} couldn't be fulfilled</p>
-              <p className="text-xs text-[#4e463a] mt-1">{order.rejectionNote || 'The kitchen was unable to prepare this order.'}</p>
-              <p className="text-[10px] text-[#7f7668] mt-1.5">You haven't been charged for this.</p>
+              <p className="text-sm font-bold text-on-error-container">Order #{order.id.slice(0, 4)} couldn't be fulfilled</p>
+              <p className="text-xs text-on-surface-variant mt-1">{order.rejectionNote || 'The kitchen was unable to prepare this order.'}</p>
+              <p className="text-[10px] text-outline mt-1.5">You haven't been charged for this.</p>
             </div>
             <button onClick={() => setDismissed(order.id)} className="p-1 text-gray-400 hover:text-gray-600 shrink-0">
               <X className="w-4 h-4" />
@@ -86,23 +86,23 @@ export function OrderStatusBar({ token, currency }: OrderStatusBarProps) {
 
   return (
     <div className="fixed top-0 inset-x-0 z-40 flex justify-center px-3 pt-3 pointer-events-none">
-      <div className="pointer-events-auto w-full max-w-md bg-white rounded-2xl shadow-lg border border-[#E9ECEF] overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
+      <div className="pointer-events-auto w-full max-w-md bg-surface-container-lowest rounded-2xl shadow-lg border border-outline-variant overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
         <button onClick={() => setExpanded(e => !e)} className="w-full text-left p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-full bg-[#765a25] text-white flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0">
                 <ChefHat className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-bold text-[#141d23] truncate">{eta.statusLabel}</p>
-                <p className="text-[11px] text-[#7f7668]">
+                <p className="text-sm font-bold text-on-surface truncate">{eta.statusLabel}</p>
+                <p className="text-[11px] text-outline">
                   Order #{order.id.slice(0, 4)} ·{' '}
                   {order.status === 'ready' ? (
-                    <span className="text-[#2D6A4F] font-semibold">Ready now</span>
+                    <span className="text-success font-semibold">Ready now</span>
                   ) : isOverdue ? (
-                    <span className="text-[#BC4749] font-semibold">Running a little late</span>
+                    <span className="text-error font-semibold">Running a little late</span>
                   ) : (
-                    <span className="font-mono font-semibold text-[#765a25]">{formatCountdown(remainingMs)}</span>
+                    <span className="font-mono font-semibold text-primary">{formatCountdown(remainingMs)}</span>
                   )}
                 </p>
               </div>
@@ -122,29 +122,29 @@ export function OrderStatusBar({ token, currency }: OrderStatusBarProps) {
           {/* Step progress: Received -> Preparing -> Ready */}
           <div className="flex items-center gap-1.5 mt-3">
             {STATUS_STEPS.map((step) => (
-              <div key={step} className={`h-1.5 flex-1 rounded-full ${STATUS_STEPS.indexOf(step) <= stepIndex ? 'bg-[#765a25]' : 'bg-[#E9ECEF]'}`} />
+              <div key={step} className={`h-1.5 flex-1 rounded-full ${STATUS_STEPS.indexOf(step) <= stepIndex ? 'bg-primary' : 'bg-outline-variant'}`} />
             ))}
           </div>
-          <div className="flex justify-between mt-1.5 text-[9px] font-semibold uppercase tracking-wider text-[#7f7668]">
-            <span className={stepIndex >= 0 ? 'text-[#765a25]' : ''}>Received</span>
-            <span className={stepIndex >= 1 ? 'text-[#765a25]' : ''}>Preparing</span>
-            <span className={stepIndex >= 2 ? 'text-[#2D6A4F] flex items-center gap-0.5' : ''}>
+          <div className="flex justify-between mt-1.5 text-[9px] font-semibold uppercase tracking-wider text-outline">
+            <span className={stepIndex >= 0 ? 'text-primary' : ''}>Received</span>
+            <span className={stepIndex >= 1 ? 'text-primary' : ''}>Preparing</span>
+            <span className={stepIndex >= 2 ? 'text-success flex items-center gap-0.5' : ''}>
               {stepIndex >= 2 && <Check className="w-2.5 h-2.5" />} Ready
             </span>
           </div>
         </button>
 
         {expanded && (
-          <div className="border-t border-[#E9ECEF] px-4 py-3 space-y-1.5 bg-[#f6faff]">
+          <div className="border-t border-outline-variant px-4 py-3 space-y-1.5 bg-surface-container-low">
             {order.items.map((item, i) => (
               <div key={i} className="flex justify-between text-xs">
-                <span className="text-[#4e463a]">{item.quantity}&times; {item.name}</span>
-                <span className="text-[#141d23] font-semibold">{formatCurrency(item.price * item.quantity, currency)}</span>
+                <span className="text-on-surface-variant">{item.quantity}&times; {item.name}</span>
+                <span className="text-on-surface font-semibold">{formatCurrency(item.price * item.quantity, currency)}</span>
               </div>
             ))}
-            <div className="flex justify-between text-xs pt-1.5 mt-1.5 border-t border-[#E9ECEF] font-bold">
-              <span className="text-[#141d23]">Total</span>
-              <span className="text-[#765a25]">{formatCurrency(order.totalAmount, currency)}</span>
+            <div className="flex justify-between text-xs pt-1.5 mt-1.5 border-t border-outline-variant font-bold">
+              <span className="text-on-surface">Total</span>
+              <span className="text-primary">{formatCurrency(order.totalAmount, currency)}</span>
             </div>
           </div>
         )}

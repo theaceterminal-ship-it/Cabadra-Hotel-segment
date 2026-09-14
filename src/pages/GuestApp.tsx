@@ -27,6 +27,16 @@ export default function GuestApp() {
   const [view, setView] = useState<Extract<AppView, 'guest_home' | 'room_dining'>>('guest_home');
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
 
+  // Guests never get the dark-mode toggle staff have (useTheme, per this
+  // app's own bg-surface/on-surface tokens) — but the same browser could
+  // still be carrying a lingering `dark` class from a staff session on
+  // this device (shared front-desk tablet, an owner testing on their own
+  // phone). Force it off here so a guest's stay is never accidentally
+  // themed by whatever a staff member last had set.
+  useEffect(() => {
+    document.documentElement.classList.remove('dark');
+  }, []);
+
   useEffect(() => {
     if (!token || !isSupabaseConfigured) return;
     fetchGuestContext(token)
@@ -101,10 +111,10 @@ export default function GuestApp() {
 
 function CenteredMessage({ title, body }: { title: string; body: string }) {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#f6faff] p-6">
+    <div className="min-h-screen w-full flex items-center justify-center bg-surface p-6">
       <div className="max-w-sm text-center">
-        <h1 className="text-lg font-bold text-[#141d23] mb-2">{title}</h1>
-        <p className="text-sm text-[#4e463a]">{body}</p>
+        <h1 className="text-lg font-bold text-on-surface mb-2">{title}</h1>
+        <p className="text-sm text-on-surface-variant">{body}</p>
       </div>
     </div>
   );
