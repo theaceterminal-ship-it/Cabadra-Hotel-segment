@@ -74,6 +74,35 @@ export async function fetchGuestRecommendations(token: string): Promise<GuestRec
   return (data ?? []) as GuestRecommendation[];
 }
 
+export interface OfferEvent {
+  offerId: string;
+  offerType?: 'menu_item' | 'service' | 'deal';
+  event: 'impression' | 'action';
+  /** Where this fired — 'on_open', 'cart_sheet', etc. Freeform on purpose: new surfaces shouldn't need a migration to log from. */
+  surface: string;
+  context?: Record<string, unknown>;
+}
+
+/**
+ * Phase 1 of the Offer Engine design: log, don't rank or place yet. Never
+ * throws into the caller — a logging failure must not be able to interrupt
+ * browsing or ordering, so this only warns.
+ */
+export async function logOfferEvents(token: string, events: OfferEvent[]): Promise<void> {
+  if (events.length === 0) return;
+  const { error } = await supabase.rpc('guest_log_offer_events', {
+    p_token: token,
+    p_events: events.map((e) => ({
+      offerId: e.offerId,
+      offerType: e.offerType ?? 'menu_item',
+      event: e.event,
+      surface: e.surface,
+      context: e.context ?? {},
+    })),
+  });
+  if (error) console.warn('Failed to log offer event:', error.message);
+}
+
 export interface GuestOrderItem {
   menuItemId: string;
   name: string;
