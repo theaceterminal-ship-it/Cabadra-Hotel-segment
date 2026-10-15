@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MenuItem, KdsOrder, AppView } from '../types';
-import { fetchGuestRecommendations, placeGuestOrder, GuestRecommendation } from '../lib/guestApi';
+import { fetchGuestRecommendations, placeGuestOrder, logOfferEvents, GuestRecommendation } from '../lib/guestApi';
 import { formatCurrency } from '../lib/currency';
 import {
   ArrowLeft,
@@ -64,6 +64,18 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
       .catch(() => setRecsError(true));
   }, [token]);
 
+  // Phase 1 of the Offer Engine design: log impressions, don't rank or
+  // place differently yet. Fires once per load of the on-open banner —
+  // "recommendations" only changes reference when the fetch above resolves.
+  useEffect(() => {
+    if (recommendations.length > 0) {
+      logOfferEvents(
+        token,
+        recommendations.map((r) => ({ offerId: r.menuItemId, event: 'impression', surface: 'on_open' }))
+      );
+    }
+  }, [recommendations, token]);
+
   const categories = [
     { id: 'all', label: 'All Dishes' },
     { id: 'specials', label: "Chef's Specials" },
@@ -80,7 +92,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
     return matchesCat && matchesSearch;
   });
 
-  const addToCart = (item: MenuItem, viaRecommendation: boolean = false) => {
+  const addToCart = (item: MenuItem, viaRecommendation: boolean = false, surface?: string) => {
     setCart((prev) => {
       const existing = prev[item.id];
       return {
@@ -95,6 +107,12 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
         },
       };
     });
+    // Only the FIRST add counts as the recommendation's conversion — a
+    // repeat +1 tap from the main grid is normal ordering, not a second
+    // acceptance of the same offer.
+    if (viaRecommendation && !cart[item.id]) {
+      logOfferEvents(token, [{ offerId: item.id, event: 'action', surface: surface ?? 'unknown' }]);
+    }
   };
 
   const removeFromCart = (itemId: string) => {
@@ -276,7 +294,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-xs text-primary">{formatCurrency(item.price, currency)}</span>
                       <button
-                        onClick={() => addToCart(item, true)}
+                        onClick={() => addToCart(item, true, 'on_open')}
                         className="h-7 px-3 rounded-lg bg-primary text-on-primary text-[11px] font-bold hover:bg-primary-hover transition-colors cursor-pointer"
                       >
                         Add
@@ -383,7 +401,17 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
       {totalCartCount > 0 && !showCartSheet && (
         <button
           id="btn-open-cart"
-          onClick={() => setShowCartSheet(true)}
+          onClick={() => {
+            setShowCartSheet(true);
+            // Snapshot at the moment of opening — not a live subscription
+            // that re-fires every time the cart changes while the sheet is up.
+            if (recommendedNotInCart.length > 0) {
+              logOfferEvents(
+                token,
+                recommendedNotInCart.map((r) => ({ offerId: r.menuItemId, event: 'impression', surface: 'cart_sheet' }))
+              );
+            }
+          }}
           className="fixed bottom-4 inset-x-4 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-full sm:max-w-md z-40 h-14 px-5 rounded-2xl bg-primary text-on-primary shadow-xl hover:bg-primary-hover transition-colors flex items-center justify-between cursor-pointer animate-in fade-in slide-in-from-bottom-4 duration-200"
         >
           <span className="flex items-center gap-2 font-bold text-sm">
@@ -481,7 +509,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                       return (
                         <button
                           key={rec.menuItemId}
-                          onClick={() => addToCart(item, true)}
+                          onClick={() => addToCart(item, true, 'cart_sheet')}
                           className="flex-none flex items-center gap-2 pl-2 pr-3 h-9 rounded-full border border-outline-variant bg-surface-container-lowest hover:border-primary text-left"
                         >
                           <span className="w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0">
