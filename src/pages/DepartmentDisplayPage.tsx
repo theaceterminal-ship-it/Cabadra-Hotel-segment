@@ -164,6 +164,17 @@ export default function DepartmentDisplayPage() {
             placeholder="Scan your badge to clock in or out"
             className="flex-1 h-11 px-3 rounded-lg border border-outline-variant bg-surface-container-lowest text-sm focus:border-primary focus:outline-none"
           />
+          {/* A real scanner's Enter keystroke should already submit via onKeyDown
+              above, but a tappable fallback costs nothing and covers manual entry
+              (testing, or a scanner that doesn't emit Enter) without depending on
+              that keystroke being recognized at all. */}
+          <button
+            onClick={submitBadge}
+            disabled={!badgeValue.trim()}
+            className="h-11 px-4 rounded-lg bg-primary text-on-primary text-sm font-bold disabled:opacity-40 shrink-0"
+          >
+            Go
+          </button>
         </div>
         {scanFeedback && (
           <p className="text-center text-xs font-semibold text-primary">{scanFeedback}</p>
