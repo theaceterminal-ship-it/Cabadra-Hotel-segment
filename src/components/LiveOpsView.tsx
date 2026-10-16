@@ -298,7 +298,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
 
                       {/* Assign to — a real person from the department directory, not just a category queue */}
                       <div className="flex items-center gap-2 mb-3">
-                        <UserCircle2 className="w-3.5 h-3.5 text-outline shrink-0" />
+                        <UserCircle2 className="w-3.5 h-3.5 text-on-surface-variant shrink-0" />
                         <select
                           value={task.assignedTo ?? ''}
                           onChange={(e) => onAssignTask(task.id, e.target.value || null)}
@@ -389,7 +389,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
                   {openCount > 0 && <span className="text-[10px] font-bold text-primary bg-highlight px-2 py-0.5 rounded-full">{openCount} open</span>}
                 </div>
                 {contacts.length === 0 ? (
-                  <p className="text-[11px] text-outline text-center py-4 px-3">No contacts added yet — Owner &gt; Staff tab.</p>
+                  <p className="text-[11px] text-on-surface-variant text-center py-4 px-3">No contacts added yet — Owner &gt; Staff tab.</p>
                 ) : (
                   <div className="divide-y divide-outline-variant">
                     {contacts.map(c => (
@@ -442,14 +442,14 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
               </div>
             </form>
             {displays.length === 0 ? (
-              <p className="text-[11px] text-outline text-center py-4 px-3">No displays yet — add one above.</p>
+              <p className="text-[11px] text-on-surface-variant text-center py-4 px-3">No displays yet — add one above.</p>
             ) : (
               <div className="divide-y divide-outline-variant">
                 {displays.map(d => (
                   <div key={d.id} className={`flex items-center justify-between px-4 py-2.5 text-xs ${!d.active ? 'opacity-50' : ''}`}>
                     <div className="min-w-0">
                       <p className="font-semibold text-on-surface truncate">{d.label}</p>
-                      <p className="text-outline">{DEPT_LABELS[d.department]}{!d.active && ' · revoked'}</p>
+                      <p className="text-on-surface-variant">{DEPT_LABELS[d.department]}{!d.active && ' · revoked'}</p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <button onClick={() => setQrDisplay(d)} className="text-primary hover:bg-surface-container-low p-1.5 rounded" title="Show QR">
@@ -478,7 +478,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-surface-container-lowest rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-outline-variant space-y-3">
             <h3 className="text-lg font-bold text-on-surface">Reject this task?</h3>
-            <p className="text-xs text-outline">
+            <p className="text-xs text-on-surface-variant">
               {rejectingTask.title} — {rejectingTask.roomNumber}. Say why so whoever's tracking it knows what happened.
             </p>
             <textarea

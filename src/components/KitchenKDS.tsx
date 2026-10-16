@@ -219,7 +219,7 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
 
           <div className="flex-1 overflow-y-auto space-y-4 pr-1">
             {newOrders.length === 0 ? (
-              <div className="p-8 text-center text-xs text-outline border-2 border-dashed border-outline-variant rounded-xl">
+              <div className="p-8 text-center text-xs text-on-surface-variant border-2 border-dashed border-outline-variant rounded-xl">
                 No new incoming tickets
               </div>
             ) : (
@@ -238,7 +238,7 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
                   <div className="flex justify-between items-start mb-3 pr-20">
                     <div>
                       <h3 className="text-2xl font-bold text-on-surface">{order.roomNumber}</h3>
-                      <p className="text-xs text-outline">
+                      <p className="text-xs text-on-surface-variant">
                         Order {order.orderNumber} {order.isVip ? '• VIP Guest' : ''}
                       </p>
                     </div>
@@ -255,7 +255,7 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
                           {item.quantity}x {item.name}
                         </span>
                         {item.modifier && (
-                          <span className="text-xs text-outline">{item.modifier}</span>
+                          <span className="text-xs text-on-surface-variant">{item.modifier}</span>
                         )}
                       </div>
                     ))}
@@ -312,7 +312,7 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
 
           <div className="flex-1 overflow-y-auto space-y-4 pr-1">
             {preparingOrders.length === 0 ? (
-              <div className="p-8 text-center text-xs text-outline border-2 border-dashed border-outline-variant rounded-xl">
+              <div className="p-8 text-center text-xs text-on-surface-variant border-2 border-dashed border-outline-variant rounded-xl">
                 No orders currently in preparation
               </div>
             ) : (
@@ -339,7 +339,7 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
                     <div className="flex justify-between items-start mb-3 pr-28">
                       <div>
                         <h3 className="text-2xl font-bold text-on-surface">{order.roomNumber}</h3>
-                        <p className="text-xs text-outline">
+                        <p className="text-xs text-on-surface-variant">
                           Order {order.orderNumber} {order.isRush ? '• Rush' : ''}
                         </p>
                       </div>
@@ -364,7 +364,7 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
                           </button>
                           <span
                             className={`text-sm font-semibold flex-1 ${
-                              item.completed ? 'line-through text-outline' : 'text-on-surface'
+                              item.completed ? 'line-through text-on-surface-variant' : 'text-on-surface'
                             }`}
                           >
                             {item.quantity}x {item.name}
@@ -411,7 +411,7 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
               <div className="h-64 flex flex-col items-center justify-center border-2 border-dashed border-outline-variant rounded-xl p-8 text-center">
                 <CheckCircle2 className="w-12 h-12 text-[#9ea0a1] mb-2" />
                 <p className="text-sm font-semibold text-on-surface-variant">No items waiting for pickup</p>
-                <p className="text-xs text-outline mt-1">Orders marked ready will appear here for staff delivery dispatch</p>
+                <p className="text-xs text-on-surface-variant mt-1">Orders marked ready will appear here for staff delivery dispatch</p>
               </div>
             ) : (
               readyOrders.map((order) => (
@@ -457,7 +457,7 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-surface-container-lowest rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-outline-variant space-y-3">
             <h3 className="text-lg font-bold text-on-surface">Reject Order {rejectingOrder.orderNumber}?</h3>
-            <p className="text-xs text-outline">
+            <p className="text-xs text-on-surface-variant">
               The guest sees this reason and isn't charged for it — say why so they know what happened.
             </p>
             <textarea

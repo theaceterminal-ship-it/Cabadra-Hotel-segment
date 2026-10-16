@@ -69,7 +69,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ notification
           </div>
           <div className="max-h-96 overflow-y-auto divide-y divide-outline-variant">
             {notifications.length === 0 ? (
-              <p className="text-xs text-outline text-center py-8">Nothing yet.</p>
+              <p className="text-xs text-on-surface-variant text-center py-8">Nothing yet.</p>
             ) : (
               notifications.map(n => {
                 const Icon = ICONS[n.type] ?? Bell;
@@ -86,7 +86,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ notification
                         {!n.read && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 mt-1" />}
                       </div>
                       {n.body && <p className="text-[11px] text-on-surface-variant mt-0.5">{n.body}</p>}
-                      <p className="text-[10px] text-outline mt-1">{timeAgo(n.createdAt)}</p>
+                      <p className="text-[10px] text-on-surface-variant mt-1">{timeAgo(n.createdAt)}</p>
                     </div>
                   </button>
                 );

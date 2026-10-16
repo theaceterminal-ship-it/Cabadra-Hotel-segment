@@ -214,7 +214,7 @@ export default function DepartmentDisplayPage() {
 
                   <p className="font-bold text-on-surface">{task.title}</p>
                   {task.description && <p className="text-sm text-on-surface-variant mt-1">{task.description}</p>}
-                  {task.assignedTo && <p className="text-xs text-outline mt-2">Assigned to {task.assignedTo}</p>}
+                  {task.assignedTo && <p className="text-xs text-on-surface-variant mt-2">Assigned to {task.assignedTo}</p>}
 
                   <div className="flex gap-2 mt-4">
                     {!inProgress && (
@@ -255,7 +255,7 @@ export default function DepartmentDisplayPage() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-surface-container-lowest rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-outline-variant space-y-3">
             <h3 className="text-lg font-bold text-on-surface">Reject this task?</h3>
-            <p className="text-xs text-outline">{rejectingTask.title}. Say why so whoever's tracking it knows what happened.</p>
+            <p className="text-xs text-on-surface-variant">{rejectingTask.title}. Say why so whoever's tracking it knows what happened.</p>
             <textarea
               autoFocus
               rows={3}

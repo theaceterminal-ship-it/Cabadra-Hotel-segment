@@ -265,7 +265,7 @@ function OverviewTab({ property, imageUrl, setImageUrl, onSaveImage, savingImage
         <div className="bg-highlight rounded-xl p-5 border border-warning flex flex-wrap items-center gap-6 justify-between">
           <div>
             <span className="text-xs font-semibold text-primary uppercase tracking-wider">Recommendation Engine Impact</span>
-            <p className="text-xs text-outline mt-1">{ticketAnalytics.ordersTotal} order{ticketAnalytics.ordersTotal === 1 ? '' : 's'} total</p>
+            <p className="text-xs text-on-surface-variant mt-1">{ticketAnalytics.ordersTotal} order{ticketAnalytics.ordersTotal === 1 ? '' : 's'} total</p>
           </div>
           <div className="flex gap-8">
             <div>
@@ -308,7 +308,7 @@ function OverviewTab({ property, imageUrl, setImageUrl, onSaveImage, savingImage
             {(['ready', 'occupied', 'occupied_vip', 'cleaning', 'dirty', 'maintenance'] as const).map(status => (
               <div key={status} className="bg-surface-container-low rounded-lg p-2 border border-outline-variant">
                 <div className="text-lg font-bold text-on-surface">{rooms.filter(r => r.status === status).length}</div>
-                <div className="text-[10px] text-outline capitalize">{status.replace('_', ' ')}</div>
+                <div className="text-[10px] text-on-surface-variant capitalize">{status.replace('_', ' ')}</div>
               </div>
             ))}
           </div>
@@ -360,7 +360,7 @@ function OpenRequestsCard({ propertyId }: { propertyId: string }) {
           <div key={r.id} className="py-2.5 flex items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs font-semibold text-on-surface truncate">{r.title}</p>
-              <p className="text-[11px] text-outline">Room {r.roomNumber} · {r.priority} · {r.timeAgo}</p>
+              <p className="text-[11px] text-on-surface-variant">Room {r.roomNumber} · {r.priority} · {r.timeAgo}</p>
             </div>
             <button
               onClick={() => handleResolve(r.id)}
@@ -408,7 +408,7 @@ function PmsModeCard({ property }: { property: Property }) {
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-bold text-on-surface">Does this hotel already use a PMS?</h3>
-          <p className="text-xs text-outline mt-1 max-w-md">
+          <p className="text-xs text-on-surface-variant mt-1 max-w-md">
             {hasExternalPms
               ? 'On — Reception skips booking screens entirely. They just tap a room and add the guest’s name so the room’s QR code, folio and requests work for them.'
               : 'Off — Cabadra is the front desk here. Reception uses New Booking to search availability and book rooms.'}
@@ -454,7 +454,7 @@ function UpiSettingsCard({ property }: { property: Property }) {
   return (
     <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-5 space-y-3">
       <h3 className="text-sm font-bold text-on-surface">Payment (UPI)</h3>
-      <p className="text-xs text-outline">Set once — Reception can show this as a QR at checkout or mid-stay for a guest paying by UPI. Folio settlement is still confirmed manually either way.</p>
+      <p className="text-xs text-on-surface-variant">Set once — Reception can show this as a QR at checkout or mid-stay for a guest paying by UPI. Folio settlement is still confirmed manually either way.</p>
       <div className="flex items-end gap-2 max-w-md">
         <div className="flex-1">
           <label className={labelCls}>UPI ID</label>
@@ -668,12 +668,12 @@ function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChanged }: { 
 
       <div className="space-y-1.5">
         {rooms.length === 0 ? (
-          <p className="text-xs text-outline text-center py-6">No rooms yet — add one above or import a CSV.</p>
+          <p className="text-xs text-on-surface-variant text-center py-6">No rooms yet — add one above or import a CSV.</p>
         ) : (
           rooms.map(r => (
             <div key={r.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs ${editingId === r.id ? 'border-primary bg-highlight' : 'border-outline-variant'}`}>
               <span className="font-semibold text-on-surface">Room {r.number}</span>
-              <span className="text-outline">
+              <span className="text-on-surface-variant">
                 {hasExternalPms ? `Floor ${r.floor}` : `${r.type} · Floor ${r.floor} · Sleeps ${r.maxOccupancy} · ${formatCurrency(r.pricePerNight, currency)}/night`}
               </span>
               <div className="flex items-center gap-1">
@@ -867,12 +867,12 @@ function MenuTab({ propertyId, currency, menu, onChanged }: { propertyId: string
 
       <div className="space-y-1.5">
         {menu.length === 0 ? (
-          <p className="text-xs text-outline text-center py-6">No menu items yet — add one above or import a CSV.</p>
+          <p className="text-xs text-on-surface-variant text-center py-6">No menu items yet — add one above or import a CSV.</p>
         ) : (
           menu.map(m => (
             <div key={m.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs ${editingId === m.id ? 'border-primary bg-highlight' : 'border-outline-variant'}`}>
               <span className="font-semibold text-on-surface">{m.name}</span>
-              <span className="text-outline">{m.category} · {formatCurrency(m.price, currency)} · {m.isVeg ? 'Veg' : 'Non-veg'}{m.prepTime ? ` · ${m.prepTime}` : ''}</span>
+              <span className="text-on-surface-variant">{m.category} · {formatCurrency(m.price, currency)} · {m.isVeg ? 'Veg' : 'Non-veg'}{m.prepTime ? ` · ${m.prepTime}` : ''}</span>
               <div className="flex items-center gap-1">
                 <button onClick={() => startEdit(m)} className="text-primary hover:text-primary-hover p-1">
                   <Pencil className="w-3.5 h-3.5" />
@@ -945,7 +945,7 @@ function ExperiencesTab({ propertyId, currency, experiences, onChanged }: { prop
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-outline">
+      <p className="text-xs text-on-surface-variant">
         These show up as "Curated For You" cards on the guest home page. Nothing shows there until you add one here.
       </p>
 
@@ -986,12 +986,12 @@ function ExperiencesTab({ propertyId, currency, experiences, onChanged }: { prop
 
       <div className="space-y-1.5">
         {experiences.length === 0 ? (
-          <p className="text-xs text-outline text-center py-6">No experiences yet — add one above.</p>
+          <p className="text-xs text-on-surface-variant text-center py-6">No experiences yet — add one above.</p>
         ) : (
           experiences.map(exp => (
             <div key={exp.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs ${editingId === exp.id ? 'border-primary bg-highlight' : 'border-outline-variant'}`}>
               <span className="font-semibold text-on-surface">{exp.name}</span>
-              <span className="text-outline">{formatCurrency(exp.price, currency)} {exp.unitLabel}</span>
+              <span className="text-on-surface-variant">{formatCurrency(exp.price, currency)} {exp.unitLabel}</span>
               <div className="flex items-center gap-1">
                 <button onClick={() => startEdit(exp)} className="text-primary hover:text-primary-hover p-1">
                   <Pencil className="w-3.5 h-3.5" />
@@ -1087,7 +1087,7 @@ function ServicesTab({ propertyId, currency, services, onChanged }: { propertyId
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-outline">
+      <p className="text-xs text-on-surface-variant">
         These show up as "At Your Service" cards on the guest home page — add whatever this property actually
         offers (housekeeping, spa, airport transfers, business center...). A guest's request is tagged with the
         department here, so it routes straight to the right Live Ops queue instead of Reception guessing from a title.
@@ -1145,12 +1145,12 @@ function ServicesTab({ propertyId, currency, services, onChanged }: { propertyId
 
       <div className="space-y-1.5">
         {services.length === 0 ? (
-          <p className="text-xs text-outline text-center py-6">No services yet — the guest home page's "At Your Service" section stays empty until you add one.</p>
+          <p className="text-xs text-on-surface-variant text-center py-6">No services yet — the guest home page's "At Your Service" section stays empty until you add one.</p>
         ) : (
           services.map(s => (
             <div key={s.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs ${editingId === s.id ? 'border-primary bg-highlight' : 'border-outline-variant'}`}>
               <span className="font-semibold text-on-surface">{s.name}</span>
-              <span className="text-outline capitalize">
+              <span className="text-on-surface-variant capitalize">
                 {s.description}{s.description ? ' · ' : ''}routes to {s.department}
                 {s.categoryType === 'transportation' && ' · route picker'}
               </span>
@@ -1213,7 +1213,7 @@ function TransportRoutesManager({ propertyId, currency }: { propertyId: string; 
   return (
     <div className="border-t border-outline-variant pt-4 space-y-3">
       <h3 className="text-sm font-bold text-on-surface">Transport Routes</h3>
-      <p className="text-xs text-outline">Where this property actually takes guests — the guest sees these as a searchable pick list, not a blank box.</p>
+      <p className="text-xs text-on-surface-variant">Where this property actually takes guests — the guest sees these as a searchable pick list, not a blank box.</p>
 
       <form onSubmit={handleAdd} className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end bg-surface-container-low p-3 rounded-lg border border-outline-variant">
         <div>
@@ -1240,12 +1240,12 @@ function TransportRoutesManager({ propertyId, currency }: { propertyId: string; 
 
       <div className="space-y-1.5">
         {loading ? null : routes.length === 0 ? (
-          <p className="text-xs text-outline text-center py-4">No routes yet.</p>
+          <p className="text-xs text-on-surface-variant text-center py-4">No routes yet.</p>
         ) : (
           routes.map(r => (
             <div key={r.id} className="flex items-center justify-between px-3 py-2 rounded-lg border border-outline-variant text-xs">
               <span className="font-semibold text-on-surface">{r.from} → {r.to}</span>
-              <span className="text-outline">{formatCurrency(r.price, currency)} {r.priceUnit}</span>
+              <span className="text-on-surface-variant">{formatCurrency(r.price, currency)} {r.priceUnit}</span>
               <button onClick={() => handleDelete(r.id)} className="text-error hover:text-red-700 p-1">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -1308,13 +1308,13 @@ function AccessLinkCard({ propertyId }: { propertyId: string }) {
         <Link2 className="w-4 h-4 text-primary" />
         <h3 className="text-sm font-bold text-on-surface">Reception Access Link</h3>
       </div>
-      <p className="text-xs text-outline">
+      <p className="text-xs text-on-surface-variant">
         Bookmark this on your front-desk computer. Opening it goes straight into Reception — no login, ever.
         Anyone with the link has full reception access, so treat it like a key, not a password to share casually.
       </p>
 
       {link === 'loading' ? (
-        <p className="text-xs text-outline">Loading…</p>
+        <p className="text-xs text-on-surface-variant">Loading…</p>
       ) : linkUrl ? (
         <div className="flex flex-col sm:flex-row gap-2">
           <input readOnly value={linkUrl} onFocus={e => e.target.select()} className={`${inputCls} font-mono flex-1`} />
@@ -1334,7 +1334,7 @@ function AccessLinkCard({ propertyId }: { propertyId: string }) {
       )}
       {error && <p className="text-xs text-red-600">{error}</p>}
       {linkUrl && (
-        <p className="text-[10px] text-outline">
+        <p className="text-[10px] text-on-surface-variant">
           Regenerating makes the old link stop working immediately — use that if it's ever shared with the wrong person.
         </p>
       )}
@@ -1418,7 +1418,7 @@ function StaffTab({ propertyId, staff, pendingInvites, onChanged }: { propertyId
 
       <div className="flex items-center gap-3 pt-1">
         <div className="flex-1 h-px bg-outline-variant" />
-        <span className="text-[10px] font-bold text-outline uppercase tracking-wider">Or invite a named account instead</span>
+        <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Or invite a named account instead</span>
         <div className="flex-1 h-px bg-outline-variant" />
       </div>
 
@@ -1426,7 +1426,7 @@ function StaffTab({ propertyId, staff, pendingInvites, onChanged }: { propertyId
         <div className="flex-1 w-full">
           <label className={labelCls}>Grant access by email</label>
           <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="colleague@hotel.com" className={inputCls} />
-          <p className="text-[10px] text-outline mt-1">Already have an account? This grants access instantly. New email? You'll get the option to send a real invite next.</p>
+          <p className="text-[10px] text-on-surface-variant mt-1">Already have an account? This grants access instantly. New email? You'll get the option to send a real invite next.</p>
         </div>
         {/* Not `${inputCls} w-32` — inputCls already carries w-full, and Tailwind's
             generated stylesheet order (not this string's order) let w-full win over
@@ -1479,7 +1479,7 @@ function StaffTab({ propertyId, staff, pendingInvites, onChanged }: { propertyId
 
       <div className="space-y-1.5">
         {staff.length === 0 ? (
-          <p className="text-xs text-outline text-center py-6">No staff records visible — run supabase/migrations/0005_staff_mgmt_and_media.sql if this looks wrong.</p>
+          <p className="text-xs text-on-surface-variant text-center py-6">No staff records visible — run supabase/migrations/0005_staff_mgmt_and_media.sql if this looks wrong.</p>
         ) : (
           staff.map(s => (
             <div key={s.userId} className="flex items-center justify-between px-3 py-2 rounded-lg border border-outline-variant text-xs">
@@ -1542,7 +1542,7 @@ function DirectoryContacts({ propertyId }: { propertyId: string }) {
   return (
     <div className="border-t border-outline-variant pt-4 space-y-3">
       <h3 className="text-sm font-bold text-on-surface">Department Contacts</h3>
-      <p className="text-xs text-outline">
+      <p className="text-xs text-on-surface-variant">
         Who Live Ops tasks actually get assigned to — a name and phone number per department, not a login. Reception sees these directly on the Live Ops board.
       </p>
 
@@ -1569,12 +1569,12 @@ function DirectoryContacts({ propertyId }: { propertyId: string }) {
 
       <div className="space-y-1.5">
         {loading ? null : contacts.length === 0 ? (
-          <p className="text-xs text-outline text-center py-4">No contacts yet.</p>
+          <p className="text-xs text-on-surface-variant text-center py-4">No contacts yet.</p>
         ) : (
           contacts.map(c => (
             <div key={c.id} className="flex items-center justify-between px-3 py-2 rounded-lg border border-outline-variant text-xs">
               <span className="font-semibold text-on-surface">{c.name}</span>
-              <span className="text-outline">{c.phone} · {DEPT_LABELS[c.department]}</span>
+              <span className="text-on-surface-variant">{c.phone} · {DEPT_LABELS[c.department]}</span>
               <div className="flex items-center gap-1">
                 <button onClick={() => setBadgeContact(c)} className="text-primary hover:bg-surface-container-low p-1 rounded" title="Shift Claims badge">
                   <QrCode className="w-3.5 h-3.5" />

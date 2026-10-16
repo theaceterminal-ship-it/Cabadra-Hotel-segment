@@ -76,7 +76,7 @@ export function CheckInModal({ propertyId, room, source = 'built_in', onClose, o
           <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1"><X className="w-5 h-5" /></button>
         </div>
 
-        <p className="text-xs text-outline">
+        <p className="text-xs text-on-surface-variant">
           {source === 'imported'
             ? "This doesn't book the room — it just tells Cabadra who's staying in it, so their room QR, folio and requests work for them specifically until checkout."
             : "This creates the guest's profile and assigns them to this room — their room-service QR will work for them specifically until checkout."}

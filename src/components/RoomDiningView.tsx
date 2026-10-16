@@ -218,7 +218,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
         </button>
         <div className="min-w-0">
           <h1 className="text-lg md:text-xl font-bold text-on-surface">In-Room Dining</h1>
-          <p className="text-xs text-outline truncate">Serving Room {roomNumber} • {propertyName}</p>
+          <p className="text-xs text-on-surface-variant truncate">Serving Room {roomNumber} • {propertyName}</p>
         </div>
       </header>
 
@@ -261,7 +261,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
 
           {/* Search bar */}
           <div className="relative w-full md:w-72">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-outline" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
             <input
               type="text"
               value={searchQuery}
@@ -290,7 +290,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                     className="flex-none w-56 bg-surface-container-lowest rounded-xl border border-outline-variant p-3 shadow-2xs"
                   >
                     <p className="font-bold text-xs text-on-surface leading-snug">{item.name}</p>
-                    <p className="text-[11px] text-outline italic mt-0.5 mb-2">Why: {rec.reason}</p>
+                    <p className="text-[11px] text-on-surface-variant italic mt-0.5 mb-2">Why: {rec.reason}</p>
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-xs text-primary">{formatCurrency(item.price, currency)}</span>
                       <button
@@ -307,7 +307,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
           </div>
         )}
         {recsError && (
-          <p className="text-[11px] text-outline">
+          <p className="text-[11px] text-on-surface-variant">
             Recommendations unavailable right now — browse the menu below instead.
           </p>
         )}
@@ -359,7 +359,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
 
                   {/* Add / Quantity Controls */}
                   <div className="flex items-center justify-between pt-3 border-t border-outline-variant">
-                    <span className="text-[11px] text-outline flex items-center gap-1">
+                    <span className="text-[11px] text-on-surface-variant flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       <span>{item.prepTime || '20-25 mins'}</span>
                     </span>
@@ -445,10 +445,10 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
             {/* Cart Items List */}
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
               {cartItemsList.length === 0 ? (
-                <div className="h-64 flex flex-col items-center justify-center text-center text-outline">
+                <div className="h-64 flex flex-col items-center justify-center text-center text-on-surface-variant">
                   <Utensils className="w-12 h-12 text-[#9ea0a1] mb-2 opacity-50" />
                   <p className="font-bold text-sm text-on-surface">Your tray is empty</p>
-                  <p className="text-xs text-outline mt-1">Add culinary dishes to place an in-room order</p>
+                  <p className="text-xs text-on-surface-variant mt-1">Add culinary dishes to place an in-room order</p>
                 </div>
               ) : (
                 <div className="space-y-3">

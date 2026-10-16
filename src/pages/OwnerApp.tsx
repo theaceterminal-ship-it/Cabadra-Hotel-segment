@@ -78,9 +78,9 @@ export default function OwnerApp() {
       <div className="min-h-screen w-full bg-surface flex items-center justify-center p-4 sm:p-6">
         <div className="w-full max-w-md bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-6">
           <h1 className="text-xl font-bold text-on-surface">Welcome to Cabadra</h1>
-          <p className="text-sm text-outline mt-1 mb-5">Let's set up your first hotel — this takes about a minute.</p>
+          <p className="text-sm text-on-surface-variant mt-1 mb-5">Let's set up your first hotel — this takes about a minute.</p>
           <NewPropertyForm onCreate={handleAddProperty} submitLabel="Create Hotel" />
-          <button onClick={() => signOut()} className="w-full text-center text-xs font-semibold text-outline hover:text-on-surface mt-4">
+          <button onClick={() => signOut()} className="w-full text-center text-xs font-semibold text-on-surface-variant hover:text-on-surface mt-4">
             Sign out
           </button>
         </div>

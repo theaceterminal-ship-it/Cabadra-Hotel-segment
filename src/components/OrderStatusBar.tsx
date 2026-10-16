@@ -66,7 +66,7 @@ export function OrderStatusBar({ token, currency }: OrderStatusBarProps) {
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold text-on-error-container">Order #{order.id.slice(0, 4)} couldn't be fulfilled</p>
             <p className="text-xs text-on-surface-variant mt-1">{order.rejectionNote || 'The kitchen was unable to prepare this order.'}</p>
-            <p className="text-[10px] text-outline mt-1.5">You haven't been charged for this.</p>
+            <p className="text-[10px] text-on-surface-variant mt-1.5">You haven't been charged for this.</p>
           </div>
           <button onClick={() => setDismissed(order.id)} className="p-1 text-gray-400 hover:text-gray-600 shrink-0">
             <X className="w-4 h-4" />
@@ -92,7 +92,7 @@ export function OrderStatusBar({ token, currency }: OrderStatusBarProps) {
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-bold text-on-surface truncate">{eta.statusLabel}</p>
-                <p className="text-[11px] text-outline">
+                <p className="text-[11px] text-on-surface-variant">
                   Order #{order.id.slice(0, 4)} ·{' '}
                   {order.status === 'ready' ? (
                     <span className="text-success font-semibold">Ready now</span>
@@ -122,7 +122,7 @@ export function OrderStatusBar({ token, currency }: OrderStatusBarProps) {
               <div key={step} className={`h-1.5 flex-1 rounded-full ${STATUS_STEPS.indexOf(step) <= stepIndex ? 'bg-primary' : 'bg-outline-variant'}`} />
             ))}
           </div>
-          <div className="flex justify-between mt-1.5 text-[9px] font-semibold uppercase tracking-wider text-outline">
+          <div className="flex justify-between mt-1.5 text-[9px] font-semibold uppercase tracking-wider text-on-surface-variant">
             <span className={stepIndex >= 0 ? 'text-primary' : ''}>Received</span>
             <span className={stepIndex >= 1 ? 'text-primary' : ''}>Preparing</span>
             <span className={stepIndex >= 2 ? 'text-success flex items-center gap-0.5' : ''}>

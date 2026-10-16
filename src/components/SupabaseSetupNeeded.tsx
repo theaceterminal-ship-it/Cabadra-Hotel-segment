@@ -11,7 +11,7 @@ export function SupabaseSetupNeeded() {
           <code className="text-xs bg-surface-container-low px-1 py-0.5 rounded">.env.local</code> and fill in your
           project's URL and anon key from Project Settings &gt; API, then restart <code className="text-xs bg-surface-container-low px-1 py-0.5 rounded">npm run dev</code>.
         </p>
-        <p className="text-xs text-outline">
+        <p className="text-xs text-on-surface-variant">
           You'll also need to run the SQL in <code className="bg-surface-container-low px-1 py-0.5 rounded">supabase/migrations/0001_init.sql</code> and{' '}
           <code className="bg-surface-container-low px-1 py-0.5 rounded">supabase/seed.sql</code> in the Supabase SQL Editor first.
         </p>

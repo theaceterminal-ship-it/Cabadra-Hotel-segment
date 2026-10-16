@@ -135,7 +135,7 @@ export const ShiftCoverageView: React.FC<ShiftCoverageViewProps> = ({ propertyId
       </div>
 
       {loading ? (
-        <p className="text-xs text-outline text-center py-8">Loading…</p>
+        <p className="text-xs text-on-surface-variant text-center py-8">Loading…</p>
       ) : shifts.length === 0 ? (
         <div className="p-8 text-center bg-surface-container-lowest rounded-xl border border-outline-variant text-sm text-on-surface-variant">
           No shifts defined for {DEPT_LABELS[department]} yet — add one below.
@@ -152,7 +152,7 @@ export const ShiftCoverageView: React.FC<ShiftCoverageViewProps> = ({ propertyId
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                   <div>
                     <p className="font-bold text-on-surface">{shift.name}</p>
-                    <p className="text-xs text-outline">{shift.startTime} – {shift.endTime}</p>
+                    <p className="text-xs text-on-surface-variant">{shift.startTime} – {shift.endTime}</p>
                   </div>
                   <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border ${style.className}`}>
                     <Icon className="w-3.5 h-3.5" /> {style.label}

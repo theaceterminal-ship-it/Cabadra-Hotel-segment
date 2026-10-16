@@ -32,12 +32,12 @@ const RequestRow: React.FC<{ request: ActiveGuestRequest }> = ({ request }) => {
       {status === 'in_progress' ? (
         <Play className="w-3.5 h-3.5 text-primary shrink-0 fill-current" />
       ) : (
-        <Clock className="w-3.5 h-3.5 text-outline shrink-0" />
+        <Clock className="w-3.5 h-3.5 text-on-surface-variant shrink-0" />
       )}
       <div className="min-w-0 flex-1">
         <p className="text-xs font-semibold text-on-surface truncate">{request.title}</p>
       </div>
-      <span className={`text-[10px] font-bold uppercase tracking-wide shrink-0 ${status === 'in_progress' ? 'text-primary' : 'text-outline'}`}>
+      <span className={`text-[10px] font-bold uppercase tracking-wide shrink-0 ${status === 'in_progress' ? 'text-primary' : 'text-on-surface-variant'}`}>
         {STATUS_LABEL[status]}
       </span>
     </div>
@@ -83,7 +83,7 @@ export function RequestStatusBar({ token }: RequestStatusBarProps) {
               {requests.length === 1 ? requests[0].title : `${requests.length} requests in progress`}
             </p>
             {requests.length === 1 && (
-              <p className="text-[11px] text-outline">{STATUS_LABEL[requests[0].taskStatus ?? 'received']}</p>
+              <p className="text-[11px] text-on-surface-variant">{STATUS_LABEL[requests[0].taskStatus ?? 'received']}</p>
             )}
           </div>
         </div>

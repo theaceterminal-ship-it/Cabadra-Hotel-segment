@@ -44,7 +44,7 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
                 Floor {displayRoom.floor} • Room Details
               </span>
               <h3 className="text-2xl font-bold text-on-surface">Room {displayRoom.number}</h3>
-              <p className="text-xs text-outline">{displayRoom.type}</p>
+              <p className="text-xs text-on-surface-variant">{displayRoom.type}</p>
             </div>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl font-bold p-1">&times;</button>
           </div>
@@ -52,23 +52,23 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
           <div className="space-y-3 text-xs">
             <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant space-y-1.5">
               <div className="flex justify-between">
-                <span className="text-outline">Current Status:</span>
+                <span className="text-on-surface-variant">Current Status:</span>
                 <span className="font-bold text-on-surface uppercase">{displayRoom.status}</span>
               </div>
               {displayRoom.guestName && (
                 <div className="flex justify-between">
-                  <span className="text-outline">Guest Name:</span>
+                  <span className="text-on-surface-variant">Guest Name:</span>
                   <span className="font-bold text-on-surface">{displayRoom.guestName}</span>
                 </div>
               )}
               {displayRoom.notes && (
                 <div className="flex justify-between">
-                  <span className="text-outline">Notes / Issue:</span>
+                  <span className="text-on-surface-variant">Notes / Issue:</span>
                   <span className="font-medium text-error">{displayRoom.notes}</span>
                 </div>
               )}
               <div className="flex justify-between">
-                <span className="text-outline">Standard Rate:</span>
+                <span className="text-on-surface-variant">Standard Rate:</span>
                 <span className="font-bold text-success">{formatCurrency(displayRoom.pricePerNight, currency)} / night</span>
               </div>
             </div>
@@ -77,10 +77,10 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
               <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant space-y-1.5">
                 <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Guest Profile</p>
                 {displayRoom.guestPhone && (
-                  <div className="flex items-center gap-1.5 text-on-surface"><Phone className="w-3 h-3 text-outline" /> {displayRoom.guestPhone}</div>
+                  <div className="flex items-center gap-1.5 text-on-surface"><Phone className="w-3 h-3 text-on-surface-variant" /> {displayRoom.guestPhone}</div>
                 )}
                 {displayRoom.guestEmail && (
-                  <div className="flex items-center gap-1.5 text-on-surface"><Mail className="w-3 h-3 text-outline" /> {displayRoom.guestEmail}</div>
+                  <div className="flex items-center gap-1.5 text-on-surface"><Mail className="w-3 h-3 text-on-surface-variant" /> {displayRoom.guestEmail}</div>
                 )}
                 {displayRoom.guestIdDocumentUrl && (
                   <a href={displayRoom.guestIdDocumentUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-primary font-semibold hover:underline">
@@ -104,7 +104,7 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
 
             <div>
               <label className="font-bold text-on-surface block mb-2">Housekeeping Status</label>
-              <p className="text-[10px] text-outline mb-2">Occupancy is set by checking a guest in, not chosen here — these are the states a room moves through around a stay.</p>
+              <p className="text-[10px] text-on-surface-variant mb-2">Occupancy is set by checking a guest in, not chosen here — these are the states a room moves through around a stay.</p>
               <div className="grid grid-cols-2 gap-2">
                 {(['ready', 'cleaning', 'dirty', 'maintenance'] as RoomStatus[]).map((st) => (
                   <button

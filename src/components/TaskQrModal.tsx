@@ -74,13 +74,13 @@ export function TaskQrModal({ task, onClose }: TaskQrModalProps) {
 
         <div className="text-left bg-surface-container-low border border-outline-variant rounded-lg p-3">
           <p className="text-sm font-bold text-on-surface">{task.title}</p>
-          <p className="text-xs text-outline mt-0.5">
+          <p className="text-xs text-on-surface-variant mt-0.5">
             {task.roomNumber && <>Room {task.roomNumber} · </>}
             Assigned to {task.assignedTo ?? 'no one yet'}
           </p>
         </div>
 
-        <p className="text-xs text-outline">
+        <p className="text-xs text-on-surface-variant">
           Hand this to {task.assignedTo ?? 'whoever\'s doing this'} — they scan it, tap Start when they begin and Done when they finish. No login needed.
         </p>
 
@@ -92,7 +92,7 @@ export function TaskQrModal({ task, onClose }: TaskQrModalProps) {
           )}
         </div>
 
-        <p className="text-[11px] text-outline truncate px-2">{url}</p>
+        <p className="text-[11px] text-on-surface-variant truncate px-2">{url}</p>
 
         <div className="flex gap-2">
           <button

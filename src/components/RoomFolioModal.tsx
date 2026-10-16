@@ -151,14 +151,14 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, r
             <Receipt className="w-5 h-5 text-primary" />
             <div>
               <h3 className="text-lg font-bold text-on-surface">Room {roomNumber} · Folio</h3>
-              {guestName && <p className="text-[11px] text-outline">{guestName}</p>}
+              {guestName && <p className="text-[11px] text-on-surface-variant">{guestName}</p>}
             </div>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1"><X className="w-5 h-5" /></button>
         </div>
 
         {loading ? (
-          <p className="text-sm text-outline text-center py-8">Loading folio…</p>
+          <p className="text-sm text-on-surface-variant text-center py-8">Loading folio…</p>
         ) : result ? (
           <div className="text-center py-6 space-y-2">
             <p className="text-2xl font-bold text-success">{formatCurrency(result.amountCharged, currency)} settled</p>
@@ -170,7 +170,7 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, r
             {/* Activity timeline — every charge and payment, oldest first, so it reads as "what happened when" rather than a jumbled bill */}
             <div className="max-h-56 overflow-y-auto divide-y divide-outline-variant border border-outline-variant rounded-lg">
               {folio.charges.length === 0 ? (
-                <p className="text-xs text-outline text-center py-6">No activity on this stay yet.</p>
+                <p className="text-xs text-on-surface-variant text-center py-6">No activity on this stay yet.</p>
               ) : (
                 [...folio.charges]
                   .sort((a, b) => a.postedAt.localeCompare(b.postedAt))
@@ -182,13 +182,13 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, r
                           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isPayment ? 'bg-success' : 'bg-primary'}`} />
                           <div className="min-w-0">
                             <p className="font-semibold text-on-surface truncate">{c.description}</p>
-                            <p className="text-[10px] text-outline">
+                            <p className="text-[10px] text-on-surface-variant">
                               {new Date(c.postedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                               {isPayment ? ' · payment received' : ` · ${c.category.replace('_', ' ')}`}
                             </p>
                           </div>
                         </div>
-                        <span className={`font-bold shrink-0 ml-2 ${isPayment ? 'text-success' : c.settled ? 'text-outline line-through' : 'text-on-surface'}`}>
+                        <span className={`font-bold shrink-0 ml-2 ${isPayment ? 'text-success' : c.settled ? 'text-on-surface-variant line-through' : 'text-on-surface'}`}>
                           {isPayment ? '−' : ''}{formatCurrency(Math.abs(c.amount), currency)}
                         </span>
                       </div>
@@ -279,7 +279,7 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, r
               </>
             )}
             {folio.status !== 'checked_in' && (
-              <p className="text-xs text-outline text-center">This reservation is {folio.status.replace('_', ' ')} — nothing to settle.</p>
+              <p className="text-xs text-on-surface-variant text-center">This reservation is {folio.status.replace('_', ' ')} — nothing to settle.</p>
             )}
           </>
         ) : (
@@ -296,7 +296,7 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, r
             ) : (
               <div className="w-48 h-48 mx-auto rounded-lg border border-outline-variant bg-surface-container-low animate-pulse" />
             )}
-            <p className="text-[11px] text-outline">Once confirmed, use "Record Payment" above so the folio reflects it.</p>
+            <p className="text-[11px] text-on-surface-variant">Once confirmed, use "Record Payment" above so the folio reflects it.</p>
             <button onClick={() => setShowUpiQr(false)} className="w-full h-9 rounded-lg bg-on-surface text-inverse-on-surface text-xs font-semibold">Close</button>
           </div>
         </div>
