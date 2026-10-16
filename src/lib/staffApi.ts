@@ -932,6 +932,69 @@ export async function setDepartmentDisplayActive(id: string, active: boolean): P
 }
 
 // ============================================================================
+// SHIFTS & COVERAGE — named recurring daily windows per department (0047),
+// and the "did someone actually show up" report built on top of
+// display_sessions. Plain RLS CRUD for shifts, same as everything else
+// above; the report itself only exists as a function (staff_shift_coverage)
+// since it's computed, not stored.
+// ============================================================================
+
+export interface Shift {
+  id: string;
+  department: 'housekeeping' | 'maintenance' | 'amenities' | 'concierge';
+  name: string;
+  /** "HH:MM", 24-hour, time-of-day only — a shift is a recurring daily window, not a calendar event. end <= start means it crosses midnight. */
+  startTime: string;
+  endTime: string;
+  active: boolean;
+}
+
+export async function fetchShifts(propertyId: string, department: Shift['department']): Promise<Shift[]> {
+  const { data, error } = await supabase
+    .from('shifts')
+    .select('*')
+    .eq('property_id', propertyId)
+    .eq('department', department)
+    .order('start_time');
+  if (error) throw error;
+  return (data ?? []).map(s => ({
+    id: s.id, department: s.department, name: s.name,
+    startTime: (s.start_time as string).slice(0, 5), endTime: (s.end_time as string).slice(0, 5), active: s.active,
+  }));
+}
+
+export async function createShift(propertyId: string, shift: Omit<Shift, 'id' | 'active'>): Promise<void> {
+  const { error } = await supabase.from('shifts').insert({
+    property_id: propertyId, department: shift.department, name: shift.name,
+    start_time: shift.startTime, end_time: shift.endTime,
+  });
+  if (error) throw error;
+}
+
+export async function deleteShift(shiftId: string): Promise<void> {
+  const { error } = await supabase.from('shifts').delete().eq('id', shiftId);
+  if (error) throw error;
+}
+
+export interface ShiftCoverage {
+  shiftId: string;
+  shiftName: string;
+  windowStart: string;
+  windowEnd: string;
+  status: 'pending' | 'covered' | 'late' | 'uncovered' | 'overrun';
+  claimedBy?: string;
+  firstClaimAt?: string;
+}
+
+export async function fetchShiftCoverage(propertyId: string, department: Shift['department'], date: string): Promise<ShiftCoverage[]> {
+  const { data, error } = await supabase.rpc('staff_shift_coverage', {
+    p_property_id: propertyId, p_department: department, p_date: date,
+  });
+  if (error) throw error;
+  return (data ?? []) as ShiftCoverage[];
+}
+
+// ============================================================================
 // ROOM FOLIO — itemized bill for a stay, settled in one payment at checkout
 // ============================================================================
 
