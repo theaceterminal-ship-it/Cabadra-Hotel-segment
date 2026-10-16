@@ -667,10 +667,22 @@ export async function resolveGuestRequest(requestId: string): Promise<void> {
   if (error) throw error;
 }
 
-/** Reception logging a request on a guest's behalf (phone-in, walk-up) — a direct insert, since staff write their own property's requests under RLS. */
-export async function logStaffRequest(propertyId: string, roomNumber: string, title: string, priority: UrgentRequest['priority'], department: UrgentRequest['department'] = 'concierge'): Promise<void> {
-  const { error } = await supabase.from('guest_requests').insert({ property_id: propertyId, room_number: roomNumber, title, priority, department });
+/**
+ * Reception logging a request on a guest's behalf (phone-in, walk-up) — a
+ * direct insert, since staff write their own property's requests under
+ * RLS. Returns the new row's id so a task dispatched for it (see
+ * handleSubmitStaffRequest) can carry guestRequestId and the two stay
+ * linked (0045) — without this, a request and the task answering it were
+ * two records with no connection between them.
+ */
+export async function logStaffRequest(propertyId: string, roomNumber: string, title: string, priority: UrgentRequest['priority'], department: UrgentRequest['department'] = 'concierge'): Promise<string> {
+  const { data, error } = await supabase
+    .from('guest_requests')
+    .insert({ property_id: propertyId, room_number: roomNumber, title, priority, department })
+    .select('id')
+    .single();
   if (error) throw error;
+  return data.id as string;
 }
 
 // ============================================================================
@@ -774,12 +786,29 @@ export async function fetchTasks(propertyId: string): Promise<LiveOpsTask[]> {
     assignedTo: t.assigned_to ?? undefined,
     taskToken: t.task_token,
     category: t.category,
+    rejectionNote: t.rejection_note ?? undefined,
+    price: t.price ?? undefined,
+    guestRequestId: t.guest_request_id ?? undefined,
   }));
 }
 
-export async function updateTaskStatus(taskId: string, status: LiveOpsTask['status']): Promise<void> {
+/** Plain status flips only — 'completed' and 'rejected' go through completeTask()/rejectTask() instead, which can't be a bare update (one posts a folio charge atomically, the other requires a reason and guards on the current status). */
+export async function updateTaskStatus(taskId: string, status: 'pending' | 'in_progress'): Promise<void> {
   const { error } = await supabase.from('tasks').update({ status }).eq('id', taskId);
   if (error) throw error;
+}
+
+/** staff_complete_task (0045) — posts the folio charge in the same transaction when the task is priced, and resolves the linked guest_requests row if there is one. Throws if a priced task has no reservation to bill. */
+export async function completeTask(taskId: string): Promise<{ charged: boolean }> {
+  const { data, error } = await supabase.rpc('staff_complete_task', { p_task_id: taskId });
+  if (error) throw new Error(error.message);
+  return { charged: Boolean((data as { charged?: boolean } | null)?.charged) };
+}
+
+/** staff_reject_task (0045) — only a still-pending task can be rejected; a note is required. Mirrors onRejectOrder's shape for KitchenKDS. */
+export async function rejectTask(taskId: string, note: string): Promise<void> {
+  const { error } = await supabase.rpc('staff_reject_task', { p_task_id: taskId, p_note: note });
+  if (error) throw new Error(error.message);
 }
 
 /** "Assign to" — a name from the property's staff_directory, not a login. Passing null clears it back to an unassigned department queue. */
@@ -788,8 +817,19 @@ export async function updateTaskAssignment(taskId: string, assignedTo: string | 
   if (error) throw error;
 }
 
-/** taskToken is excluded — it's generated server-side by the tasks table's default (gen_random_uuid()), not something a new-task form could know in advance. See service_task_resolve (0025_task_qr.sql). */
-export async function createTask(propertyId: string, task: Omit<LiveOpsTask, 'id' | 'taskToken'>): Promise<void> {
+/**
+ * taskToken is excluded — it's generated server-side by the tasks table's
+ * default (gen_random_uuid()), not something a new-task form could know in
+ * advance. See service_task_resolve (0025_task_qr.sql).
+ *
+ * guestRequestId links this task back to the guest_requests row it answers
+ * (0045) — pass it when dispatching a task FROM a request (see
+ * handleSubmitStaffRequest), omit it for a task staff create from scratch.
+ */
+export async function createTask(
+  propertyId: string,
+  task: Omit<LiveOpsTask, 'id' | 'taskToken' | 'rejectionNote'>
+): Promise<void> {
   const { error } = await supabase.from('tasks').insert({
     property_id: propertyId,
     room_label: task.roomNumber,
@@ -800,6 +840,8 @@ export async function createTask(propertyId: string, task: Omit<LiveOpsTask, 'id
     status: task.status,
     category: task.category,
     assigned_to: task.assignedTo ?? null,
+    price: task.price ?? null,
+    guest_request_id: task.guestRequestId ?? null,
   });
   if (error) throw error;
 }
