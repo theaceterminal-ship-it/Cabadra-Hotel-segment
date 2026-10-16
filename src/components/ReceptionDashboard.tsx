@@ -1,17 +1,20 @@
 import React, { useMemo, useState } from 'react';
 import {
-  Search, Plus, Star, Clock, CheckCircle2, XCircle, ClipboardList, Megaphone, CalendarPlus,
+  Search, Plus, Star, Clock, CheckCircle2, XCircle, ClipboardList, Megaphone, CalendarPlus, UserPlus, X,
 } from 'lucide-react';
 import { Room, RoomStatus, UrgentRequest, UpcomingArrival, LiveOpsTask, AppView } from '../types';
 import { updateArrivalEta, PropertyStats } from '../lib/staffApi';
 import { formatCurrency } from '../lib/currency';
 import { NewBookingModal } from './NewBookingModal';
+import { RoomDetailModal, CHECKINABLE_STATUSES } from './RoomDetailModal';
+import { CheckInModal } from './CheckInModal';
 
 interface ReceptionDashboardProps {
   propertyId: string;
   propertyName: string;
   currency: string;
-  /** true = this hotel runs its own PMS — New Booking (availability search/advance booking) is hidden; a room is checked in directly from Rooms & Floors instead. */
+  upiId?: string;
+  /** true = this hotel runs its own PMS — New Booking (availability search/advance booking) is hidden; a room is checked in directly by tapping it (here or in Rooms & Floors) instead. */
   hasExternalPms: boolean;
   rooms: Room[];
   urgentRequests: UrgentRequest[];
@@ -21,6 +24,7 @@ interface ReceptionDashboardProps {
   onResolveUrgentRequest: (id: string) => void;
   onCheckInGuest: (arrivalId: string) => void;
   onCancelBooking: (arrivalId: string) => void;
+  onUpdateRoom: (updated: Room) => void;
   onRefreshRooms: () => void;
   onOpenNewRequest: () => void;
   onNavigate: (view: AppView) => void;
@@ -78,13 +82,18 @@ function ListCard({ title, count, icon: Icon, viewAllLabel, onViewAll, children,
  * room/guest search where the reference had "Today" filling the rest.
  */
 export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
-  propertyId, propertyName, currency, hasExternalPms, rooms, urgentRequests, upcomingArrivals, tasks, stats,
-  onResolveUrgentRequest, onCheckInGuest, onCancelBooking, onRefreshRooms, onOpenNewRequest, onNavigate,
+  propertyId, propertyName, currency, upiId, hasExternalPms, rooms, urgentRequests, upcomingArrivals, tasks, stats,
+  onResolveUrgentRequest, onCheckInGuest, onCancelBooking, onUpdateRoom, onRefreshRooms, onOpenNewRequest, onNavigate,
 }) => {
   const [etaEditArrivalId, setEtaEditArrivalId] = useState<string | null>(null);
   const [savingEta, setSavingEta] = useState(false);
   const [showNewBooking, setShowNewBooking] = useState(false);
   const [search, setSearch] = useState('');
+  const [selectedRoomForDetail, setSelectedRoomForDetail] = useState<Room | null>(null);
+  const [showQuickCheckIn, setShowQuickCheckIn] = useState(false);
+  const [checkInRoom, setCheckInRoom] = useState<Room | null>(null);
+
+  const checkinableRooms = useMemo(() => rooms.filter(r => CHECKINABLE_STATUSES.includes(r.status)), [rooms]);
 
   const occupiedCount = rooms.filter(r => r.status === 'occupied' || r.status === 'occupied_vip').length;
   const occupancyPct = rooms.length > 0 ? Math.round((occupiedCount / rooms.length) * 100) : 0;
@@ -133,7 +142,14 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
           <StatCard label="Total Sales Today" value={stats ? formatCurrency(stats.revenueToday, currency) : '—'} />
           <StatCard label="Occupancy" value={`${occupancyPct}%`} />
           <div className="flex items-center gap-2">
-            {!hasExternalPms && (
+            {hasExternalPms ? (
+              <button
+                onClick={() => setShowQuickCheckIn(true)}
+                className="h-10 px-3 rounded-full bg-primary-container/40 text-on-surface-strong text-xs font-bold flex items-center gap-1.5 hover:bg-primary-container/60 transition-colors whitespace-nowrap"
+              >
+                <UserPlus className="w-4 h-4" /> Add Check-In
+              </button>
+            ) : (
               <button
                 onClick={() => setShowNewBooking(true)}
                 className="h-10 px-3 rounded-full bg-primary-container/40 text-on-surface-strong text-xs font-bold flex items-center gap-1.5 hover:bg-primary-container/60 transition-colors whitespace-nowrap"
@@ -256,13 +272,19 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
                     {floorRooms.map(room => {
                       const c = ROOM_STATUS_COLOR[room.status];
                       return (
-                        <div key={room.id} className={`${c.bg} ${c.on} rounded-xl p-2.5 aspect-square flex flex-col justify-between`}>
+                        <button
+                          key={room.id}
+                          type="button"
+                          onClick={() => setSelectedRoomForDetail(room)}
+                          title={room.type}
+                          className={`${c.bg} ${c.on} rounded-xl p-2.5 aspect-square flex flex-col justify-between text-left transition-all hover:brightness-95 cursor-pointer`}
+                        >
                           <span className="text-sm font-bold">{room.number}</span>
                           <div>
                             <p className="text-[9px] font-semibold uppercase tracking-wide opacity-80">{ROOM_STATUS_LABEL[room.status]}</p>
                             {room.guestName && <p className="text-[10px] font-medium truncate">{room.guestName}</p>}
                           </div>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -280,6 +302,69 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
           rooms={rooms}
           onClose={() => setShowNewBooking(false)}
           onBooked={onRefreshRooms}
+        />
+      )}
+
+      {selectedRoomForDetail && (
+        <RoomDetailModal
+          propertyId={propertyId}
+          propertyName={propertyName}
+          currency={currency}
+          upiId={upiId}
+          hasExternalPms={hasExternalPms}
+          room={selectedRoomForDetail}
+          onClose={() => setSelectedRoomForDetail(null)}
+          onUpdateRoom={onUpdateRoom}
+          onRefreshRooms={onRefreshRooms}
+        />
+      )}
+
+      {/* PMS-mode quick check-in: the hotel's own PMS owns bookings, so this
+          skips availability search entirely — pick a room that's actually
+          free right now and check the guest in, the same flow New Booking's
+          absence in this mode implies but with its own entry point instead
+          of making reception hunt for a ready room in the grid first. */}
+      {showQuickCheckIn && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant space-y-4 max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-on-surface">Check In a Guest</h3>
+              <button onClick={() => setShowQuickCheckIn(false)} className="text-gray-400 hover:text-gray-600 p-1"><X className="w-5 h-5" /></button>
+            </div>
+            <p className="text-xs text-outline -mt-2">Pick a room that's ready, cleaning or dirty — occupied rooms aren't shown.</p>
+            {checkinableRooms.length === 0 ? (
+              <p className="text-xs text-outline text-center py-8">No rooms are available to check in right now.</p>
+            ) : (
+              <div className="grid grid-cols-3 gap-2 overflow-y-auto">
+                {checkinableRooms.map(room => {
+                  const c = ROOM_STATUS_COLOR[room.status];
+                  return (
+                    <button
+                      key={room.id}
+                      onClick={() => { setShowQuickCheckIn(false); setCheckInRoom(room); }}
+                      className={`${c.bg} ${c.on} rounded-xl p-2.5 aspect-square flex flex-col justify-between text-left hover:brightness-95`}
+                    >
+                      <span className="text-sm font-bold">{room.number}</span>
+                      <p className="text-[9px] font-semibold uppercase tracking-wide opacity-80">{ROOM_STATUS_LABEL[room.status]}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {checkInRoom && (
+        <CheckInModal
+          propertyId={propertyId}
+          room={checkInRoom}
+          source={hasExternalPms ? 'imported' : 'built_in'}
+          onClose={() => setCheckInRoom(null)}
+          onCheckedIn={() => {
+            onRefreshRooms();
+            setCheckInRoom(null);
+          }}
         />
       )}
     </div>

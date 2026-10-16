@@ -1357,7 +1357,12 @@ function StaffTab({ propertyId, staff, pendingInvites, onChanged }: { propertyId
           <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="colleague@hotel.com" className={inputCls} />
           <p className="text-[10px] text-outline mt-1">Already have an account? This grants access instantly. New email? You'll get the option to send a real invite next.</p>
         </div>
-        <select value={role} onChange={e => setRole(e.target.value as 'owner' | 'receptionist')} className={`${inputCls} w-32 bg-surface-container-lowest`}>
+        {/* Not `${inputCls} w-32` — inputCls already carries w-full, and Tailwind's
+            generated stylesheet order (not this string's order) let w-full win over
+            w-32, stretching this select to ~650px and squeezing the label/input/help
+            text sibling down to ~42px (every word wrapping its own line). Written out
+            without w-full instead of fighting the cascade with an importance hack. */}
+        <select value={role} onChange={e => setRole(e.target.value as 'owner' | 'receptionist')} className="h-9 px-2 text-xs border border-outline-variant rounded focus:border-primary focus:outline-none w-32 bg-surface-container-lowest shrink-0">
           <option value="receptionist">Receptionist</option>
           <option value="owner">Owner</option>
         </select>
