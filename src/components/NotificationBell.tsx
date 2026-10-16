@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bell, UtensilsCrossed, Megaphone, ClipboardList, AlertTriangle } from 'lucide-react';
+import { Bell, UtensilsCrossed, Megaphone, ClipboardList, AlertTriangle, MessageCircle } from 'lucide-react';
 import { AppNotification } from '../types';
 
 const ICONS: Record<AppNotification['type'], typeof Bell> = {
@@ -8,6 +8,7 @@ const ICONS: Record<AppNotification['type'], typeof Bell> = {
   high_priority_request: AlertTriangle,
   task_created: ClipboardList,
   new_arrival: Bell,
+  folio_chat_message: MessageCircle,
 };
 
 function timeAgo(iso: string): string {

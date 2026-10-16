@@ -6,7 +6,7 @@
  */
 
 import { supabase } from './supabaseClient';
-import type { MenuItem } from '../types';
+import type { MenuItem, FolioChatMessage } from '../types';
 
 export interface GuestExperience {
   id: string;
@@ -175,4 +175,17 @@ export async function fetchActiveOrder(token: string): Promise<ActiveOrder | nul
   const { data, error } = await supabase.rpc('guest_get_active_order', { p_token: token });
   if (error) throw new Error(`Failed to check active order: ${error.message}`);
   return (data ?? null) as ActiveOrder | null;
+}
+
+/** Folio Chat (0052) — the whole thread for this stay, oldest first. Polled, not Realtime: the guest side is anon with no RLS visibility into folio_chat_messages (same reasoning as every other guest_* read), and Realtime's postgres_changes still enforces RLS, so there's nothing for an anon subscription to see here. */
+export async function fetchChatMessages(token: string): Promise<FolioChatMessage[]> {
+  const { data, error } = await supabase.rpc('guest_fetch_chat_messages', { p_token: token });
+  if (error) throw new Error(`Failed to load messages: ${error.message}`);
+  return (data ?? []) as FolioChatMessage[];
+}
+
+export async function sendChatMessage(token: string, body: string): Promise<FolioChatMessage> {
+  const { data, error } = await supabase.rpc('guest_send_chat_message', { p_token: token, p_body: body });
+  if (error) throw new Error(`Failed to send message: ${error.message}`);
+  return data as FolioChatMessage;
 }

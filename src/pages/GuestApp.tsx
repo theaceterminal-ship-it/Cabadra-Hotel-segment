@@ -8,6 +8,7 @@ import { RoomDiningView } from '../components/RoomDiningView';
 import { SupabaseSetupNeeded } from '../components/SupabaseSetupNeeded';
 import { OrderStatusBar } from '../components/OrderStatusBar';
 import { RequestStatusBar } from '../components/RequestStatusBar';
+import { GuestFolioChat } from '../components/GuestFolioChat';
 
 /**
  * The guest page: `/guest/:token`. No login — the token in the URL (handed
@@ -121,6 +122,9 @@ export default function GuestApp() {
           onPlaceOrder={() => {}}
         />
       )}
+      {/* Always available, across both sub-views — Folio Chat is about the
+          stay, not about whichever screen happens to be open. */}
+      <GuestFolioChat token={token} />
     </>
   );
 }

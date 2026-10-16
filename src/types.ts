@@ -147,12 +147,20 @@ export interface UrgentRequest {
 
 export interface AppNotification {
   id: string;
-  type: 'new_order' | 'guest_request' | 'high_priority_request' | 'task_created' | 'new_arrival';
+  type: 'new_order' | 'guest_request' | 'high_priority_request' | 'task_created' | 'new_arrival' | 'folio_chat_message';
   title: string;
   body: string;
   roomNumber?: string;
   createdAt: string;
   read: boolean;
+}
+
+/** One message in a stay's Folio Chat thread (0052) — shared shape between guestApi.ts (token-scoped) and staffApi.ts (RLS-scoped). */
+export interface FolioChatMessage {
+  id: string;
+  sender: 'guest' | 'staff';
+  body: string;
+  createdAt: string;
 }
 
 export interface FolioCharge {
