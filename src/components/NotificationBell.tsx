@@ -26,10 +26,13 @@ interface NotificationBellProps {
   unreadCount: number;
   onMarkRead: (id: string) => void;
   onMarkAllRead?: () => void;
+  /** Scopes the list to one calendar day — defaults to today in the hook, but a date here lets staff look back instead of being stuck with "all time." */
+  date?: string;
+  onDateChange?: (date: string) => void;
 }
 
 /** A header bell + dropdown, fed by useNotifications/usePortfolioNotifications. Realtime-driven — no polling here, the hook's Supabase subscription pushes new rows in. */
-export const NotificationBell: React.FC<NotificationBellProps> = ({ notifications, unreadCount, onMarkRead, onMarkAllRead }) => {
+export const NotificationBell: React.FC<NotificationBellProps> = ({ notifications, unreadCount, onMarkRead, onMarkAllRead, date, onDateChange }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -60,17 +63,27 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ notification
 
       {open && (
         <div className="absolute right-0 mt-2 w-80 max-w-[90vw] bg-surface-container-lowest rounded-xl border border-outline-variant shadow-xl z-50 overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-outline-variant bg-surface-container-low flex items-center justify-between">
-            <span className="text-xs font-bold text-on-surface">Notifications</span>
-            {onMarkAllRead && unreadCount > 0 && (
-              <button onClick={onMarkAllRead} className="text-[11px] font-semibold text-primary hover:underline">
-                Mark all read
-              </button>
-            )}
+          <div className="px-4 py-2.5 border-b border-outline-variant bg-surface-container-low flex items-center justify-between gap-2">
+            <span className="text-xs font-bold text-on-surface shrink-0">Notifications</span>
+            <div className="flex items-center gap-2 shrink-0">
+              {onDateChange && (
+                <input
+                  type="date"
+                  value={date ?? ''}
+                  onChange={(e) => onDateChange(e.target.value)}
+                  className="h-7 px-1.5 text-[11px] border border-outline-variant rounded bg-surface-container-lowest focus:border-primary focus:outline-none"
+                />
+              )}
+              {onMarkAllRead && unreadCount > 0 && (
+                <button onClick={onMarkAllRead} className="text-[11px] font-semibold text-primary hover:underline whitespace-nowrap">
+                  Mark all read
+                </button>
+              )}
+            </div>
           </div>
           <div className="max-h-96 overflow-y-auto divide-y divide-outline-variant">
             {notifications.length === 0 ? (
-              <p className="text-xs text-on-surface-variant text-center py-8">Nothing yet.</p>
+              <p className="text-xs text-on-surface-variant text-center py-8">Nothing on this date.</p>
             ) : (
               notifications.map(n => {
                 const Icon = ICONS[n.type] ?? Bell;

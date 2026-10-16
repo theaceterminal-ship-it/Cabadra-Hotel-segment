@@ -31,7 +31,7 @@ export default function OwnerApp() {
   const [, setSelectedPropertyId] = useState<string>('');
 
   const ownedPropertyIds = assignments.filter(a => a.role === 'owner').map(a => a.propertyId);
-  const { notifications, unreadCount, markRead } = usePortfolioNotifications(ownedPropertyIds);
+  const { notifications, unreadCount, markRead, date: notificationsDate, setDate: setNotificationsDate } = usePortfolioNotifications(ownedPropertyIds);
 
   const reloadProperties = () => fetchStaffProperties().then(setProperties).catch(err => console.warn('Failed to load properties:', err));
 
@@ -107,7 +107,7 @@ export default function OwnerApp() {
       <div className="flex-1 min-w-0">
         <div className="h-14 flex items-center justify-end gap-3 px-4 sm:px-6">
           <ThemeToggle theme={theme} onChange={setTheme} />
-          <NotificationBell notifications={notifications} unreadCount={unreadCount} onMarkRead={markRead} />
+          <NotificationBell notifications={notifications} unreadCount={unreadCount} onMarkRead={markRead} date={notificationsDate} onDateChange={setNotificationsDate} />
         </div>
 
         <Routes>

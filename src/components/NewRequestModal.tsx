@@ -1,17 +1,24 @@
 import React, { useState } from 'react';
 import { Megaphone, X } from 'lucide-react';
 
+type Department = 'housekeeping' | 'maintenance' | 'amenities' | 'concierge';
+
+const DEPT_LABELS: Record<Department, string> = {
+  housekeeping: 'Housekeeping', maintenance: 'Maintenance', amenities: 'Amenities', concierge: 'Concierge',
+};
+
 export interface NewRequestSubmission {
   roomNumber?: string;
   title: string;
   priority: 'High Priority' | 'Standard' | 'Pending Approval';
-  autoDispatchTask?: boolean;
+  /** Which department's queue this lands in — a guest_requests insert now always creates its matching task automatically (0053), so this just decides where. */
+  department?: Department;
 }
 
 interface NewRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
-  /** 'staff' (Reception, logging on a guest's behalf) shows the room-number field and the auto-dispatch-task option; 'guest' (the guest app) shows neither — the room comes from their reservation already. */
+  /** 'staff' (Reception, logging on a guest's behalf) shows the room-number field and department picker; 'guest' (the guest app) shows neither — the room and department come from the service category they tapped already. */
   mode: 'staff' | 'guest';
   onSubmit: (submission: NewRequestSubmission) => void | Promise<void>;
 }
@@ -25,7 +32,7 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
   const [roomNumber, setRoomNumber] = useState('');
   const [title, setTitle] = useState('');
   const [priority, setPriority] = useState<'High Priority' | 'Standard' | 'Pending Approval'>('High Priority');
-  const [autoDispatchTask, setAutoDispatchTask] = useState(true);
+  const [department, setDepartment] = useState<Department>('housekeeping');
   const [submitting, setSubmitting] = useState(false);
 
   if (!isOpen) return null;
@@ -40,7 +47,7 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
         roomNumber: mode === 'staff' ? roomNumber.trim() : undefined,
         title: title.trim(),
         priority,
-        autoDispatchTask: mode === 'staff' ? autoDispatchTask : undefined,
+        department: mode === 'staff' ? department : undefined,
       });
       setTitle('');
       setRoomNumber('');
@@ -108,16 +115,18 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
           </div>
 
           {mode === 'staff' && (
-            <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant">
-              <label className="flex items-center gap-2 cursor-pointer font-medium text-on-surface">
-                <input
-                  type="checkbox"
-                  checked={autoDispatchTask}
-                  onChange={(e) => setAutoDispatchTask(e.target.checked)}
-                  className="accent-primary"
-                />
-                <span>Auto-dispatch task to Live Ops Housekeeping board</span>
-              </label>
+            <div>
+              <label className="font-bold text-on-surface block mb-1">Routes To</label>
+              <select
+                value={department}
+                onChange={(e) => setDepartment(e.target.value as Department)}
+                className="w-full h-10 px-3 border border-outline-variant rounded-lg bg-surface-container-lowest focus:border-primary focus:outline-none"
+              >
+                {(Object.keys(DEPT_LABELS) as Department[]).map(d => (
+                  <option key={d} value={d}>{DEPT_LABELS[d]}</option>
+                ))}
+              </select>
+              <p className="text-[10px] text-on-surface-variant mt-1">Lands on this department's Live Ops queue right away.</p>
             </div>
           )}
 

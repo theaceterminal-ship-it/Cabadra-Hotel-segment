@@ -1,24 +1,29 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AppNotification } from '../types';
-import { fetchNotifications, markAllNotificationsRead, markNotificationRead, subscribeToNotifications } from '../lib/staffApi';
+import { fetchNotifications, markAllNotificationsRead, markNotificationRead, subscribeToNotifications, todayLocalDateString } from '../lib/staffApi';
 
 /**
- * Backs the notification bell: loads recent notifications for a property,
- * then stays live via Supabase Realtime (see notify_new_order /
+ * Backs the notification bell: loads notifications for a property, scoped
+ * to one calendar day (defaults to today — see fetchNotifications), then
+ * stays live via Supabase Realtime (see notify_new_order /
  * notify_guest_request triggers in 0007_notifications.sql) so a new order
- * or urgent request shows up without a manual refresh or poll.
+ * or urgent request shows up without a manual refresh or poll. The
+ * Realtime handler only prepends a pushed row while viewing today — a row
+ * that just happened can't belong to whatever past date is on screen.
  */
 export function useNotifications(propertyId: string | undefined) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [date, setDate] = useState(todayLocalDateString());
 
   const reload = useCallback(() => {
     if (!propertyId) return;
-    fetchNotifications(propertyId)
+    setLoading(true);
+    fetchNotifications(propertyId, date)
       .then(setNotifications)
       .catch(err => console.warn('Failed to load notifications:', err))
       .finally(() => setLoading(false));
-  }, [propertyId]);
+  }, [propertyId, date]);
 
   useEffect(() => {
     reload();
@@ -27,10 +32,11 @@ export function useNotifications(propertyId: string | undefined) {
   useEffect(() => {
     if (!propertyId) return;
     const unsubscribe = subscribeToNotifications(propertyId, (row) => {
-      setNotifications(prev => [row, ...prev].slice(0, 30));
+      if (date !== todayLocalDateString()) return;
+      setNotifications(prev => [row, ...prev]);
     });
     return unsubscribe;
-  }, [propertyId]);
+  }, [propertyId, date]);
 
   const markRead = useCallback((id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
@@ -45,26 +51,30 @@ export function useNotifications(propertyId: string | undefined) {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  return { notifications, unreadCount, loading, markRead, markAllRead };
+  return { notifications, unreadCount, loading, markRead, markAllRead, date, setDate };
 }
 
 /** Same idea, but merged across every property an owner runs — for OwnerApp's header bell, where there's no single propertyId. */
 export function usePortfolioNotifications(propertyIds: string[]) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [date, setDate] = useState(todayLocalDateString());
   const key = propertyIds.join(',');
 
   useEffect(() => {
     if (propertyIds.length === 0) { setNotifications([]); return; }
-    Promise.all(propertyIds.map(id => fetchNotifications(id, 10)))
-      .then(lists => setNotifications(lists.flat().sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 30)))
+    Promise.all(propertyIds.map(id => fetchNotifications(id, date, 30)))
+      .then(lists => setNotifications(lists.flat().sort((a, b) => b.createdAt.localeCompare(a.createdAt))))
       .catch(err => console.warn('Failed to load portfolio notifications:', err));
 
     const unsubscribes = propertyIds.map(id =>
-      subscribeToNotifications(id, (row) => setNotifications(prev => [row, ...prev].slice(0, 30)))
+      subscribeToNotifications(id, (row) => {
+        if (date !== todayLocalDateString()) return;
+        setNotifications(prev => [row, ...prev]);
+      })
     );
     return () => unsubscribes.forEach(fn => fn());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+  }, [key, date]);
 
   const markRead = useCallback((id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
@@ -73,5 +83,5 @@ export function usePortfolioNotifications(propertyIds: string[]) {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  return { notifications, unreadCount, markRead };
+  return { notifications, unreadCount, markRead, date, setDate };
 }

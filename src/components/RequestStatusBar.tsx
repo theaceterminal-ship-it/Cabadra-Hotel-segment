@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchActiveGuestRequests, ActiveGuestRequest } from '../lib/guestApi';
-import { Bell, ChevronDown, Clock, Play, AlertTriangle } from 'lucide-react';
+import { Bell, Clock, Play, AlertTriangle } from 'lucide-react';
 
 interface RequestStatusBarProps {
   token: string;
@@ -45,22 +45,13 @@ const RequestRow: React.FC<{ request: ActiveGuestRequest }> = ({ request }) => {
 };
 
 /**
- * The request-side counterpart to OrderStatusBar — same "something's in
- * flight" bar, for guest_requests (housekeeping, concierge, amenities...)
- * instead of F&B orders. Found missing live-testing: a submitted request
- * genuinely reaches guest_requests (confirmed on the Reception board), but
- * nothing on the guest's own screen ever said so, unlike food's "Order
- * received" bar. Polls every 8s, same cadence as orders; a request drops
- * off this list the moment guest_requests.status leaves 'open'
- * (guest_get_active_requests, 0051), so there's nothing to dismiss once
- * staff resolves it — the list just gets shorter.
- *
- * Always rendered, even with nothing active — originally this returned
- * null whenever `requests` was empty, which meant the one way to check
- * "did my request go through" was a bar that only exists once something's
- * already pending. This is the persistent status button that was missing:
- * tap it any time to see what's in flight, or confirm there's nothing to
- * worry about.
+ * The request-side counterpart to OrderStatusBar, but a small floating
+ * button + dropdown (top-right) instead of a wide banner — a full-width
+ * bar competing with OrderStatusBar for the same top-center space was more
+ * than this needed. Polls every 8s, same cadence as orders; a request
+ * drops off the moment guest_requests.status leaves 'open'
+ * (guest_get_active_requests, 0051). Always rendered, even with nothing
+ * active, so "did my request go through" always has somewhere to check.
  */
 export function RequestStatusBar({ token }: RequestStatusBarProps) {
   const [requests, setRequests] = useState<ActiveGuestRequest[]>([]);
@@ -78,32 +69,32 @@ export function RequestStatusBar({ token }: RequestStatusBarProps) {
   const isEmpty = requests.length === 0;
 
   return (
-    <div className={`pointer-events-auto w-full max-w-md bg-surface-container-lowest rounded-2xl shadow-lg border overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300 ${anyRejected ? 'border-error-container' : 'border-outline-variant'}`}>
-      <button onClick={() => setExpanded(e => !e)} className="w-full text-left p-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${anyRejected ? 'bg-error text-on-error' : isEmpty ? 'bg-surface-container-low text-on-surface-variant' : 'bg-primary text-on-primary'}`}>
-            <Bell className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-bold text-on-surface truncate">
-              {isEmpty ? 'My Requests' : requests.length === 1 ? requests[0].title : `${requests.length} requests in progress`}
-            </p>
-            {requests.length === 1 && (
-              <p className="text-[11px] text-on-surface-variant">{STATUS_LABEL[requests[0].taskStatus ?? 'received']}</p>
-            )}
-            {isEmpty && <p className="text-[11px] text-on-surface-variant">Tap to check status</p>}
-          </div>
-        </div>
-        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform shrink-0 ${expanded ? 'rotate-180' : ''}`} />
+    <div className="fixed top-3 right-3 z-40 pointer-events-auto">
+      <button
+        onClick={() => setExpanded(e => !e)}
+        title="My Requests"
+        className={`relative h-10 px-3 rounded-full shadow-lg flex items-center gap-1.5 transition-colors ${
+          anyRejected ? 'bg-error text-on-error' : isEmpty ? 'bg-surface-container-lowest text-on-surface-variant border border-outline-variant' : 'bg-primary text-on-primary'
+        }`}
+      >
+        <Bell className="w-4 h-4" />
+        {!isEmpty && (
+          <span className="text-xs font-bold">{requests.length}</span>
+        )}
       </button>
 
       {expanded && (
-        <div className="border-t border-outline-variant px-4 py-1 divide-y divide-outline-variant bg-surface-container-low">
-          {isEmpty ? (
-            <p className="text-xs text-on-surface-variant text-center py-3">Nothing pending right now — you're all caught up.</p>
-          ) : (
-            requests.map(r => <RequestRow key={r.id} request={r} />)
-          )}
+        <div className="absolute top-full right-0 mt-2 w-72 max-w-[85vw] bg-surface-container-lowest rounded-2xl shadow-xl border border-outline-variant overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="px-4 py-2.5 border-b border-outline-variant bg-surface-container-low">
+            <span className="text-xs font-bold text-on-surface">My Requests</span>
+          </div>
+          <div className="px-4 py-1 divide-y divide-outline-variant max-h-72 overflow-y-auto">
+            {isEmpty ? (
+              <p className="text-xs text-on-surface-variant text-center py-4">Nothing pending right now — you're all caught up.</p>
+            ) : (
+              requests.map(r => <RequestRow key={r.id} request={r} />)
+            )}
+          </div>
         </div>
       )}
     </div>

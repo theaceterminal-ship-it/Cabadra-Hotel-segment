@@ -88,13 +88,13 @@ export default function GuestApp() {
 
   return (
     <>
-      {/* Both bars position themselves via this one shared fixed stack instead
-          of each claiming "fixed top-0" independently, which would make a
-          second bar sit exactly on top of the first instead of below it. */}
+      {/* OrderStatusBar owns the centered top banner; RequestStatusBar is a
+          small floating button in the top-right corner instead (its own
+          dropdown, not a second banner competing for the same space). */}
       <div className="fixed top-0 inset-x-0 z-40 flex flex-col items-center gap-2 px-3 pt-3 pointer-events-none">
         <OrderStatusBar token={token} currency={context.property.currency} />
-        <RequestStatusBar token={token} />
       </div>
+      <RequestStatusBar token={token} />
       {view === 'guest_home' && (
         <GuestHome
           propertyName={context.property.name}

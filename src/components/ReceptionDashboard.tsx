@@ -1,9 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Search, Plus, Star, Clock, CheckCircle2, XCircle, ClipboardList, Megaphone, CalendarPlus, UserPlus, X,
+  Search, Plus, Star, Clock, CheckCircle2, XCircle, ClipboardList, Megaphone, CalendarPlus, UserPlus, X, Users,
 } from 'lucide-react';
 import { Room, RoomStatus, UrgentRequest, UpcomingArrival, LiveOpsTask, AppView } from '../types';
-import { updateArrivalEta, PropertyStats } from '../lib/staffApi';
+import { updateArrivalEta, fetchActiveShiftSessions, ActiveShiftSession, PropertyStats } from '../lib/staffApi';
 import { formatCurrency } from '../lib/currency';
 import { NewBookingModal } from './NewBookingModal';
 import { RoomDetailModal, CHECKINABLE_STATUSES } from './RoomDetailModal';
@@ -71,6 +71,46 @@ function ListCard({ title, count, icon: Icon, viewAllLabel, onViewAll, children,
         <div className="divide-y divide-outline-variant max-h-64 overflow-y-auto">{children}</div>
       )}
     </div>
+  );
+}
+
+const DEPT_LABELS: Record<ActiveShiftSession['department'], string> = {
+  housekeeping: 'Housekeeping', maintenance: 'Maintenance', amenities: 'Amenities', concierge: 'Concierge',
+};
+
+/**
+ * Found missing live-testing: once staff started clocking in via a badge
+ * scan (department_display_scan_badge), nothing on Reception's own
+ * dashboard reflected it — the only place that showed up was the display
+ * itself. Self-fetching, same pattern as PropertyDetailPage's
+ * OpenRequestsCard, and polled rather than wired through the parent's own
+ * reload cycle since it's reading a table (display_sessions) nothing else
+ * on this page touches.
+ */
+function WhoIsOnShiftCard({ propertyId }: { propertyId: string }) {
+  const [sessions, setSessions] = useState<ActiveShiftSession[]>([]);
+
+  useEffect(() => {
+    const poll = () => fetchActiveShiftSessions(propertyId).then(setSessions).catch(() => {});
+    poll();
+    const interval = setInterval(poll, 8000);
+    return () => clearInterval(interval);
+  }, [propertyId]);
+
+  return (
+    <ListCard title="On Shift Now" count={sessions.length} icon={Users} empty="No one clocked in right now.">
+      {sessions.map(s => (
+        <div key={s.id} className="p-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-on-surface truncate">{s.staffName}</p>
+            <p className="text-[10px] text-on-surface-variant truncate">{DEPT_LABELS[s.department]}{s.displayLabel ? ` · ${s.displayLabel}` : ''}</p>
+          </div>
+          <span className="text-[10px] font-semibold text-success shrink-0">
+            since {new Date(s.claimedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+      ))}
+    </ListCard>
   );
 }
 
@@ -168,8 +208,10 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-        {/* Left column — Guest Requests, Upcoming Arrivals, Live Operations */}
+        {/* Left column — Guest Requests, Upcoming Arrivals, Live Operations, On Shift Now */}
         <div className="xl:col-span-4 flex flex-col gap-4">
+          <WhoIsOnShiftCard propertyId={propertyId} />
+
           <ListCard title="Guest Requests" count={urgentRequests.length} icon={Megaphone} empty="Nothing outstanding — nice.">
             {urgentRequests.map(req => (
               <div key={req.id} onClick={() => onResolveUrgentRequest(req.id)} className="p-3 hover:bg-surface-container-low transition-colors cursor-pointer group flex items-center justify-between gap-3">
