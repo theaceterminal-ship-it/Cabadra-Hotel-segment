@@ -54,6 +54,13 @@ const RequestRow: React.FC<{ request: ActiveGuestRequest }> = ({ request }) => {
  * off this list the moment guest_requests.status leaves 'open'
  * (guest_get_active_requests, 0051), so there's nothing to dismiss once
  * staff resolves it — the list just gets shorter.
+ *
+ * Always rendered, even with nothing active — originally this returned
+ * null whenever `requests` was empty, which meant the one way to check
+ * "did my request go through" was a bar that only exists once something's
+ * already pending. This is the persistent status button that was missing:
+ * tap it any time to see what's in flight, or confirm there's nothing to
+ * worry about.
  */
 export function RequestStatusBar({ token }: RequestStatusBarProps) {
   const [requests, setRequests] = useState<ActiveGuestRequest[]>([]);
@@ -67,32 +74,36 @@ export function RequestStatusBar({ token }: RequestStatusBarProps) {
     return () => { cancelled = true; clearInterval(interval); };
   }, [token]);
 
-  if (requests.length === 0) return null;
-
   const anyRejected = requests.some(r => r.taskStatus === 'rejected');
+  const isEmpty = requests.length === 0;
 
   return (
     <div className={`pointer-events-auto w-full max-w-md bg-surface-container-lowest rounded-2xl shadow-lg border overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300 ${anyRejected ? 'border-error-container' : 'border-outline-variant'}`}>
       <button onClick={() => setExpanded(e => !e)} className="w-full text-left p-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${anyRejected ? 'bg-error text-on-error' : 'bg-primary text-on-primary'}`}>
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${anyRejected ? 'bg-error text-on-error' : isEmpty ? 'bg-surface-container-low text-on-surface-variant' : 'bg-primary text-on-primary'}`}>
             <Bell className="w-4 h-4" />
           </div>
           <div className="min-w-0">
             <p className="text-sm font-bold text-on-surface truncate">
-              {requests.length === 1 ? requests[0].title : `${requests.length} requests in progress`}
+              {isEmpty ? 'My Requests' : requests.length === 1 ? requests[0].title : `${requests.length} requests in progress`}
             </p>
             {requests.length === 1 && (
               <p className="text-[11px] text-on-surface-variant">{STATUS_LABEL[requests[0].taskStatus ?? 'received']}</p>
             )}
+            {isEmpty && <p className="text-[11px] text-on-surface-variant">Tap to check status</p>}
           </div>
         </div>
-        {requests.length > 1 && <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform shrink-0 ${expanded ? 'rotate-180' : ''}`} />}
+        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform shrink-0 ${expanded ? 'rotate-180' : ''}`} />
       </button>
 
-      {expanded && requests.length > 1 && (
+      {expanded && (
         <div className="border-t border-outline-variant px-4 py-1 divide-y divide-outline-variant bg-surface-container-low">
-          {requests.map(r => <RequestRow key={r.id} request={r} />)}
+          {isEmpty ? (
+            <p className="text-xs text-on-surface-variant text-center py-3">Nothing pending right now — you're all caught up.</p>
+          ) : (
+            requests.map(r => <RequestRow key={r.id} request={r} />)
+          )}
         </div>
       )}
     </div>
