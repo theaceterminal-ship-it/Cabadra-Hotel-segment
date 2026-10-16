@@ -51,8 +51,9 @@ import { formatCurrency } from '../lib/currency';
 import {
   ArrowLeft, Plus, Trash2, BedDouble, UtensilsCrossed, Users, Pencil,
   LayoutDashboard, Upload, Download, AlertTriangle, Sparkles, ConciergeBell,
-  Link2, RefreshCw, Copy, Check,
+  Link2, RefreshCw, Copy, Check, QrCode,
 } from 'lucide-react';
+import { BadgeQrModal } from '../components/BadgeQrModal';
 
 const inputCls = "w-full h-9 px-2 text-xs border border-outline-variant rounded focus:border-primary focus:outline-none";
 const labelCls = "text-[10px] font-bold text-on-surface-variant block mb-1";
@@ -1432,6 +1433,7 @@ function DirectoryContacts({ propertyId }: { propertyId: string }) {
   const [form, setForm] = useState({ name: '', phone: '', department: 'housekeeping' as DirectoryContact['department'] });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [badgeContact, setBadgeContact] = useState<DirectoryContact | null>(null);
 
   const reload = () => fetchStaffDirectory(propertyId).then(setContacts).catch(() => {}).finally(() => setLoading(false));
   useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [propertyId]);
@@ -1497,13 +1499,26 @@ function DirectoryContacts({ propertyId }: { propertyId: string }) {
             <div key={c.id} className="flex items-center justify-between px-3 py-2 rounded-lg border border-outline-variant text-xs">
               <span className="font-semibold text-on-surface">{c.name}</span>
               <span className="text-outline">{c.phone} · {DEPT_LABELS[c.department]}</span>
-              <button onClick={() => handleDelete(c.id)} className="text-error hover:text-red-700 p-1">
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button onClick={() => setBadgeContact(c)} className="text-primary hover:bg-surface-container-low p-1 rounded" title="Shift Claims badge">
+                  <QrCode className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => handleDelete(c.id)} className="text-error hover:text-red-700 p-1">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           ))
         )}
       </div>
+
+      {badgeContact && (
+        <BadgeQrModal
+          contact={badgeContact}
+          onClose={() => setBadgeContact(null)}
+          onRegenerated={reload}
+        />
+      )}
     </div>
   );
 }

@@ -856,15 +856,17 @@ export interface DirectoryContact {
   name: string;
   phone: string;
   department: 'housekeeping' | 'maintenance' | 'amenities' | 'concierge';
+  /** This person's own standing QR for Shift Claims — scanning it on a department display claims/releases it for them. See department_display_scan_badge (0047). */
+  badgeToken: string;
 }
 
 export async function fetchStaffDirectory(propertyId: string): Promise<DirectoryContact[]> {
   const { data, error } = await supabase.from('staff_directory').select('*').eq('property_id', propertyId).order('name');
   if (error) throw error;
-  return (data ?? []).map(d => ({ id: d.id, name: d.name, phone: d.phone, department: d.department }));
+  return (data ?? []).map(d => ({ id: d.id, name: d.name, phone: d.phone, department: d.department, badgeToken: d.badge_token }));
 }
 
-export async function addDirectoryContact(propertyId: string, contact: Omit<DirectoryContact, 'id'>): Promise<void> {
+export async function addDirectoryContact(propertyId: string, contact: Omit<DirectoryContact, 'id' | 'badgeToken'>): Promise<void> {
   const { error } = await supabase.from('staff_directory').insert({
     property_id: propertyId, name: contact.name, phone: contact.phone, department: contact.department,
   });
@@ -873,6 +875,59 @@ export async function addDirectoryContact(propertyId: string, contact: Omit<Dire
 
 export async function deleteDirectoryContact(contactId: string): Promise<void> {
   const { error } = await supabase.from('staff_directory').delete().eq('id', contactId);
+  if (error) throw error;
+}
+
+/** Lost badge, not a lost login — regenerating it is a plain field update under the same RLS that already lets staff manage their own property's directory, not a special function. The old QR simply stops working the moment this lands. */
+export async function regenerateBadgeToken(contactId: string): Promise<string> {
+  const newToken = crypto.randomUUID();
+  const { error } = await supabase.from('staff_directory').update({ badge_token: newToken }).eq('id', contactId);
+  if (error) throw error;
+  return newToken;
+}
+
+// ============================================================================
+// DEPARTMENT DISPLAYS — one revocable link per physical device (a kitchen
+// tablet, a housekeeping phone), scoped to one department's live queue.
+// Plain RLS CRUD, same as staff_directory above — the department_display_*
+// RPCs (0046-0048) are for the no-login device itself, not for staff
+// managing the list of devices.
+// ============================================================================
+
+export interface DepartmentDisplayAdmin {
+  id: string;
+  department: 'housekeeping' | 'maintenance' | 'amenities' | 'concierge';
+  label: string;
+  token: string;
+  active: boolean;
+  lastUsedAt?: string;
+}
+
+export async function fetchDepartmentDisplays(propertyId: string): Promise<DepartmentDisplayAdmin[]> {
+  const { data, error } = await supabase
+    .from('department_displays')
+    .select('*')
+    .eq('property_id', propertyId)
+    .order('department')
+    .order('label');
+  if (error) throw error;
+  return (data ?? []).map(d => ({
+    id: d.id, department: d.department, label: d.label, token: d.token, active: d.active, lastUsedAt: d.last_used_at ?? undefined,
+  }));
+}
+
+export async function createDepartmentDisplay(
+  propertyId: string,
+  department: DepartmentDisplayAdmin['department'],
+  label: string
+): Promise<void> {
+  const { error } = await supabase.from('department_displays').insert({ property_id: propertyId, department, label });
+  if (error) throw error;
+}
+
+/** Revoking is just active=false — department_display_resolve already refuses an inactive token, no separate "delete" needed and the device's queue history (display_sessions) stays intact. */
+export async function setDepartmentDisplayActive(id: string, active: boolean): Promise<void> {
+  const { error } = await supabase.from('department_displays').update({ active }).eq('id', id);
   if (error) throw error;
 }
 
