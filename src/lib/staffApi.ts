@@ -8,7 +8,7 @@
  */
 
 import { supabase } from './supabaseClient';
-import type { Property, Room, RoomStatus, UpcomingArrival, UrgentRequest, LiveOpsTask, MenuItem, AppNotification, Folio } from '../types';
+import type { Property, Room, RoomStatus, UpcomingArrival, UrgentRequest, LiveOpsTask, MenuItem, AppNotification, Folio, FolioChatMessage } from '../types';
 import { formatCurrency } from './currency';
 
 /** Turns "Deluxe King 204" into a URL/id-safe slug. Rooms' primary key is global (not scoped by property_id), so this is prefixed with the property id to guarantee uniqueness — same convention as supabase/seed.sql. */
@@ -1144,5 +1144,29 @@ export async function fetchPendingInvites(propertyId: string): Promise<PendingIn
 
 export async function cancelPendingInvite(propertyId: string, email: string): Promise<void> {
   const { error } = await supabase.rpc('staff_cancel_pending_invite', { p_property_id: propertyId, p_email: email });
+  if (error) throw error;
+}
+
+// ============================================================================
+// FOLIO CHAT (0052) — plain table reads/writes under RLS (is_staff_for_property),
+// same as fetchGuestRequests/resolveGuestRequest above. The guest side goes
+// through two SECURITY DEFINER RPCs instead (guestApi.ts) since anon has no
+// RLS visibility into this table at all.
+// ============================================================================
+
+export async function fetchChatMessages(reservationId: string): Promise<FolioChatMessage[]> {
+  const { data, error } = await supabase
+    .from('folio_chat_messages')
+    .select('id, sender, body, created_at')
+    .eq('reservation_id', reservationId)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map(m => ({ id: m.id, sender: m.sender, body: m.body, createdAt: m.created_at }));
+}
+
+export async function sendStaffChatMessage(propertyId: string, reservationId: string, body: string): Promise<void> {
+  const { error } = await supabase
+    .from('folio_chat_messages')
+    .insert({ property_id: propertyId, reservation_id: reservationId, sender: 'staff', body });
   if (error) throw error;
 }

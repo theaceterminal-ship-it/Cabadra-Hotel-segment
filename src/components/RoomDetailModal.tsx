@@ -4,8 +4,9 @@ import { GuestLinkCard } from './GuestLinkCard';
 import { RoomFolioModal } from './RoomFolioModal';
 import { RoomQrModal } from './RoomQrModal';
 import { CheckInModal } from './CheckInModal';
+import { StaffFolioChatModal } from './StaffFolioChatModal';
 import { formatCurrency } from '../lib/currency';
-import { Phone, Mail, FileText, UserPlus, QrCode, Receipt } from 'lucide-react';
+import { Phone, Mail, FileText, UserPlus, QrCode, Receipt, MessageCircle } from 'lucide-react';
 
 /** Rooms that can actually accept a new check-in — matches staff_checkin_new_guest's own allowed-status check (0013_guest_checkin.sql). */
 export const CHECKINABLE_STATUSES: RoomStatus[] = ['ready', 'dirty', 'cleaning'];
@@ -33,6 +34,7 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
   const [showFolio, setShowFolio] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const [showCheckIn, setShowCheckIn] = useState(false);
+  const [showChat, setShowChat] = useState(false);
 
   return (
     <>
@@ -136,6 +138,15 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
             <div className="flex items-center gap-2">
               {displayRoom.reservationId && (
                 <button
+                  onClick={() => setShowChat(true)}
+                  className="h-9 px-3 rounded-lg border border-outline-variant text-on-surface-variant text-xs font-bold hover:border-primary hover:text-primary flex items-center gap-1.5 whitespace-nowrap"
+                  title="Message this guest (Folio Chat)"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" /> Chat
+                </button>
+              )}
+              {displayRoom.reservationId && (
+                <button
                   onClick={() => setShowFolio(true)}
                   className="h-9 px-3 rounded-lg border border-primary text-primary text-xs font-bold hover:bg-highlight flex items-center gap-1.5 whitespace-nowrap"
                 >
@@ -168,6 +179,16 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
       )}
 
       {showQr && <RoomQrModal roomNumber={displayRoom.number} roomId={displayRoom.id} onClose={() => setShowQr(false)} />}
+
+      {showChat && displayRoom.reservationId && (
+        <StaffFolioChatModal
+          propertyId={propertyId}
+          reservationId={displayRoom.reservationId}
+          roomNumber={displayRoom.number}
+          guestName={displayRoom.guestName}
+          onClose={() => setShowChat(false)}
+        />
+      )}
 
       {showCheckIn && (
         <CheckInModal
