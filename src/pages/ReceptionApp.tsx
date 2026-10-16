@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { LayoutDashboard, BedDouble, ListChecks, UtensilsCrossed, Truck } from 'lucide-react';
+import { LayoutDashboard, BedDouble, ListChecks, UtensilsCrossed, Truck, CalendarClock } from 'lucide-react';
 import { AppView, KdsOrder, LiveOpsTask, Room, UpcomingArrival, UrgentRequest } from '../types';
 import { useAuth, signOut } from '../hooks/useAuth';
 import {
@@ -29,6 +29,7 @@ import {
 } from '../lib/staffApi';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { Sidebar, SidebarNavItem } from '../components/Sidebar';
+import { ShiftCoverageView } from '../components/ShiftCoverageView';
 import { ReceptionDashboard } from '../components/ReceptionDashboard';
 import { RoomsFloorsView } from '../components/RoomsFloorsView';
 import { LiveOpsView } from '../components/LiveOpsView';
@@ -42,7 +43,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useNotifications } from '../hooks/useNotifications';
 import LoginPage from './LoginPage';
 
-type ReceptionTab = 'dashboard' | 'rooms_floors' | 'live_ops' | 'kitchen_kds' | 'active_deliveries';
+type ReceptionTab = 'dashboard' | 'rooms_floors' | 'live_ops' | 'kitchen_kds' | 'active_deliveries' | 'shift_coverage';
 
 function supabaseOrderToKdsOrder(order: StaffOrder, previouslySeen?: KdsOrder): KdsOrder {
   const roomNumber = order.roomId.split('-').pop() ?? order.roomId;
@@ -314,6 +315,7 @@ export default function ReceptionApp() {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: openRequestsCount },
     { id: 'rooms_floors', label: 'Rooms & Floors', icon: BedDouble },
     { id: 'live_ops', label: 'Live Ops & Tasks', icon: ListChecks, badge: openTasksCount },
+    { id: 'shift_coverage', label: 'Shift Coverage', icon: CalendarClock },
     { id: 'kitchen_kds', label: 'Kitchen KDS', icon: UtensilsCrossed, badge: activeOrdersCount },
     { id: 'active_deliveries', label: 'Active Deliveries', icon: Truck },
   ];
@@ -383,6 +385,7 @@ export default function ReceptionApp() {
             <KitchenKDS orders={kdsOrders} onUpdateOrder={handleUpdateKdsOrder} onRejectOrder={handleRejectOrder} onNavigate={(v: AppView) => setView(v as ReceptionTab)} />
           )}
           {view === 'active_deliveries' && <ActiveDeliveries propertyId={propertyId} onNavigate={(v: AppView) => setView(v as ReceptionTab)} />}
+          {view === 'shift_coverage' && <ShiftCoverageView propertyId={propertyId ?? ''} onNavigate={(v: AppView) => setView(v as ReceptionTab)} />}
         </div>
       </div>
 

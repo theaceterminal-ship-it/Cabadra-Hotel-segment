@@ -8,7 +8,8 @@ export type AppView =
   | 'kitchen_kds'
   | 'active_deliveries'
   | 'guest_home'
-  | 'room_dining';
+  | 'room_dining'
+  | 'shift_coverage';
 
 export type RoomStatus = 'ready' | 'occupied' | 'cleaning' | 'dirty' | 'occupied_vip' | 'maintenance';
 
