@@ -1,7 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { LiveOpsTask, AppView } from '../types';
-import { DirectoryContact } from '../lib/staffApi';
+import {
+  DirectoryContact,
+  DepartmentDisplayAdmin,
+  fetchDepartmentDisplays,
+  createDepartmentDisplay,
+  setDepartmentDisplayActive,
+} from '../lib/staffApi';
 import { TaskQrModal } from './TaskQrModal';
+import { DisplayQrModal } from './DisplayQrModal';
 import {
   CheckCircle2,
   AlertTriangle,
@@ -16,9 +23,12 @@ import {
   QrCode,
   X,
   Ban,
+  Tablet,
+  Power,
 } from 'lucide-react';
 
 interface LiveOpsViewProps {
+  propertyId: string;
   tasks: LiveOpsTask[];
   directory: DirectoryContact[];
   onUpdateTask: (task: LiveOpsTask) => void;
@@ -35,6 +45,7 @@ const DEPT_LABELS: Record<DirectoryContact['department'], string> = {
 };
 
 export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
+  propertyId,
   tasks,
   directory,
   onUpdateTask,
@@ -50,6 +61,38 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
   const [qrTask, setQrTask] = useState<LiveOpsTask | null>(null);
   const [rejectingTask, setRejectingTask] = useState<LiveOpsTask | null>(null);
   const [rejectNote, setRejectNote] = useState('');
+
+  // Department Displays — generated here, since Reception is where the
+  // physical tablets actually live, not Owner (where staff_directory badges
+  // are issued instead, PropertyDetailPage's Staff tab).
+  const [displays, setDisplays] = useState<DepartmentDisplayAdmin[]>([]);
+  const [qrDisplay, setQrDisplay] = useState<DepartmentDisplayAdmin | null>(null);
+  const [newDisplayLabel, setNewDisplayLabel] = useState('');
+  const [newDisplayDept, setNewDisplayDept] = useState<DepartmentDisplayAdmin['department']>('housekeeping');
+  const [creatingDisplay, setCreatingDisplay] = useState(false);
+
+  const reloadDisplays = () => fetchDepartmentDisplays(propertyId).then(setDisplays).catch(() => {});
+  useEffect(() => { reloadDisplays(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [propertyId]);
+
+  const handleCreateDisplay = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDisplayLabel.trim()) return;
+    setCreatingDisplay(true);
+    try {
+      await createDepartmentDisplay(propertyId, newDisplayDept, newDisplayLabel.trim());
+      setNewDisplayLabel('');
+      reloadDisplays();
+    } catch {
+      // The form just keeps whatever was typed — nothing destructive happened.
+    } finally {
+      setCreatingDisplay(false);
+    }
+  };
+
+  const handleToggleDisplay = async (display: DepartmentDisplayAdmin) => {
+    await setDepartmentDisplayActive(display.id, !display.active).catch(() => {});
+    reloadDisplays();
+  };
 
   const handleConfirmReject = () => {
     if (!rejectingTask || !rejectNote.trim()) return;
@@ -366,10 +409,70 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
               </div>
             );
           })}
+
+          {/* Department Displays — one revocable link per shared tablet/phone, scoped to that department's live queue. Badges for the staff who scan them are issued from Owner > Staff instead. */}
+          <div className="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
+            <div className="px-4 py-2.5 border-b border-outline-variant bg-surface-container-low">
+              <h4 className="text-xs font-bold text-on-surface">Department Displays</h4>
+            </div>
+            <form onSubmit={handleCreateDisplay} className="p-3 space-y-2 border-b border-outline-variant">
+              <input
+                value={newDisplayLabel}
+                onChange={e => setNewDisplayLabel(e.target.value)}
+                placeholder="e.g. Kitchen tablet #1"
+                className="w-full h-9 px-2.5 text-xs border border-outline-variant rounded-lg bg-surface-container-lowest focus:border-primary focus:outline-none"
+              />
+              <div className="flex gap-2">
+                <select
+                  value={newDisplayDept}
+                  onChange={e => setNewDisplayDept(e.target.value as DepartmentDisplayAdmin['department'])}
+                  className="flex-1 h-9 px-2 text-xs border border-outline-variant rounded-lg bg-surface-container-lowest"
+                >
+                  {(Object.keys(DEPT_LABELS) as DepartmentDisplayAdmin['department'][]).map(d => (
+                    <option key={d} value={d}>{DEPT_LABELS[d]}</option>
+                  ))}
+                </select>
+                <button
+                  type="submit"
+                  disabled={creatingDisplay || !newDisplayLabel.trim()}
+                  className="h-9 px-3 rounded-lg bg-primary text-on-primary text-xs font-bold hover:bg-primary-hover disabled:opacity-50 flex items-center gap-1"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add
+                </button>
+              </div>
+            </form>
+            {displays.length === 0 ? (
+              <p className="text-[11px] text-outline text-center py-4 px-3">No displays yet — add one above.</p>
+            ) : (
+              <div className="divide-y divide-outline-variant">
+                {displays.map(d => (
+                  <div key={d.id} className={`flex items-center justify-between px-4 py-2.5 text-xs ${!d.active ? 'opacity-50' : ''}`}>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-on-surface truncate">{d.label}</p>
+                      <p className="text-outline">{DEPT_LABELS[d.department]}{!d.active && ' · revoked'}</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button onClick={() => setQrDisplay(d)} className="text-primary hover:bg-surface-container-low p-1.5 rounded" title="Show QR">
+                        <Tablet className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleToggleDisplay(d)}
+                        className={`p-1.5 rounded hover:bg-surface-container-low ${d.active ? 'text-error' : 'text-success'}`}
+                        title={d.active ? 'Revoke' : 'Reactivate'}
+                      >
+                        <Power className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </aside>
       </div>
 
       {qrTask && <TaskQrModal task={qrTask} onClose={() => setQrTask(null)} />}
+      {qrDisplay && <DisplayQrModal display={qrDisplay} onClose={() => setQrDisplay(null)} />}
 
       {rejectingTask && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">

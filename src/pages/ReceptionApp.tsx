@@ -368,6 +368,7 @@ export default function ReceptionApp() {
           )}
           {view === 'live_ops' && (
             <LiveOpsView
+              propertyId={propertyId ?? ''}
               tasks={tasks}
               directory={directory}
               onUpdateTask={handleUpdateTask}
