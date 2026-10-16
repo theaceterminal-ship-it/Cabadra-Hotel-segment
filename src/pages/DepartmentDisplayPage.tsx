@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Check, Clock, MapPin, Play, User, X } from 'lucide-react';
+import { Camera, Check, Clock, MapPin, Play, User, X } from 'lucide-react';
 import {
   resolveDisplay,
   scanBadge,
@@ -10,6 +10,7 @@ import {
   DepartmentDisplay,
   DisplayTask,
 } from '../lib/displayApi';
+import { QrScannerModal } from '../components/QrScannerModal';
 
 const DEPT_LABELS: Record<DepartmentDisplay['department'], string> = {
   housekeeping: 'Housekeeping', maintenance: 'Maintenance', amenities: 'Amenities', concierge: 'Concierge',
@@ -18,18 +19,22 @@ const DEPT_LABELS: Record<DepartmentDisplay['department'], string> = {
 const REFRESH_MS = 8000;
 
 /**
- * What a department display's own QR opens — a shared tablet, not a
- * personal device, meant to stay on this screen for a whole shift. Two
- * login-less layers stacked: the display token (this page's own auth, same
- * tier as a task QR) scopes it to one department's queue; a badge scan on
- * top of that claims it for a named staff member, so "who accepted this"
- * has a real answer (department_display_scan_badge, 0047).
+ * What a department display's own QR opens — either a shared tablet left
+ * on this screen for a whole shift, or (just as often now) a staff
+ * member's own phone, reached by scanning that same department QR with
+ * their camera app. Two login-less layers stacked: the display token (this
+ * page's own auth, same tier as a task QR) scopes it to one department's
+ * queue; a badge scan on top of that claims it for a named staff member,
+ * so "who accepted this" has a real answer — no password, no picking a
+ * name from a list, just the scan itself (department_display_scan_badge,
+ * 0047). Scanning the SAME badge again releases that claim, so "scan when
+ * you arrive, scan again before you go" is the entire clock-in/out flow.
  *
- * The badge field assumes a USB/Bluetooth barcode-scanner peripheral
- * acting as a keyboard — scanning a badge "types" its token into whatever's
- * focused, then sends Enter. That's the common real-world shape for a
- * shared station like this (no in-browser camera access needed), and it
- * degrades gracefully to manual entry for testing.
+ * Two ways to feed it a badge token: the in-browser camera scanner
+ * (QrScannerModal) for a personal phone, or a plain text field for a
+ * shared kiosk wired to a USB/Bluetooth barcode-scanner peripheral acting
+ * as a keyboard (scanning "types" the token, then sends Enter) — or just
+ * manual entry for testing. Both end up at the same submitBadge call.
  */
 export default function DepartmentDisplayPage() {
   const { token = '' } = useParams<{ token: string }>();
@@ -38,6 +43,7 @@ export default function DepartmentDisplayPage() {
   const [actingOn, setActingOn] = useState<string | null>(null);
   const [badgeValue, setBadgeValue] = useState('');
   const [scanFeedback, setScanFeedback] = useState<string | null>(null);
+  const [showCameraScanner, setShowCameraScanner] = useState(false);
   const [rejectingTask, setRejectingTask] = useState<DisplayTask | null>(null);
   const [rejectNote, setRejectNote] = useState('');
   const badgeInputRef = useRef<HTMLInputElement>(null);
@@ -70,8 +76,8 @@ export default function DepartmentDisplayPage() {
   // automated Return keypress, never reached this handler at all). Calling
   // it directly from the input's own onKeyDown removes that dependency
   // entirely instead of trying to coax implicit submission into working.
-  const submitBadge = async () => {
-    const value = badgeValue.trim();
+  const submitBadge = async (rawValue?: string) => {
+    const value = (rawValue ?? badgeValue).trim();
     if (!value) return;
     setBadgeValue('');
     try {
@@ -84,6 +90,11 @@ export default function DepartmentDisplayPage() {
       setTimeout(() => setScanFeedback(null), 4000);
       badgeInputRef.current?.focus();
     }
+  };
+
+  const handleCameraScan = (decodedText: string) => {
+    setShowCameraScanner(false);
+    submitBadge(decodedText);
   };
 
   const handleStart = async (task: DisplayTask) => {
@@ -153,28 +164,46 @@ export default function DepartmentDisplayPage() {
           <h1 className="text-xl font-bold text-on-surface mt-0.5">{DEPT_LABELS[display.department]} — {display.label}</h1>
         </header>
 
-        <div className="bg-highlight border border-outline-variant rounded-2xl p-4 flex items-center gap-3">
-          <User className="w-5 h-5 text-on-highlight shrink-0" />
-          <input
-            ref={badgeInputRef}
-            autoFocus
-            value={badgeValue}
-            onChange={e => setBadgeValue(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submitBadge(); } }}
-            placeholder="Scan your badge to clock in or out"
-            className="flex-1 h-11 px-3 rounded-lg border border-outline-variant bg-surface-container-lowest text-sm focus:border-primary focus:outline-none"
-          />
-          {/* A real scanner's Enter keystroke should already submit via onKeyDown
-              above, but a tappable fallback costs nothing and covers manual entry
-              (testing, or a scanner that doesn't emit Enter) without depending on
-              that keystroke being recognized at all. */}
+        <div className="bg-highlight border border-outline-variant rounded-2xl p-4 space-y-3">
+          {/* The primary path on a personal phone: tap, scan your own badge
+              QR (BadgeQrModal), done — no typing. Scanning the same badge
+              again later clocks you out (department_display_scan_badge
+              toggles claim/release on its own). */}
           <button
-            onClick={submitBadge}
-            disabled={!badgeValue.trim()}
-            className="h-11 px-4 rounded-lg bg-primary text-on-primary text-sm font-bold disabled:opacity-40 shrink-0"
+            onClick={() => setShowCameraScanner(true)}
+            className="w-full h-12 rounded-xl bg-primary text-on-primary text-sm font-bold flex items-center justify-center gap-2"
           >
-            Go
+            <Camera className="w-5 h-5" /> Scan Badge to Clock In / Out
           </button>
+
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-px bg-outline-variant" />
+            <span className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wider">or type it manually</span>
+            <div className="flex-1 h-px bg-outline-variant" />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <User className="w-5 h-5 text-on-highlight shrink-0" />
+            <input
+              ref={badgeInputRef}
+              value={badgeValue}
+              onChange={e => setBadgeValue(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submitBadge(); } }}
+              placeholder="Badge code — for a USB scanner or manual entry"
+              className="flex-1 h-11 px-3 rounded-lg border border-outline-variant bg-surface-container-lowest text-sm focus:border-primary focus:outline-none"
+            />
+            {/* A real scanner's Enter keystroke should already submit via onKeyDown
+                above, but a tappable fallback costs nothing and covers manual entry
+                (testing, or a scanner that doesn't emit Enter) without depending on
+                that keystroke being recognized at all. */}
+            <button
+              onClick={() => submitBadge()}
+              disabled={!badgeValue.trim()}
+              className="h-11 px-4 rounded-lg bg-primary text-on-primary text-sm font-bold disabled:opacity-40 shrink-0"
+            >
+              Go
+            </button>
+          </div>
         </div>
         {scanFeedback && (
           <p className="text-center text-xs font-semibold text-primary">{scanFeedback}</p>
@@ -250,6 +279,15 @@ export default function DepartmentDisplayPage() {
           </div>
         )}
       </div>
+
+      {showCameraScanner && (
+        <QrScannerModal
+          title="Scan Your Badge"
+          instructions="Point your camera at your own badge QR — the one from your Staff tab's Shift Claims badge. First scan clocks you in, the same scan again later clocks you out."
+          onScan={handleCameraScan}
+          onClose={() => setShowCameraScanner(false)}
+        />
+      )}
 
       {rejectingTask && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
