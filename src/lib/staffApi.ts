@@ -920,9 +920,14 @@ export async function createDepartmentDisplay(
   propertyId: string,
   department: DepartmentDisplayAdmin['department'],
   label: string
-): Promise<void> {
-  const { error } = await supabase.from('department_displays').insert({ property_id: propertyId, department, label });
+): Promise<DepartmentDisplayAdmin> {
+  const { data, error } = await supabase
+    .from('department_displays')
+    .insert({ property_id: propertyId, department, label })
+    .select('*')
+    .single();
   if (error) throw error;
+  return { id: data.id, department: data.department, label: data.label, token: data.token, active: data.active, lastUsedAt: data.last_used_at ?? undefined };
 }
 
 /** Revoking is just active=false — department_display_resolve already refuses an inactive token, no separate "delete" needed and the device's queue history (display_sessions) stays intact. */
