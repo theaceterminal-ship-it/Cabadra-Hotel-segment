@@ -63,8 +63,14 @@ export default function DepartmentDisplayPage() {
     return () => clearInterval(id);
   }, []);
 
-  const handleBadgeSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Not wired through <form onSubmit> — a form with a single text input and
+  // no visible submit button relies on the browser's implicit-submission
+  // behavior, which turned out NOT to fire reliably when tested against the
+  // live deployment (real keystrokes + Enter from a barcode scanner, or an
+  // automated Return keypress, never reached this handler at all). Calling
+  // it directly from the input's own onKeyDown removes that dependency
+  // entirely instead of trying to coax implicit submission into working.
+  const submitBadge = async () => {
     const value = badgeValue.trim();
     if (!value) return;
     setBadgeValue('');
@@ -147,17 +153,18 @@ export default function DepartmentDisplayPage() {
           <h1 className="text-xl font-bold text-on-surface mt-0.5">{DEPT_LABELS[display.department]} — {display.label}</h1>
         </header>
 
-        <form onSubmit={handleBadgeSubmit} className="bg-highlight border border-outline-variant rounded-2xl p-4 flex items-center gap-3">
+        <div className="bg-highlight border border-outline-variant rounded-2xl p-4 flex items-center gap-3">
           <User className="w-5 h-5 text-on-highlight shrink-0" />
           <input
             ref={badgeInputRef}
             autoFocus
             value={badgeValue}
             onChange={e => setBadgeValue(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submitBadge(); } }}
             placeholder="Scan your badge to clock in or out"
             className="flex-1 h-11 px-3 rounded-lg border border-outline-variant bg-surface-container-lowest text-sm focus:border-primary focus:outline-none"
           />
-        </form>
+        </div>
         {scanFeedback && (
           <p className="text-center text-xs font-semibold text-primary">{scanFeedback}</p>
         )}
