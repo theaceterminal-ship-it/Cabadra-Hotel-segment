@@ -26,14 +26,36 @@ export default function GuestApp() {
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<Extract<AppView, 'guest_home' | 'room_dining'>>('guest_home');
 
-  // Guests never get the dark-mode toggle staff have (useTheme, per this
-  // app's own bg-surface/on-surface tokens) — but the same browser could
-  // still be carrying a lingering `dark` class from a staff session on
-  // this device (shared front-desk tablet, an owner testing on their own
-  // phone). Force it off here so a guest's stay is never accidentally
-  // themed by whatever a staff member last had set.
+  // Staff get an explicit light/dark toggle (useTheme) that deliberately
+  // ignores the OS, per its own comment — a receptionist's front-desk
+  // machine keeps whatever was picked last. A guest has no such toggle and
+  // no reason to trust a stray `dark` class left on this browser by a
+  // staff session on the same device, so the guest page instead follows
+  // the guest's own phone/browser setting directly via
+  // prefers-color-scheme, live — including if they flip their OS theme
+  // while this page is still open. The `<meta name="theme-color">` tag
+  // keeps the mobile browser's address/status bar matching this page's own
+  // background (bg-surface) rather than showing a mismatched strip.
   useEffect(() => {
-    document.documentElement.classList.remove('dark');
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+
+    const apply = (isDark: boolean) => {
+      document.documentElement.classList.toggle('dark', isDark);
+
+      let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.name = 'theme-color';
+        document.head.appendChild(meta);
+      }
+      // Matches --color-surface for .dark / :root in src/index.css.
+      meta.content = isDark ? '#14101f' : '#9992c9';
+    };
+
+    apply(media.matches);
+    const onChange = (e: MediaQueryListEvent) => apply(e.matches);
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
   }, []);
 
   useEffect(() => {
