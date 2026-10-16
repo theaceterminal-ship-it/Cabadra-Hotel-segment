@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { Room, RoomStatus } from '../types';
-import { GuestLinkCard } from './GuestLinkCard';
-import { RoomFolioModal } from './RoomFolioModal';
 import { RoomQrModal } from './RoomQrModal';
-import { CheckInModal } from './CheckInModal';
+import { RoomDetailModal } from './RoomDetailModal';
 import { NewBookingModal } from './NewBookingModal';
 import { formatCurrency } from '../lib/currency';
 import {
-  Search, User, Brush, AlertCircle, Star, Wrench, QrCode, Receipt, UserPlus, FileText, Phone, Mail, CalendarPlus,
+  Search, User, Brush, AlertCircle, Star, Wrench, QrCode, CalendarPlus,
 } from 'lucide-react';
 
 interface RoomsFloorsViewProps {
@@ -23,9 +21,6 @@ interface RoomsFloorsViewProps {
   /** Re-fetches rooms from Supabase — called after a checkout settles or a new check-in, since both change reservation state beyond what the optimistic onUpdateRoom patch covers. */
   onRefreshRooms: () => void;
 }
-
-/** Rooms that can actually accept a new check-in — matches staff_checkin_new_guest's own allowed-status check (0013_guest_checkin.sql). */
-const CHECKINABLE_STATUSES: RoomStatus[] = ['ready', 'dirty', 'cleaning'];
 
 /** One room tile's look, keyed by status — kept as data instead of a JSX switch so a floor section is just `rooms.map(tile)`. */
 const STATUS_STYLE: Record<RoomStatus, { tile: string; text: string; icon: React.ComponentType<{ className?: string }> }> = {
@@ -68,9 +63,7 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<RoomStatus | 'all'>('all');
   const [selectedRoomForDetail, setSelectedRoomForDetail] = useState<Room | null>(null);
-  const [showFolio, setShowFolio] = useState(false);
   const [qrRoom, setQrRoom] = useState<Room | null>(null);
-  const [checkInRoom, setCheckInRoom] = useState<Room | null>(null);
   const [showNewBooking, setShowNewBooking] = useState(false);
 
   const filteredRooms = rooms.filter((r) => {
@@ -213,155 +206,21 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
         )}
       </div>
 
-      {/* Room Detail & Status Control Modal */}
       {selectedRoomForDetail && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant space-y-4">
-            <div className="flex justify-between items-start pb-3 border-b border-outline-variant">
-              <div>
-                <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
-                  Floor {selectedRoomForDetail.floor} • Room Details
-                </span>
-                <h3 className="text-2xl font-bold text-on-surface">Room {selectedRoomForDetail.number}</h3>
-                <p className="text-xs text-outline">{selectedRoomForDetail.type}</p>
-              </div>
-              <button onClick={() => setSelectedRoomForDetail(null)} className="text-gray-400 hover:text-gray-600 text-xl font-bold p-1">&times;</button>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant space-y-1.5">
-                <div className="flex justify-between">
-                  <span className="text-outline">Current Status:</span>
-                  <span className="font-bold text-on-surface uppercase">{selectedRoomForDetail.status}</span>
-                </div>
-                {selectedRoomForDetail.guestName && (
-                  <div className="flex justify-between">
-                    <span className="text-outline">Guest Name:</span>
-                    <span className="font-bold text-on-surface">{selectedRoomForDetail.guestName}</span>
-                  </div>
-                )}
-                {selectedRoomForDetail.notes && (
-                  <div className="flex justify-between">
-                    <span className="text-outline">Notes / Issue:</span>
-                    <span className="font-medium text-error">{selectedRoomForDetail.notes}</span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-outline">Standard Rate:</span>
-                  <span className="font-bold text-success">{formatCurrency(selectedRoomForDetail.pricePerNight, currency)} / night</span>
-                </div>
-              </div>
-
-              {/* Guest profile — only exists once a real check-in created it (staff_checkin_new_guest); this is exactly what ties the room's durable QR to a specific person until checkout. */}
-              {(selectedRoomForDetail.guestPhone || selectedRoomForDetail.guestEmail || selectedRoomForDetail.guestIdDocumentUrl) && (
-                <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant space-y-1.5">
-                  <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Guest Profile</p>
-                  {selectedRoomForDetail.guestPhone && (
-                    <div className="flex items-center gap-1.5 text-on-surface"><Phone className="w-3 h-3 text-outline" /> {selectedRoomForDetail.guestPhone}</div>
-                  )}
-                  {selectedRoomForDetail.guestEmail && (
-                    <div className="flex items-center gap-1.5 text-on-surface"><Mail className="w-3 h-3 text-outline" /> {selectedRoomForDetail.guestEmail}</div>
-                  )}
-                  {selectedRoomForDetail.guestIdDocumentUrl && (
-                    <a href={selectedRoomForDetail.guestIdDocumentUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-primary font-semibold hover:underline">
-                      <FileText className="w-3 h-3" /> View ID document
-                    </a>
-                  )}
-                </div>
-              )}
-
-              {selectedRoomForDetail.guestToken && <GuestLinkCard guestToken={selectedRoomForDetail.guestToken} />}
-
-              {CHECKINABLE_STATUSES.includes(selectedRoomForDetail.status) && (
-                <button
-                  type="button"
-                  onClick={() => setCheckInRoom(selectedRoomForDetail)}
-                  className="w-full h-10 rounded-lg bg-primary text-on-primary text-xs font-bold hover:bg-primary-hover flex items-center justify-center gap-1.5"
-                >
-                  <UserPlus className="w-3.5 h-3.5" /> Check In Guest
-                </button>
-              )}
-
-              <div>
-                <label className="font-bold text-on-surface block mb-2">Housekeeping Status</label>
-                <p className="text-[10px] text-outline mb-2">Occupancy is set by checking a guest in, not chosen here — these are the states a room moves through around a stay.</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {(['ready', 'cleaning', 'dirty', 'maintenance'] as RoomStatus[]).map((st) => (
-                    <button
-                      key={st}
-                      disabled={selectedRoomForDetail.status === 'occupied' || selectedRoomForDetail.status === 'occupied_vip'}
-                      onClick={() => {
-                        onUpdateRoom({ ...selectedRoomForDetail, status: st });
-                        setSelectedRoomForDetail({ ...selectedRoomForDetail, status: st });
-                      }}
-                      className={`p-2 rounded-lg border text-xs font-bold capitalize transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
-                        selectedRoomForDetail.status === st ? 'bg-primary text-on-primary border-primary' : 'bg-surface-container-lowest border-outline-variant text-on-surface-variant hover:bg-surface-container-low'
-                      }`}
-                    >
-                      {st.replace('_', ' ')}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center pt-3 border-t border-outline-variant gap-2">
-              <button
-                onClick={() => setQrRoom(selectedRoomForDetail)}
-                className="h-9 px-3 rounded-lg border border-outline-variant text-on-surface-variant text-xs font-bold hover:border-primary hover:text-primary flex items-center gap-1.5 whitespace-nowrap"
-              >
-                <QrCode className="w-3.5 h-3.5" /> Room QR
-              </button>
-              <div className="flex items-center gap-2">
-                {selectedRoomForDetail.reservationId && (
-                  <button
-                    onClick={() => setShowFolio(true)}
-                    className="h-9 px-3 rounded-lg border border-primary text-primary text-xs font-bold hover:bg-highlight flex items-center gap-1.5 whitespace-nowrap"
-                  >
-                    <Receipt className="w-3.5 h-3.5" /> Folio & Checkout
-                  </button>
-                )}
-                <button onClick={() => setSelectedRoomForDetail(null)} className="px-4 py-2 bg-on-surface text-inverse-on-surface rounded-lg text-xs font-semibold whitespace-nowrap">
-                  Done
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showFolio && selectedRoomForDetail?.reservationId && (
-        <RoomFolioModal
-          reservationId={selectedRoomForDetail.reservationId}
-          roomNumber={selectedRoomForDetail.number}
-          guestName={selectedRoomForDetail.guestName}
+        <RoomDetailModal
+          propertyId={propertyId}
           propertyName={propertyName}
           currency={currency}
           upiId={upiId}
-          onClose={() => setShowFolio(false)}
-          onCheckedOut={() => {
-            onRefreshRooms();
-            setShowFolio(false);
-            setSelectedRoomForDetail(null);
-          }}
+          hasExternalPms={hasExternalPms}
+          room={selectedRoomForDetail}
+          onClose={() => setSelectedRoomForDetail(null)}
+          onUpdateRoom={onUpdateRoom}
+          onRefreshRooms={onRefreshRooms}
         />
       )}
 
       {qrRoom && <RoomQrModal roomNumber={qrRoom.number} roomId={qrRoom.id} onClose={() => setQrRoom(null)} />}
-
-      {checkInRoom && (
-        <CheckInModal
-          propertyId={propertyId}
-          room={checkInRoom}
-          source={hasExternalPms ? 'imported' : 'built_in'}
-          onClose={() => setCheckInRoom(null)}
-          onCheckedIn={() => {
-            onRefreshRooms();
-            setCheckInRoom(null);
-            setSelectedRoomForDetail(null);
-          }}
-        />
-      )}
 
       {!hasExternalPms && showNewBooking && (
         <NewBookingModal

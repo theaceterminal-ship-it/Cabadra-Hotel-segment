@@ -341,6 +341,7 @@ export default function ReceptionApp() {
               propertyId={propertyId}
               propertyName={propertyName}
               currency={currency}
+              upiId={upiId}
               hasExternalPms={hasExternalPms}
               rooms={rooms}
               urgentRequests={urgentRequests.filter(r => r.status === 'open')}
@@ -350,6 +351,7 @@ export default function ReceptionApp() {
               onResolveUrgentRequest={handleResolveUrgentRequest}
               onCheckInGuest={handleCheckInGuest}
               onCancelBooking={handleCancelBooking}
+              onUpdateRoom={handleUpdateRoom}
               onRefreshRooms={() => propertyId && reloadRoomsAndArrivals(propertyId)}
               onOpenNewRequest={() => setIsRequestModalOpen(true)}
               onNavigate={(v: AppView) => setView(v as ReceptionTab)}
