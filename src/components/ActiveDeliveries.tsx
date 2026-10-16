@@ -101,7 +101,7 @@ export const ActiveDeliveries: React.FC<ActiveDeliveriesProps> = ({ propertyId, 
           <div className="p-10 text-center bg-surface-container-lowest rounded-2xl border border-outline-variant flex flex-col items-center gap-2">
             <PackageCheck className="w-10 h-10 text-[#9ea0a1]" />
             <p className="text-sm font-semibold text-on-surface-variant">No deliveries waiting</p>
-            <p className="text-xs text-outline">Orders marked "Ready" on the Kitchen KDS board show up here.</p>
+            <p className="text-xs text-on-surface-variant">Orders marked "Ready" on the Kitchen KDS board show up here.</p>
           </div>
         ) : (
           orders.map(order => {

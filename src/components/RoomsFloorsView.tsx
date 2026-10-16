@@ -101,7 +101,7 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
           {/* text-on-surface-strong-muted, not -variant: this sits directly
               on the page's own bg-surface (a saturated color in both themes,
               see index.css's comment on that token), not inside a white
-              card — -variant/text-outline read as ~1.2:1 contrast there,
+              card — -variant/text-on-surface-variant read as ~1.2:1 contrast there,
               functionally invisible. */}
           <p className="text-sm text-on-surface-strong-muted mt-1">
             {hasExternalPms
@@ -111,7 +111,7 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <div className="relative flex-1 sm:w-72">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-outline" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}

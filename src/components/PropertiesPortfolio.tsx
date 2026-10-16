@@ -66,7 +66,7 @@ export const PropertiesPortfolio: React.FC<PropertiesPortfolioProps> = ({
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
             {/* Search Input */}
             <div className="relative w-full sm:w-64">
-              <Search className="w-4 h-4 text-outline absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-on-surface-variant absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 id="input-search-properties"
                 type="text"
@@ -161,7 +161,7 @@ export const PropertiesPortfolio: React.FC<PropertiesPortfolioProps> = ({
                   <div className="mb-4">
                     <h3 className="text-xl font-bold text-on-surface truncate">{prop.name}</h3>
                     <p className="text-xs text-on-surface-variant flex items-center gap-1 mt-1">
-                      <MapPin className="w-3.5 h-3.5 text-outline" />
+                      <MapPin className="w-3.5 h-3.5 text-on-surface-variant" />
                       <span>{prop.location}</span>
                     </p>
                   </div>

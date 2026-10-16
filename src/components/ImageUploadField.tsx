@@ -74,7 +74,7 @@ export function ImageUploadField({ label, value, onChange }: ImageUploadFieldPro
           </>
         )}
       </div>
-      {uploading && <p className="text-[10px] text-outline mt-1">Uploading…</p>}
+      {uploading && <p className="text-[10px] text-on-surface-variant mt-1">Uploading…</p>}
       {error && <p className="text-[10px] text-red-600 mt-1">{error}</p>}
     </div>
   );

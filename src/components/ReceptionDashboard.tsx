@@ -180,7 +180,7 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
                     <span className={`text-[10px] font-bold ${req.priority === 'High Priority' ? 'text-error' : 'text-primary'}`}>{req.priority}</span>
                   </div>
                 </div>
-                <CheckCircle2 className="w-4 h-4 text-outline opacity-0 group-hover:opacity-100 shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-on-surface-variant opacity-0 group-hover:opacity-100 shrink-0" />
               </div>
             ))}
           </ListCard>
@@ -203,13 +203,13 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
                 ) : (
                   <div className="flex items-center gap-1 shrink-0">
                     {arr.isDelayed && <span className="text-[9px] font-bold text-error bg-error-container px-1.5 py-0.5 rounded">Late</span>}
-                    <button onClick={() => setEtaEditArrivalId(etaEditArrivalId === arr.id ? null : arr.id)} className="h-7 w-7 flex items-center justify-center rounded border border-outline-variant text-outline hover:border-primary hover:text-primary" title="Update ETA">
+                    <button onClick={() => setEtaEditArrivalId(etaEditArrivalId === arr.id ? null : arr.id)} className="h-7 w-7 flex items-center justify-center rounded border border-outline-variant text-on-surface-variant hover:border-primary hover:text-primary" title="Update ETA">
                       <Clock className="w-3 h-3" />
                     </button>
                     <button onClick={() => onCheckInGuest(arr.id)} className="h-7 px-2 rounded border border-outline-variant text-[10px] font-bold text-on-surface hover:border-primary hover:text-primary">
                       Check In
                     </button>
-                    <button onClick={() => { if (confirm(`Cancel ${arr.guestName}'s booking?`)) onCancelBooking(arr.id); }} className="h-7 w-7 flex items-center justify-center rounded border border-outline-variant text-outline hover:border-error hover:text-error" title="Cancel booking">
+                    <button onClick={() => { if (confirm(`Cancel ${arr.guestName}'s booking?`)) onCancelBooking(arr.id); }} className="h-7 w-7 flex items-center justify-center rounded border border-outline-variant text-on-surface-variant hover:border-error hover:text-error" title="Cancel booking">
                       <XCircle className="w-3 h-3" />
                     </button>
                   </div>
@@ -249,7 +249,7 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <h2 className="text-base font-bold text-on-surface">{today}</h2>
             <div className="relative w-full sm:w-72">
-              <Search className="w-3.5 h-3.5 text-outline absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-on-surface-variant absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
@@ -331,9 +331,9 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
               <h3 className="text-lg font-bold text-on-surface">Check In a Guest</h3>
               <button onClick={() => setShowQuickCheckIn(false)} className="text-gray-400 hover:text-gray-600 p-1"><X className="w-5 h-5" /></button>
             </div>
-            <p className="text-xs text-outline -mt-2">Pick a room that's ready, cleaning or dirty — occupied rooms aren't shown.</p>
+            <p className="text-xs text-on-surface-variant -mt-2">Pick a room that's ready, cleaning or dirty — occupied rooms aren't shown.</p>
             {checkinableRooms.length === 0 ? (
-              <p className="text-xs text-outline text-center py-8">No rooms are available to check in right now.</p>
+              <p className="text-xs text-on-surface-variant text-center py-8">No rooms are available to check in right now.</p>
             ) : (
               <div className="grid grid-cols-3 gap-2 overflow-y-auto">
                 {checkinableRooms.map(room => {

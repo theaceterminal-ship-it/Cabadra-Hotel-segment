@@ -103,7 +103,7 @@ export function NewPropertyForm({ onCreate, onCancel, submitLabel = 'Save Proper
             <option key={c.code} value={c.code}>{c.name} ({c.currency})</option>
           ))}
         </select>
-        <p className="text-[10px] text-outline mt-1">
+        <p className="text-[10px] text-on-surface-variant mt-1">
           Sets this property's currency to {currencyForCountry(country)}. Can't be changed after creation.
         </p>
       </div>
@@ -114,7 +114,7 @@ export function NewPropertyForm({ onCreate, onCancel, submitLabel = 'Save Proper
 
       <div>
         <label className="font-semibold text-on-surface block mb-1">Do you already manage bookings elsewhere?</label>
-        <p className="text-[10px] text-outline mb-2">
+        <p className="text-[10px] text-on-surface-variant mb-2">
           "PMS" is the software a hotel uses to track reservations and room availability — eZee, Cloudbeds, or even
           a paper register/spreadsheet all count. This just decides which screens Cabadra shows you next.
         </p>
@@ -127,7 +127,7 @@ export function NewPropertyForm({ onCreate, onCancel, submitLabel = 'Save Proper
             }`}
           >
             <span className={`block text-xs font-bold ${usesPms === 'yes' ? 'text-primary' : 'text-on-surface'}`}>Yes, we already have one</span>
-            <span className="block text-[10px] text-outline mt-0.5">Cabadra hides its own booking screens — you'll just link guests to rooms, and your PMS stays in charge of bookings.</span>
+            <span className="block text-[10px] text-on-surface-variant mt-0.5">Cabadra hides its own booking screens — you'll just link guests to rooms, and your PMS stays in charge of bookings.</span>
           </button>
           <button
             type="button"
@@ -137,7 +137,7 @@ export function NewPropertyForm({ onCreate, onCancel, submitLabel = 'Save Proper
             }`}
           >
             <span className={`block text-xs font-bold ${usesPms === 'no' ? 'text-primary' : 'text-on-surface'}`}>No — set Cabadra up as our front desk</span>
-            <span className="block text-[10px] text-outline mt-0.5">You'll get room booking and availability search too, not just the guest-experience side.</span>
+            <span className="block text-[10px] text-on-surface-variant mt-0.5">You'll get room booking and availability search too, not just the guest-experience side.</span>
           </button>
         </div>
 
@@ -165,9 +165,9 @@ export function NewPropertyForm({ onCreate, onCancel, submitLabel = 'Save Proper
         )}
       </div>
 
-      <p className="text-[10px] text-outline">You can change this later from the property's Overview tab if it turns out wrong.</p>
+      <p className="text-[10px] text-on-surface-variant">You can change this later from the property's Overview tab if it turns out wrong.</p>
 
-      <p className="text-[11px] text-outline">
+      <p className="text-[11px] text-on-surface-variant">
         Rooms and a menu aren't created here yet — you'll add those separately once the property exists.
       </p>
 

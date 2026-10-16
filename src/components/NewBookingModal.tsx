@@ -187,11 +187,11 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
             <button onClick={() => setStep('search')} className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
               <ArrowLeft className="w-3 h-3" /> Adjust search
             </button>
-            <p className="text-[11px] text-outline">
+            <p className="text-[11px] text-on-surface-variant">
               {checkIn} &rarr; {checkOut} · {partySize} guest{partySize === '1' ? '' : 's'}{roomType !== 'any' ? ` · ${roomType}` : ''}
             </p>
             {availableRooms.length === 0 ? (
-              <p className="text-sm text-outline text-center py-10">
+              <p className="text-sm text-on-surface-variant text-center py-10">
                 Nothing free for those dates that sleeps {partySize}+{roomType !== 'any' ? ` in "${roomType}"` : ''}. Try adjusting the search.
               </p>
             ) : (
@@ -204,11 +204,11 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
                   >
                     <div>
                       <p className="text-sm font-bold text-on-surface">Room {room.number} · {room.type}</p>
-                      <p className="text-[11px] text-outline">Floor {room.floor} · Sleeps {room.maxOccupancy}</p>
+                      <p className="text-[11px] text-on-surface-variant">Floor {room.floor} · Sleeps {room.maxOccupancy}</p>
                     </div>
                     <div className="text-right shrink-0 ml-3">
                       <p className="text-sm font-bold text-success">{formatCurrency(room.pricePerNight, currency)}</p>
-                      <p className="text-[10px] text-outline">/ night</p>
+                      <p className="text-[10px] text-on-surface-variant">/ night</p>
                     </div>
                   </button>
                 ))}
@@ -261,7 +261,7 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
             {isFutureBooking ? (
               <>
                 <p className="text-base font-bold text-on-surface">Room {selectedRoom.number} reserved for {name}</p>
-                <p className="text-xs text-outline">
+                <p className="text-xs text-on-surface-variant">
                   Arriving {checkIn}. It'll show in Upcoming Arrivals on the Dashboard — check them in from there when they arrive, or cancel it if plans change.
                 </p>
                 <button onClick={onClose} className="w-full h-10 rounded-lg bg-on-surface text-inverse-on-surface text-xs font-semibold mt-2">
@@ -271,7 +271,7 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
             ) : (
               <>
                 <p className="text-base font-bold text-on-surface">Room {selectedRoom.number} assigned to {name}</p>
-                <p className="text-xs text-outline">
+                <p className="text-xs text-on-surface-variant">
                   Their folio starts now and runs through checkout — every order and request on this room belongs to them until then.
                 </p>
                 <div className="flex gap-2 pt-2">

@@ -165,7 +165,7 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
                 <option key={p.id} value={p.name}>{p.name}</option>
               ))}
             </select>
-            <ChevronDown className="w-4 h-4 text-outline absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChevronDown className="w-4 h-4 text-on-surface-variant absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
 
           {/* Time Range Filter */}
@@ -180,7 +180,7 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
               <option value="30d">Last 30 Days</option>
               <option value="90d">Last 90 Days</option>
             </select>
-            <ChevronDown className="w-4 h-4 text-outline absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChevronDown className="w-4 h-4 text-on-surface-variant absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
 
           {/* Quick jump to Properties grid */}
@@ -215,7 +215,7 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
           <div className="text-3xl md:text-4xl font-bold text-on-surface tracking-tight">
             {portfolioStats ? formatCurrency(portfolioStats.totalRevenue, primaryCurrency) : '—'}
           </div>
-          <p className="mt-2 text-xs text-outline">Across {properties.length} propert{properties.length === 1 ? 'y' : 'ies'}</p>
+          <p className="mt-2 text-xs text-on-surface-variant">Across {properties.length} propert{properties.length === 1 ? 'y' : 'ies'}</p>
         </div>
 
         <div
@@ -233,7 +233,7 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
           <div className="text-3xl md:text-4xl font-bold text-on-surface tracking-tight">
             {portfolioStats ? portfolioStats.ordersToday.toLocaleString() : '—'}
           </div>
-          <p className="mt-2 text-xs text-outline">Room service, since midnight</p>
+          <p className="mt-2 text-xs text-on-surface-variant">Room service, since midnight</p>
         </div>
 
         <div
@@ -251,7 +251,7 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
           <div className="text-3xl md:text-4xl font-bold text-on-surface tracking-tight">
             {portfolioStats ? formatCurrency(portfolioStats.avgOrderValue, primaryCurrency) : '—'}
           </div>
-          <p className="mt-2 text-xs text-outline">All-time, all properties</p>
+          <p className="mt-2 text-xs text-on-surface-variant">All-time, all properties</p>
         </div>
 
         <div
@@ -269,7 +269,7 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
           <div className="text-3xl md:text-4xl font-bold text-on-surface tracking-tight">
             {portfolioStats ? portfolioStats.openRequests : '—'}
           </div>
-          <p className="mt-2 text-xs text-outline">Unresolved guest requests</p>
+          <p className="mt-2 text-xs text-on-surface-variant">Unresolved guest requests</p>
         </div>
       </div>
 
@@ -283,7 +283,7 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
             <span className="text-xs font-semibold text-primary uppercase tracking-wider">
               Recommendation Engine Impact · {properties[0]?.name ?? ''}
             </span>
-            <p className="text-xs text-outline mt-1">
+            <p className="text-xs text-on-surface-variant mt-1">
               Based on {ticketAnalytics.ordersTotal} live demo order{ticketAnalytics.ordersTotal === 1 ? '' : 's'} placed via Room Dining.
             </p>
           </div>
@@ -352,7 +352,7 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
             {/* Recharts Component — real data from staff_revenue_trend(), one row per day, zero-filled for days with no orders */}
             <div className="h-64 w-full">
               {revenueTrend.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-xs text-outline">
+                <div className="h-full flex items-center justify-center text-xs text-on-surface-variant">
                   No orders yet in this window.
                 </div>
               ) : (
@@ -445,7 +445,7 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
                           <span className="font-semibold group-hover:text-primary transition-colors block">
                             {prop.name}
                           </span>
-                          <span className="text-xs text-outline">{prop.location}</span>
+                          <span className="text-xs text-on-surface-variant">{prop.location}</span>
                         </div>
                       </td>
                       <td className="p-4 text-right font-medium">{prop.totalRevenue}</td>

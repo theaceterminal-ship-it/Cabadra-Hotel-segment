@@ -222,7 +222,7 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
                     <Icon className="w-6 h-6" />
                   </div>
                   <h3 className="text-sm font-bold text-on-surface">{cat.name}</h3>
-                  {cat.description && <p className="text-[11px] text-outline mt-0.5">{cat.description}</p>}
+                  {cat.description && <p className="text-[11px] text-on-surface-variant mt-0.5">{cat.description}</p>}
                 </div>
               );
             })}
@@ -289,7 +289,7 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
               <>
                 <label className="text-[11px] font-bold text-on-surface-variant block mb-1">Where to?</label>
                 <div className="relative mb-2">
-                  <MapPin className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-outline" />
+                  <MapPin className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant" />
                   <input
                     value={routeSearch}
                     onChange={(e) => setRouteSearch(e.target.value)}
@@ -299,7 +299,7 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
                 </div>
                 <div className="space-y-1.5 max-h-48 overflow-y-auto mb-4">
                   {filteredRoutes.length === 0 ? (
-                    <p className="text-xs text-outline text-center py-6">No routes match — ask the front desk directly.</p>
+                    <p className="text-xs text-on-surface-variant text-center py-6">No routes match — ask the front desk directly.</p>
                   ) : (
                     filteredRoutes.map(route => (
                       <label
@@ -310,7 +310,7 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
                       >
                         <span className="flex items-center gap-2">
                           <input type="radio" name="route" checked={selectedRouteId === route.id} onChange={() => setSelectedRouteId(route.id)} className="accent-primary" />
-                          {route.from} <Car className="w-3 h-3 text-outline" /> {route.to}
+                          {route.from} <Car className="w-3 h-3 text-on-surface-variant" /> {route.to}
                         </span>
                         <span className="font-bold text-primary shrink-0">{formatCurrency(route.price, currency)} {route.priceUnit}</span>
                       </label>

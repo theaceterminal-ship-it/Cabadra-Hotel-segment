@@ -71,7 +71,7 @@ export function RoomQrModal({ roomNumber, roomId, onClose }: RoomQrModalProps) {
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1"><X className="w-5 h-5" /></button>
         </div>
 
-        <p className="text-xs text-outline">
+        <p className="text-xs text-on-surface-variant">
           Print once and stick it in the room — it always opens for whoever's currently checked in, no reprinting after every stay.
         </p>
 
@@ -83,7 +83,7 @@ export function RoomQrModal({ roomNumber, roomId, onClose }: RoomQrModalProps) {
           )}
         </div>
 
-        <p className="text-[11px] text-outline truncate px-2">{url}</p>
+        <p className="text-[11px] text-on-surface-variant truncate px-2">{url}</p>
 
         <div className="flex gap-2">
           <button

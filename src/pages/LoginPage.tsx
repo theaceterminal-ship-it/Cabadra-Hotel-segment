@@ -86,7 +86,7 @@ export default function LoginPage({ roleLabel }: LoginPageProps) {
     <div className="min-h-screen w-full flex items-center justify-center bg-surface p-6">
       <div className="w-full max-w-sm bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-6">
         <h1 className="text-lg font-bold text-on-surface mb-1">{roleLabel ? `${roleLabel} sign in` : 'Sign in to Cabadra'}</h1>
-        <p className="text-xs text-outline mb-5">
+        <p className="text-xs text-on-surface-variant mb-5">
           {roleLabel ? 'Cabadra staff access — not for guests.' : 'For hotel owners and staff — not for guests.'}
         </p>
 
@@ -107,7 +107,7 @@ export default function LoginPage({ roleLabel }: LoginPageProps) {
 
         <div className="flex items-center gap-3 my-4">
           <div className="flex-1 h-px bg-outline-variant" />
-          <span className="text-[11px] text-outline font-semibold uppercase tracking-wider">or</span>
+          <span className="text-[11px] text-on-surface-variant font-semibold uppercase tracking-wider">or</span>
           <div className="flex-1 h-px bg-outline-variant" />
         </div>
 

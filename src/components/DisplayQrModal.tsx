@@ -78,10 +78,10 @@ export function DisplayQrModal({ display, onClose }: DisplayQrModalProps) {
 
         <div className="text-left bg-surface-container-low border border-outline-variant rounded-lg p-3">
           <p className="text-sm font-bold text-on-surface">{display.label}</p>
-          <p className="text-xs text-outline mt-0.5">{DEPT_LABELS[display.department]}</p>
+          <p className="text-xs text-on-surface-variant mt-0.5">{DEPT_LABELS[display.department]}</p>
         </div>
 
-        <p className="text-xs text-outline">
+        <p className="text-xs text-on-surface-variant">
           Open this on the tablet that'll stay on this department's queue for the shift, or scan it to re-open after a restart.
         </p>
 
@@ -93,7 +93,7 @@ export function DisplayQrModal({ display, onClose }: DisplayQrModalProps) {
           )}
         </div>
 
-        <p className="text-[11px] text-outline truncate px-2">{url}</p>
+        <p className="text-[11px] text-on-surface-variant truncate px-2">{url}</p>
 
         <div className="flex gap-2">
           <button

@@ -78,7 +78,7 @@ export function BadgeQrModal({ contact, onClose, onRegenerated }: BadgeQrModalPr
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1"><X className="w-5 h-5" /></button>
         </div>
 
-        <p className="text-xs text-outline">
+        <p className="text-xs text-on-surface-variant">
           Print this and hand it to {contact.name} — scanning it on a department display's tablet claims that display for their shift, and scanning it again releases them.
         </p>
 
