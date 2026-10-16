@@ -37,6 +37,8 @@ import {
   deleteDirectoryContact,
   fetchAccessLink,
   provisionAccessLink,
+  fetchGuestRequests,
+  resolveGuestRequest,
   StaffMember,
   TicketSizeAnalytics,
   PendingInvite,
@@ -45,13 +47,14 @@ import {
   TransportRoute,
   DirectoryContact,
 } from '../lib/staffApi';
+import type { UrgentRequest } from '../types';
 import { ImageUploadField } from '../components/ImageUploadField';
 import { PresetSelect } from '../components/PresetSelect';
 import { formatCurrency } from '../lib/currency';
 import {
   ArrowLeft, Plus, Trash2, BedDouble, UtensilsCrossed, Users, Pencil,
   LayoutDashboard, Upload, Download, AlertTriangle, Sparkles, ConciergeBell,
-  Link2, RefreshCw, Copy, Check, QrCode,
+  Link2, RefreshCw, Copy, Check, QrCode, Megaphone, CheckCircle2,
 } from 'lucide-react';
 import { BadgeQrModal } from '../components/BadgeQrModal';
 
@@ -171,7 +174,12 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-semibold text-on-surface">{property?.name ?? propertyId}</h1>
-          <p className="text-sm text-on-surface-variant mt-1">{property?.location}</p>
+          {/* text-on-surface-strong-muted below, not -variant/-outline: this
+              header and tab bar sit directly on the page's own bg-surface
+              (a saturated color in both themes), not inside a white card —
+              those tokens read as ~1.2-1.9:1 contrast there, functionally
+              invisible. */}
+          <p className="text-sm text-on-surface-strong-muted mt-1">{property?.location}</p>
         </div>
       </div>
 
@@ -184,7 +192,7 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`px-4 py-2.5 text-xs font-bold flex items-center gap-1.5 border-b-2 whitespace-nowrap transition-colors ${
-                tab === t.id ? 'border-primary text-primary' : 'border-transparent text-outline hover:text-on-surface-variant'
+                tab === t.id ? 'border-primary text-primary' : 'border-transparent text-on-surface-strong-muted hover:text-on-surface-strong'
               }`}
             >
               <Icon className="w-3.5 h-3.5" /> {t.label}
@@ -194,7 +202,7 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
       </div>
 
       {loading ? (
-        <p className="text-sm text-outline text-center py-12">Loading…</p>
+        <p className="text-sm text-on-surface-strong-muted text-center py-12">Loading…</p>
       ) : error ? (
         <p className="text-sm text-red-600 text-center py-12">{error}</p>
       ) : tab === 'overview' ? (
@@ -247,6 +255,11 @@ function OverviewTab({ property, imageUrl, setImageUrl, onSaveImage, savingImage
         <StatCard label="Revenue Today" value={property.revenueToday} />
         <StatCard label="Open Requests" value={String(property.requestsCount)} />
       </div>
+
+      {/* "View Property" from Owner Overview's Attention Required card lands
+          here — it used to land on a bare "Open Requests: N" count with no
+          way to see what any of them actually were. This is that list. */}
+      {property.requestsCount > 0 && <OpenRequestsCard propertyId={property.id} />}
 
       {ticketAnalytics && ticketAnalytics.ordersTotal > 0 && (
         <div className="bg-highlight rounded-xl p-5 border border-warning flex flex-wrap items-center gap-6 justify-between">
@@ -301,6 +314,64 @@ function OverviewTab({ property, imageUrl, setImageUrl, onSaveImage, savingImage
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * What "View Property" on Owner Overview's Attention Required card actually
+ * needed to land on — the requests themselves, not just the count that
+ * sent the owner looking for them. Resolve here mirrors Reception's own
+ * (resolveGuestRequest) rather than inventing a second meaning for
+ * "resolved" — an owner clearing one here is the same action, same RLS,
+ * same effect on the Dashboard's own list.
+ */
+function OpenRequestsCard({ propertyId }: { propertyId: string }) {
+  const [requests, setRequests] = useState<UrgentRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
+
+  const reload = () => fetchGuestRequests(propertyId).then(setRequests).catch(() => {}).finally(() => setLoading(false));
+  useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [propertyId]);
+
+  const open = requests.filter(r => r.status === 'open');
+
+  const handleResolve = async (id: string) => {
+    setResolvingId(id);
+    try {
+      await resolveGuestRequest(id);
+      reload();
+    } catch {
+      // List just stays as it was — nothing destructive happened, worth letting them retry.
+    } finally {
+      setResolvingId(null);
+    }
+  };
+
+  if (loading || open.length === 0) return null;
+
+  return (
+    <div className="bg-surface-container-lowest rounded-xl border border-error-container p-5 space-y-3">
+      <h3 className="text-sm font-bold text-on-surface flex items-center gap-1.5">
+        <Megaphone className="w-4 h-4 text-error" /> Open Guest Requests ({open.length})
+      </h3>
+      <div className="divide-y divide-outline-variant">
+        {open.map(r => (
+          <div key={r.id} className="py-2.5 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-on-surface truncate">{r.title}</p>
+              <p className="text-[11px] text-outline">Room {r.roomNumber} · {r.priority} · {r.timeAgo}</p>
+            </div>
+            <button
+              onClick={() => handleResolve(r.id)}
+              disabled={resolvingId === r.id}
+              className="h-8 px-3 rounded-lg border border-outline-variant text-on-surface-variant text-[11px] font-bold hover:border-success hover:text-success disabled:opacity-50 flex items-center gap-1 shrink-0"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" /> {resolvingId === r.id ? 'Resolving…' : 'Resolve'}
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
