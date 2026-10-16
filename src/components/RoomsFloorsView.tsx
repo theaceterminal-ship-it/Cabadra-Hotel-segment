@@ -98,7 +98,12 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-semibold text-on-surface">Rooms & Floors</h1>
-          <p className="text-sm text-on-surface-variant mt-1">
+          {/* text-on-surface-strong-muted, not -variant: this sits directly
+              on the page's own bg-surface (a saturated color in both themes,
+              see index.css's comment on that token), not inside a white
+              card — -variant/text-outline read as ~1.2:1 contrast there,
+              functionally invisible. */}
+          <p className="text-sm text-on-surface-strong-muted mt-1">
             {hasExternalPms
               ? 'Your PMS handles bookings — tap a ready room to check the guest in here and switch on their QR.'
               : 'Manage every room, and print a room-service QR for the door.'}
@@ -149,7 +154,7 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
         </div>
         {floors.length > 1 && (
           <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-outline font-semibold">Jump to:</span>
+            <span className="text-on-surface-strong-muted font-semibold">Jump to:</span>
             {floors.map(fl => (
               <button key={fl} onClick={() => scrollToFloor(fl)} className="px-2.5 py-1 rounded bg-surface-container-low text-primary font-bold hover:bg-[#dbe4ed]">
                 {fl}
@@ -168,7 +173,7 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
             <section key={floor} id={`floor-section-${floor}`} className="scroll-mt-4">
               <h2 className="text-sm font-bold text-on-surface mb-3 flex items-center gap-2">
                 Floor {floor}
-                <span className="text-outline font-medium">({floorRooms.length} room{floorRooms.length === 1 ? '' : 's'})</span>
+                <span className="text-on-surface-strong-muted font-medium">({floorRooms.length} room{floorRooms.length === 1 ? '' : 's'})</span>
               </h2>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
                 {floorRooms.map(room => {
@@ -202,7 +207,7 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
           );
         })}
         {filteredRooms.length === 0 && (
-          <p className="text-sm text-outline text-center py-16">No rooms match your search/filter.</p>
+          <p className="text-sm text-on-surface-strong-muted text-center py-16">No rooms match your search/filter.</p>
         )}
       </div>
 
