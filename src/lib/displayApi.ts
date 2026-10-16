@@ -26,6 +26,9 @@ export interface DepartmentDisplay {
   department: 'housekeeping' | 'maintenance' | 'amenities' | 'concierge';
   label: string;
   tasks: DisplayTask[];
+  /** Whoever currently has this display claimed (department_display_scan_badge) — undefined when no one's clocked in right now. */
+  activeStaffName?: string;
+  activeSince?: string;
 }
 
 export async function resolveDisplay(token: string): Promise<DepartmentDisplay> {

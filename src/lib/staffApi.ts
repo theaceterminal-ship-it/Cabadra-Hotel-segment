@@ -936,6 +936,32 @@ export async function setDepartmentDisplayActive(id: string, active: boolean): P
   if (error) throw error;
 }
 
+export interface ActiveShiftSession {
+  id: string;
+  staffName: string;
+  department: DepartmentDisplayAdmin['department'];
+  displayLabel: string;
+  claimedAt: string;
+}
+
+/** Reception Dashboard's "Who's on shift right now" — every display_sessions row still open (released_at is null), across every department. */
+export async function fetchActiveShiftSessions(propertyId: string): Promise<ActiveShiftSession[]> {
+  const { data, error } = await supabase
+    .from('display_sessions')
+    .select('id, claimed_at, staff_directory(name), department_displays(department, label)')
+    .eq('property_id', propertyId)
+    .is('released_at', null)
+    .order('claimed_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map(row => ({
+    id: row.id,
+    staffName: (row.staff_directory as { name?: string } | null)?.name ?? 'Unknown',
+    department: (row.department_displays as { department?: ActiveShiftSession['department'] } | null)?.department ?? 'concierge',
+    displayLabel: (row.department_displays as { label?: string } | null)?.label ?? '',
+    claimedAt: row.claimed_at,
+  }));
+}
+
 // ============================================================================
 // SHIFTS & COVERAGE — named recurring daily windows per department (0047),
 // and the "did someone actually show up" report built on top of
@@ -1028,11 +1054,31 @@ export async function recordFolioPayment(reservationId: string, amount: number, 
 // NOTIFICATIONS — system-generated only; staff can read and mark-read, never post
 // ============================================================================
 
-export async function fetchNotifications(propertyId: string, limit = 30): Promise<AppNotification[]> {
+/** Today in the viewer's own local time, as 'YYYY-MM-DD' — the default scope for fetchNotifications below, and what a date picker's blank/reset value means. */
+export function todayLocalDateString(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * Found live-testing: the notification list showed everything ever logged
+ * for a property, oldest activity mixed in with anything that actually
+ * needs attention right now. Scoped to one local calendar day — defaults
+ * to today, but takes any 'YYYY-MM-DD' so a date picker can look back.
+ * Day boundaries are computed in the browser's own local time, not the
+ * property's (this app has no stored property timezone yet) — acceptable
+ * for a single-timezone-per-deployment hotel, same simplification the
+ * shift-coverage report already makes elsewhere.
+ */
+export async function fetchNotifications(propertyId: string, date: string = todayLocalDateString(), limit = 100): Promise<AppNotification[]> {
+  const start = new Date(`${date}T00:00:00`);
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
   const { data, error } = await supabase
     .from('notifications')
     .select('*')
     .eq('property_id', propertyId)
+    .gte('created_at', start.toISOString())
+    .lt('created_at', end.toISOString())
     .order('created_at', { ascending: false })
     .limit(limit);
   if (error) throw error;

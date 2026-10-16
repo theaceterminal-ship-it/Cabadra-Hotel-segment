@@ -93,7 +93,7 @@ export default function ReceptionApp() {
   const syncInFlight = useRef(false);
 
   const propertyId = assignments.find(a => a.role === 'receptionist')?.propertyId;
-  const { notifications, unreadCount, markRead, markAllRead } = useNotifications(propertyId);
+  const { notifications, unreadCount, markRead, markAllRead, date: notificationsDate, setDate: setNotificationsDate } = useNotifications(propertyId);
 
   const reloadRoomsAndArrivals = async (pid: string) => {
     try {
@@ -214,25 +214,14 @@ export default function ReceptionApp() {
     }
   };
 
-  const handleSubmitStaffRequest = async (input: { roomNumber?: string; title: string; priority: UrgentRequest['priority']; autoDispatchTask?: boolean }) => {
+  const handleSubmitStaffRequest = async (input: { roomNumber?: string; title: string; priority: UrgentRequest['priority']; department?: UrgentRequest['department'] }) => {
     if (!propertyId || !input.roomNumber) return;
     try {
-      const requestId = await logStaffRequest(propertyId, input.roomNumber, input.title, input.priority);
-      if (input.autoDispatchTask) {
-        await createTask(propertyId, {
-          roomNumber: `Room ${input.roomNumber}`,
-          title: input.title,
-          description: 'Auto-dispatched from urgent guest reception desk ticket.',
-          priority: input.priority === 'High Priority' ? 'high' : 'standard',
-          dueTime: '15 mins',
-          status: 'pending',
-          category: /towel|clean/i.test(input.title) ? 'housekeeping' : 'amenities',
-          // Links the task back to the request it answers (0045) — completing
-          // it now resolves this guest_requests row in the same write,
-          // instead of the two drifting independently.
-          guestRequestId: requestId,
-        });
-      }
+      // The matching task (department, linked via guest_request_id) is
+      // created automatically by a DB trigger now (0053) — a
+      // guest_requests insert always gets dispatched, from either origin,
+      // so there's no separate dispatch step here to duplicate it.
+      await logStaffRequest(propertyId, input.roomNumber, input.title, input.priority, input.department ?? 'concierge');
       await Promise.all([reloadRequests(propertyId), reloadTasks(propertyId)]);
     } catch (err) {
       console.warn('Failed to log request:', err);
@@ -287,6 +276,18 @@ export default function ReceptionApp() {
     return () => { cancelled = true; clearInterval(interval); };
   }, [propertyId]);
 
+  // Found live-testing: a guest's request/task only ever showed up after a
+  // manual refresh — reloadRequests/reloadTasks were only called once on
+  // mount and after a staff action, nothing polled them the way orders
+  // above already do. Same cadence as orders, so "is a guest asking for
+  // something" never depends on someone remembering to hit refresh.
+  useEffect(() => {
+    if (!propertyId) return;
+    const poll = () => { reloadRequests(propertyId); reloadTasks(propertyId); };
+    const interval = setInterval(poll, 5000);
+    return () => clearInterval(interval);
+  }, [propertyId]);
+
   if (!isSupabaseConfigured) return <SupabaseSetupNeeded />;
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-surface text-sm text-on-surface-strong">Loading…</div>;
   if (!session) return <LoginPage roleLabel="Reception" />;
@@ -332,7 +333,7 @@ export default function ReceptionApp() {
       <div className="flex-1 min-w-0 flex flex-col">
         <div className="h-14 flex items-center justify-end gap-3 px-4 sm:px-6 shrink-0">
           <ThemeToggle theme={theme} onChange={setTheme} />
-          <NotificationBell notifications={notifications} unreadCount={unreadCount} onMarkRead={markRead} onMarkAllRead={markAllRead} />
+          <NotificationBell notifications={notifications} unreadCount={unreadCount} onMarkRead={markRead} onMarkAllRead={markAllRead} date={notificationsDate} onDateChange={setNotificationsDate} />
         </div>
 
         <div className="flex-1 overflow-y-auto pt-0">
