@@ -14,14 +14,18 @@ import {
   Phone,
   UserCircle2,
   QrCode,
+  X,
+  Ban,
 } from 'lucide-react';
 
 interface LiveOpsViewProps {
   tasks: LiveOpsTask[];
   directory: DirectoryContact[];
   onUpdateTask: (task: LiveOpsTask) => void;
+  /** The "can't do this" path — required note, only while still pending. See staff_reject_task (0045). */
+  onRejectTask: (task: LiveOpsTask, note: string) => void;
   onAssignTask: (taskId: string, assignedTo: string | null) => void;
-  onAddTask: (task: Omit<LiveOpsTask, 'id' | 'taskToken'>) => void;
+  onAddTask: (task: Omit<LiveOpsTask, 'id' | 'taskToken' | 'rejectionNote'>) => void;
   onRefresh: () => void;
   onNavigate: (view: AppView) => void;
 }
@@ -34,6 +38,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
   tasks,
   directory,
   onUpdateTask,
+  onRejectTask,
   onAssignTask,
   onAddTask,
   onRefresh,
@@ -43,6 +48,15 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [qrTask, setQrTask] = useState<LiveOpsTask | null>(null);
+  const [rejectingTask, setRejectingTask] = useState<LiveOpsTask | null>(null);
+  const [rejectNote, setRejectNote] = useState('');
+
+  const handleConfirmReject = () => {
+    if (!rejectingTask || !rejectNote.trim()) return;
+    onRejectTask(rejectingTask, rejectNote.trim());
+    setRejectingTask(null);
+    setRejectNote('');
+  };
 
   // New task form state
   const [newRoom, setNewRoom] = useState('');
@@ -59,9 +73,9 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
 
   const filteredTasks = tasks.filter(t => filterCategory === 'all' || t.category === filterCategory);
 
-  const urgentCount = tasks.filter(t => t.priority === 'high' && t.status !== 'completed').length;
+  const urgentCount = tasks.filter(t => t.priority === 'high' && t.status !== 'completed' && t.status !== 'rejected').length;
   const completedCount = tasks.filter(t => t.status === 'completed').length;
-  const pendingCount = tasks.filter(t => t.status !== 'completed').length;
+  const pendingCount = tasks.filter(t => t.status !== 'completed' && t.status !== 'rejected').length;
 
   const handleAction = (task: LiveOpsTask) => {
     if (task.status === 'pending') {
@@ -196,6 +210,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
               filteredTasks.map((task) => {
                 const isHigh = task.priority === 'high';
                 const isDone = task.status === 'completed';
+                const isRejected = task.status === 'rejected';
                 const inProgress = task.status === 'in_progress';
                 const candidates = directoryByDept(task.category);
 
@@ -204,12 +219,12 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
                     key={task.id}
                     id={`task-card-${task.id}`}
                     className={`bg-surface-container-lowest rounded-xl border ${
-                      isHigh && !isDone
+                      isHigh && !isDone && !isRejected
                         ? 'border-error-container shadow-[0_4px_12px_rgba(188,71,73,0.1)]'
                         : 'border-outline-variant shadow-[0_4px_12px_rgba(0,0,0,0.03)]'
-                    } overflow-hidden relative transition-all ${isDone ? 'opacity-60 bg-gray-50' : ''}`}
+                    } overflow-hidden relative transition-all ${isDone || isRejected ? 'opacity-60 bg-gray-50' : ''}`}
                   >
-                    {isHigh && !isDone && (
+                    {isHigh && !isDone && !isRejected && (
                       <div className="absolute top-0 left-0 w-1.5 h-full bg-error"></div>
                     )}
 
@@ -252,7 +267,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
                           ))}
                         </select>
                         {/* Once assigned, hand them a QR — they scan it to open a no-login page with just this task, tap Start/Done. No account needed. */}
-                        {task.assignedTo && !isDone && (
+                        {task.assignedTo && !isDone && !isRejected && (
                           <button
                             type="button"
                             onClick={() => setQrTask(task)}
@@ -264,10 +279,21 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
                         )}
                       </div>
 
+                      {isRejected && task.rejectionNote && (
+                        <div className="bg-error-container/30 text-on-error-container p-2.5 rounded-lg text-xs border border-error-container mb-3">
+                          <span className="font-bold">Rejected: </span>
+                          {task.rejectionNote}
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between gap-2">
                         {isDone ? (
                           <span className="inline-flex items-center gap-1.5 text-xs font-bold text-success bg-success/10 px-3 py-1.5 rounded-lg w-full justify-center">
                             <CheckCheck className="w-4 h-4" /> Completed
+                          </span>
+                        ) : isRejected ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-error bg-error/10 px-3 py-1.5 rounded-lg w-full justify-center">
+                            <Ban className="w-4 h-4" /> Rejected
                           </span>
                         ) : inProgress ? (
                           <button
@@ -277,17 +303,26 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
                             <Check className="w-4 h-4" /> Mark Complete
                           </button>
                         ) : (
-                          <button
-                            onClick={() => handleAction(task)}
-                            className={`flex-1 h-11 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                              isHigh
-                                ? 'bg-primary text-on-primary hover:bg-primary-hover shadow-xs'
-                                : 'bg-transparent border border-primary text-primary hover:bg-surface-container-low'
-                            }`}
-                          >
-                            {isHigh ? <Play className="w-4 h-4 fill-white" /> : null}
-                            <span>{isHigh ? 'Start' : 'Accept'}</span>
-                          </button>
+                          <>
+                            <button
+                              onClick={() => { setRejectingTask(task); setRejectNote(''); }}
+                              className="h-11 px-3 rounded-lg border border-error text-error hover:bg-error-container/30 transition-all flex items-center justify-center cursor-pointer shrink-0"
+                              title="Reject this task"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleAction(task)}
+                              className={`flex-1 h-11 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                isHigh
+                                  ? 'bg-primary text-on-primary hover:bg-primary-hover shadow-xs'
+                                  : 'bg-transparent border border-primary text-primary hover:bg-surface-container-low'
+                              }`}
+                            >
+                              {isHigh ? <Play className="w-4 h-4 fill-white" /> : null}
+                              <span>{isHigh ? 'Start' : 'Accept'}</span>
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -335,6 +370,40 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
       </div>
 
       {qrTask && <TaskQrModal task={qrTask} onClose={() => setQrTask(null)} />}
+
+      {rejectingTask && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-surface-container-lowest rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-outline-variant space-y-3">
+            <h3 className="text-lg font-bold text-on-surface">Reject this task?</h3>
+            <p className="text-xs text-outline">
+              {rejectingTask.title} — {rejectingTask.roomNumber}. Say why so whoever's tracking it knows what happened.
+            </p>
+            <textarea
+              autoFocus
+              rows={3}
+              value={rejectNote}
+              onChange={(e) => setRejectNote(e.target.value)}
+              placeholder="e.g. No spare rooms to move linens from, short-staffed tonight..."
+              className="w-full p-2.5 text-sm border border-outline-variant rounded-lg focus:border-error focus:outline-none resize-none"
+            />
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                onClick={() => setRejectingTask(null)}
+                className="px-4 py-2 border border-outline-variant rounded-lg text-xs font-semibold text-on-surface-variant hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmReject}
+                disabled={!rejectNote.trim()}
+                className="px-4 py-2 bg-error text-on-error rounded-lg text-xs font-bold hover:bg-red-700 disabled:opacity-50"
+              >
+                Reject Task
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* New Task Creation Modal */}
       {showNewTaskModal && (

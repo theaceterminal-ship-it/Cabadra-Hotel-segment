@@ -107,11 +107,17 @@ export interface LiveOpsTask {
   description: string;
   priority: 'high' | 'standard';
   dueTime: string;
-  status: 'pending' | 'in_progress' | 'completed';
+  status: 'pending' | 'in_progress' | 'completed' | 'rejected';
   assignedTo?: string;
   category: 'housekeeping' | 'maintenance' | 'amenities' | 'concierge';
   /** The capability token behind this task's QR — whoever scans it can start/complete this one task, no login. See service_task_resolve (0025_task_qr.sql). */
   taskToken: string;
+  /** Why staff couldn't do this — required whenever status is 'rejected'. See staff_reject_task (0045). */
+  rejectionNote?: string;
+  /** Set only for a billable task (a late-checkout fee, an in-room massage) — posts to the guest's folio atomically on completion. See staff_complete_task (0045). */
+  price?: number;
+  /** The guest_requests row this task answers, if any — completing the task resolves the request in the same write. See staff_complete_task (0045). */
+  guestRequestId?: string;
 }
 
 export interface UpcomingArrival {

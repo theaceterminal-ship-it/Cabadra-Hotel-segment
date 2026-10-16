@@ -17,6 +17,8 @@ import {
   logStaffRequest,
   fetchTasks,
   updateTaskStatus,
+  completeTask,
+  rejectTask,
   updateTaskAssignment,
   createTask,
   fetchStaffDirectory,
@@ -176,7 +178,29 @@ export default function ReceptionApp() {
 
   const handleUpdateTask = (updatedTask: LiveOpsTask) => {
     setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
-    updateTaskStatus(updatedTask.id, updatedTask.status).catch(err => console.warn(`Failed to update task ${updatedTask.id}:`, err));
+
+    if (updatedTask.status === 'completed') {
+      // Posts the folio charge atomically if the task is priced — a plain
+      // status update can't make that guarantee. Resync from the server on
+      // failure (e.g. a priced task with no reservation to bill) so the
+      // board doesn't keep showing "Completed" for something that wasn't.
+      completeTask(updatedTask.id).catch(err => {
+        console.warn(`Failed to complete task ${updatedTask.id}:`, err);
+        if (propertyId) reloadTasks(propertyId);
+      });
+      return;
+    }
+
+    updateTaskStatus(updatedTask.id, updatedTask.status as 'pending' | 'in_progress')
+      .catch(err => console.warn(`Failed to update task ${updatedTask.id}:`, err));
+  };
+
+  const handleRejectTask = (task: LiveOpsTask, note: string) => {
+    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'rejected', rejectionNote: note } : t));
+    rejectTask(task.id, note).catch(err => {
+      console.warn(`Failed to reject task ${task.id}:`, err);
+      if (propertyId) reloadTasks(propertyId);
+    });
   };
 
   const handleAddTask = async (newTask: Omit<LiveOpsTask, 'id' | 'taskToken'>) => {
@@ -192,7 +216,7 @@ export default function ReceptionApp() {
   const handleSubmitStaffRequest = async (input: { roomNumber?: string; title: string; priority: UrgentRequest['priority']; autoDispatchTask?: boolean }) => {
     if (!propertyId || !input.roomNumber) return;
     try {
-      await logStaffRequest(propertyId, input.roomNumber, input.title, input.priority);
+      const requestId = await logStaffRequest(propertyId, input.roomNumber, input.title, input.priority);
       if (input.autoDispatchTask) {
         await createTask(propertyId, {
           roomNumber: `Room ${input.roomNumber}`,
@@ -202,6 +226,10 @@ export default function ReceptionApp() {
           dueTime: '15 mins',
           status: 'pending',
           category: /towel|clean/i.test(input.title) ? 'housekeeping' : 'amenities',
+          // Links the task back to the request it answers (0045) — completing
+          // it now resolves this guest_requests row in the same write,
+          // instead of the two drifting independently.
+          guestRequestId: requestId,
         });
       }
       await Promise.all([reloadRequests(propertyId), reloadTasks(propertyId)]);
@@ -343,6 +371,7 @@ export default function ReceptionApp() {
               tasks={tasks}
               directory={directory}
               onUpdateTask={handleUpdateTask}
+              onRejectTask={handleRejectTask}
               onAssignTask={handleAssignTask}
               onAddTask={handleAddTask}
               onRefresh={() => propertyId && reloadTasks(propertyId)}
