@@ -64,28 +64,33 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
 
   // Department Displays — generated here, since Reception is where the
   // physical tablets actually live, not Owner (where staff_directory badges
-  // are issued instead, PropertyDetailPage's Staff tab).
+  // are issued instead, PropertyDetailPage's Staff tab). One QR per
+  // department is the whole idea — staff scans it before their shift and
+  // it opens straight into that department's queue, so this auto-creates
+  // (or reuses) exactly one active display per department instead of
+  // asking anyone to name/configure one first.
   const [displays, setDisplays] = useState<DepartmentDisplayAdmin[]>([]);
   const [qrDisplay, setQrDisplay] = useState<DepartmentDisplayAdmin | null>(null);
-  const [newDisplayLabel, setNewDisplayLabel] = useState('');
-  const [newDisplayDept, setNewDisplayDept] = useState<DepartmentDisplayAdmin['department']>('housekeeping');
-  const [creatingDisplay, setCreatingDisplay] = useState(false);
+  const [gettingQrFor, setGettingQrFor] = useState<DirectoryContact['department'] | null>(null);
 
   const reloadDisplays = () => fetchDepartmentDisplays(propertyId).then(setDisplays).catch(() => {});
   useEffect(() => { reloadDisplays(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [propertyId]);
 
-  const handleCreateDisplay = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newDisplayLabel.trim()) return;
-    setCreatingDisplay(true);
+  const handleShowDepartmentQr = async (department: DepartmentDisplayAdmin['department']) => {
+    const existing = displays.find(d => d.department === department && d.active);
+    if (existing) {
+      setQrDisplay(existing);
+      return;
+    }
+    setGettingQrFor(department);
     try {
-      await createDepartmentDisplay(propertyId, newDisplayDept, newDisplayLabel.trim());
-      setNewDisplayLabel('');
-      reloadDisplays();
+      const created = await createDepartmentDisplay(propertyId, department, `${DEPT_LABELS[department]} QR`);
+      setDisplays(prev => [...prev, created]);
+      setQrDisplay(created);
     } catch {
-      // The form just keeps whatever was typed — nothing destructive happened.
+      // Nothing created, nothing to show — the button just stays clickable to retry.
     } finally {
-      setCreatingDisplay(false);
+      setGettingQrFor(null);
     }
   };
 
@@ -410,63 +415,43 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
             );
           })}
 
-          {/* Department Displays — one revocable link per shared tablet/phone, scoped to that department's live queue. Badges for the staff who scan them are issued from Owner > Staff instead. */}
+          {/* One QR per department — scan it before your shift, it opens
+              straight into that department's queue. Auto-created the first
+              time anyone taps "Show QR" for a department, nothing to name
+              or configure first. */}
           <div className="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
             <div className="px-4 py-2.5 border-b border-outline-variant bg-surface-container-low">
-              <h4 className="text-xs font-bold text-on-surface">Department Displays</h4>
+              <h4 className="text-xs font-bold text-on-surface">Department QR Codes</h4>
+              <p className="text-[10px] text-on-surface-variant mt-0.5">Scan before a shift — opens that department's queue.</p>
             </div>
-            <form onSubmit={handleCreateDisplay} className="p-3 space-y-2 border-b border-outline-variant">
-              <input
-                value={newDisplayLabel}
-                onChange={e => setNewDisplayLabel(e.target.value)}
-                placeholder="e.g. Kitchen tablet #1"
-                className="w-full h-9 px-2.5 text-xs border border-outline-variant rounded-lg bg-surface-container-lowest focus:border-primary focus:outline-none"
-              />
-              <div className="flex gap-2">
-                <select
-                  value={newDisplayDept}
-                  onChange={e => setNewDisplayDept(e.target.value as DepartmentDisplayAdmin['department'])}
-                  className="flex-1 h-9 px-2 text-xs border border-outline-variant rounded-lg bg-surface-container-lowest"
-                >
-                  {(Object.keys(DEPT_LABELS) as DepartmentDisplayAdmin['department'][]).map(d => (
-                    <option key={d} value={d}>{DEPT_LABELS[d]}</option>
-                  ))}
-                </select>
-                <button
-                  type="submit"
-                  disabled={creatingDisplay || !newDisplayLabel.trim()}
-                  className="h-9 px-3 rounded-lg bg-primary text-on-primary text-xs font-bold hover:bg-primary-hover disabled:opacity-50 flex items-center gap-1"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Add
-                </button>
-              </div>
-            </form>
-            {displays.length === 0 ? (
-              <p className="text-[11px] text-on-surface-variant text-center py-4 px-3">No displays yet — add one above.</p>
-            ) : (
-              <div className="divide-y divide-outline-variant">
-                {displays.map(d => (
-                  <div key={d.id} className={`flex items-center justify-between px-4 py-2.5 text-xs ${!d.active ? 'opacity-50' : ''}`}>
-                    <div className="min-w-0">
-                      <p className="font-semibold text-on-surface truncate">{d.label}</p>
-                      <p className="text-on-surface-variant">{DEPT_LABELS[d.department]}{!d.active && ' · revoked'}</p>
-                    </div>
+            <div className="divide-y divide-outline-variant">
+              {(Object.keys(DEPT_LABELS) as DepartmentDisplayAdmin['department'][]).map(dept => {
+                const existing = displays.find(d => d.department === dept && d.active);
+                return (
+                  <div key={dept} className="flex items-center justify-between px-4 py-2.5 text-xs">
+                    <span className="font-semibold text-on-surface">{DEPT_LABELS[dept]}</span>
                     <div className="flex items-center gap-1 shrink-0">
-                      <button onClick={() => setQrDisplay(d)} className="text-primary hover:bg-surface-container-low p-1.5 rounded" title="Show QR">
-                        <Tablet className="w-3.5 h-3.5" />
-                      </button>
+                      {existing && (
+                        <button
+                          onClick={() => handleToggleDisplay(existing)}
+                          className="text-error hover:bg-surface-container-low p-1.5 rounded"
+                          title="Revoke this QR — a fresh one is made next time you tap Show QR"
+                        >
+                          <Power className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                       <button
-                        onClick={() => handleToggleDisplay(d)}
-                        className={`p-1.5 rounded hover:bg-surface-container-low ${d.active ? 'text-error' : 'text-success'}`}
-                        title={d.active ? 'Revoke' : 'Reactivate'}
+                        onClick={() => handleShowDepartmentQr(dept)}
+                        disabled={gettingQrFor === dept}
+                        className="h-8 px-3 rounded-lg bg-primary text-on-primary text-[11px] font-bold hover:bg-primary-hover disabled:opacity-50 flex items-center gap-1.5"
                       >
-                        <Power className="w-3.5 h-3.5" />
+                        <Tablet className="w-3.5 h-3.5" /> {gettingQrFor === dept ? 'Getting QR…' : 'Show QR'}
                       </button>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                );
+              })}
+            </div>
           </div>
         </aside>
       </div>
