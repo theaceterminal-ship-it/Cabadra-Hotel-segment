@@ -58,21 +58,19 @@ export function OrderStatusBar({ token, currency }: OrderStatusBarProps) {
   // guest sees exactly why, without needing to ask anyone.
   if (order.status === 'rejected') {
     return (
-      <div className="fixed top-0 inset-x-0 z-40 flex justify-center px-3 pt-3 pointer-events-none">
-        <div className="pointer-events-auto w-full max-w-md bg-surface-container-lowest rounded-2xl shadow-lg border border-error-container overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className="p-4 flex items-start gap-3">
-            <div className="w-9 h-9 rounded-full bg-error text-on-error flex items-center justify-center shrink-0">
-              <AlertTriangle className="w-4 h-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold text-on-error-container">Order #{order.id.slice(0, 4)} couldn't be fulfilled</p>
-              <p className="text-xs text-on-surface-variant mt-1">{order.rejectionNote || 'The kitchen was unable to prepare this order.'}</p>
-              <p className="text-[10px] text-outline mt-1.5">You haven't been charged for this.</p>
-            </div>
-            <button onClick={() => setDismissed(order.id)} className="p-1 text-gray-400 hover:text-gray-600 shrink-0">
-              <X className="w-4 h-4" />
-            </button>
+      <div className="pointer-events-auto w-full max-w-md bg-surface-container-lowest rounded-2xl shadow-lg border border-error-container overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="p-4 flex items-start gap-3">
+          <div className="w-9 h-9 rounded-full bg-error text-on-error flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-4 h-4" />
           </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-on-error-container">Order #{order.id.slice(0, 4)} couldn't be fulfilled</p>
+            <p className="text-xs text-on-surface-variant mt-1">{order.rejectionNote || 'The kitchen was unable to prepare this order.'}</p>
+            <p className="text-[10px] text-outline mt-1.5">You haven't been charged for this.</p>
+          </div>
+          <button onClick={() => setDismissed(order.id)} className="p-1 text-gray-400 hover:text-gray-600 shrink-0">
+            <X className="w-4 h-4" />
+          </button>
         </div>
       </div>
     );
@@ -85,8 +83,7 @@ export function OrderStatusBar({ token, currency }: OrderStatusBarProps) {
   const isOverdue = remainingMs <= 0 && order.status !== 'ready';
 
   return (
-    <div className="fixed top-0 inset-x-0 z-40 flex justify-center px-3 pt-3 pointer-events-none">
-      <div className="pointer-events-auto w-full max-w-md bg-surface-container-lowest rounded-2xl shadow-lg border border-outline-variant overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
+    <div className="pointer-events-auto w-full max-w-md bg-surface-container-lowest rounded-2xl shadow-lg border border-outline-variant overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
         <button onClick={() => setExpanded(e => !e)} className="w-full text-left p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
@@ -148,7 +145,6 @@ export function OrderStatusBar({ token, currency }: OrderStatusBarProps) {
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 }

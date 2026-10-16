@@ -132,6 +132,24 @@ export async function submitGuestRequest(
   return data as string;
 }
 
+export interface ActiveGuestRequest {
+  id: string;
+  title: string;
+  department: Department;
+  priority: 'High Priority' | 'Standard' | 'Pending Approval';
+  createdAt: string;
+  /** Null until staff turns this into a Live Ops task — most self-submitted requests stay null and the only signal is "received" until it resolves and drops off this list. See guest_get_active_requests (0051). */
+  taskStatus?: 'pending' | 'in_progress' | 'completed' | 'rejected';
+  rejectionNote?: string;
+}
+
+/** Every request still open for this stay — the request-side counterpart to fetchActiveOrder, for a status bar that tells a guest "we got your towel request" instead of leaving them to wonder. */
+export async function fetchActiveGuestRequests(token: string): Promise<ActiveGuestRequest[]> {
+  const { data, error } = await supabase.rpc('guest_get_active_requests', { p_token: token });
+  if (error) throw new Error(`Failed to check request status: ${error.message}`);
+  return (data ?? []) as ActiveGuestRequest[];
+}
+
 export async function bookGuestExperience(token: string, experienceName: string, price: number): Promise<string> {
   const { data, error } = await supabase.rpc('guest_book_experience', {
     p_token: token,
