@@ -7,6 +7,7 @@ import { GuestHome } from '../components/GuestHome';
 import { RoomDiningView } from '../components/RoomDiningView';
 import { SupabaseSetupNeeded } from '../components/SupabaseSetupNeeded';
 import { OrderStatusBar } from '../components/OrderStatusBar';
+import { RequestStatusBar } from '../components/RequestStatusBar';
 
 /**
  * The guest page: `/guest/:token`. No login — the token in the URL (handed
@@ -64,7 +65,13 @@ export default function GuestApp() {
 
   return (
     <>
-      <OrderStatusBar token={token} currency={context.property.currency} />
+      {/* Both bars position themselves via this one shared fixed stack instead
+          of each claiming "fixed top-0" independently, which would make a
+          second bar sit exactly on top of the first instead of below it. */}
+      <div className="fixed top-0 inset-x-0 z-40 flex flex-col items-center gap-2 px-3 pt-3 pointer-events-none">
+        <OrderStatusBar token={token} currency={context.property.currency} />
+        <RequestStatusBar token={token} />
+      </div>
       {view === 'guest_home' && (
         <GuestHome
           propertyName={context.property.name}
