@@ -47,6 +47,20 @@ function serviceIconFor(key: string) {
   return SERVICE_ICONS[key] ?? Compass;
 }
 
+// A blank textarea was the only way to ask for anything on a general
+// (non-transportation) service — fine for something unusual, but most
+// requests are one of a handful of common asks that shouldn't need typing
+// at all. Tapping a chip fills the note below rather than submitting
+// immediately, so a guest can still add to it before confirming. Keyed by
+// department (not by the specific service category) since that's the
+// granularity the rest of this app already reasons about.
+const REQUEST_PRESETS: Record<Department, string[]> = {
+  housekeeping: ['Extra towels', 'Extra pillows & blankets', 'Toiletries refill', 'Fresh linens', 'Turn-down service'],
+  maintenance: ['AC not cooling', 'Leaking tap or plumbing', 'Light/bulb not working', 'TV or Wi-Fi issue', 'Door lock issue'],
+  amenities: ['Book a massage', 'Book a sauna session', 'Pool towels', 'Gym access query'],
+  concierge: ['Late checkout request', 'Luggage assistance', 'Local sightseeing info', 'Restaurant reservation', 'Wake-up call'],
+};
+
 export const GuestHome: React.FC<GuestHomeProps> = ({
   propertyName,
   propertyImage,
@@ -320,6 +334,22 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
               </>
             ) : (
               <>
+                {REQUEST_PRESETS[activeModal.department].length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {REQUEST_PRESETS[activeModal.department].map(preset => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setRequestNote(preset)}
+                        className={`px-2.5 py-1.5 rounded-full border text-[11px] font-semibold transition-colors ${
+                          requestNote === preset ? 'border-primary bg-highlight text-primary' : 'border-outline-variant text-on-surface-variant hover:border-primary'
+                        }`}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <label className="text-[11px] font-bold text-on-surface-variant block mb-1">Anything specific? (optional)</label>
                 <textarea
                   rows={3}
