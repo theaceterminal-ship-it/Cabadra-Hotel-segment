@@ -150,6 +150,13 @@ export async function fetchActiveGuestRequests(token: string): Promise<ActiveGue
   return (data ?? []) as ActiveGuestRequest[];
 }
 
+export async function dismissGuestRequest(token: string, requestId: string): Promise<void> {
+  const { error } = await supabase.rpc('guest_dismiss_request', { p_token: token, p_request_id: requestId });
+  if (error) {
+    console.warn('Failed to dismiss request:', error.message);
+  }
+}
+
 export async function bookGuestExperience(token: string, experienceName: string, price: number): Promise<string> {
   const { data, error } = await supabase.rpc('guest_book_experience', {
     p_token: token,

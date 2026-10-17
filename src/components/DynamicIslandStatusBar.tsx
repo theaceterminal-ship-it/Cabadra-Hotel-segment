@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchActiveOrder, fetchActiveGuestRequests, ActiveOrder, ActiveGuestRequest } from '../lib/guestApi';
+import { fetchActiveOrder, fetchActiveGuestRequests, dismissGuestRequest, ActiveOrder, ActiveGuestRequest } from '../lib/guestApi';
 import { computeOrderEta } from '../lib/eta';
 import { formatCurrency } from '../lib/currency';
 import { ChefHat, Check, X, AlertTriangle, Sparkles, Clock, Play, ChevronDown, BellOff } from 'lucide-react';
@@ -30,12 +30,13 @@ function formatCountdown(ms: number): string {
 /**
  * Dynamic Island Status Bar:
  * Merges Room Dining orders and Service Requests into a single, compact,
- * pill-shaped top bar. Replaces the separate floating bell button.
+ * pill-shaped top bar.
  */
 export function DynamicIslandStatusBar({ token, currency, roomNumber }: DynamicIslandStatusBarProps) {
   const [order, setOrder] = useState<ActiveOrder | null>(null);
   const [requests, setRequests] = useState<ActiveGuestRequest[]>([]);
   const [dismissedOrder, setDismissedOrder] = useState<string | null>(null);
+  const [dismissedRequests, setDismissedRequests] = useState<string[]>([]);
   const [expanded, setExpanded] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
@@ -55,8 +56,13 @@ export function DynamicIslandStatusBar({ token, currency, roomNumber }: DynamicI
     return () => clearInterval(tick);
   }, []);
 
+  const handleDismissRequest = async (requestId: string) => {
+    setDismissedRequests(prev => [...prev, requestId]);
+    await dismissGuestRequest(token, requestId);
+  };
+
   const activeOrder = order && order.id !== dismissedOrder ? order : null;
-  const activeRequests = requests.filter(r => r.taskStatus !== 'completed');
+  const activeRequests = requests.filter(r => !dismissedRequests.includes(r.id) && r.taskStatus !== 'completed');
   const hasActiveOrder = Boolean(activeOrder);
   const hasActiveRequests = activeRequests.length > 0;
   const totalUpdatesCount = (hasActiveOrder ? 1 : 0) + activeRequests.length;
@@ -236,24 +242,34 @@ export function DynamicIslandStatusBar({ token, currency, roomNumber }: DynamicI
                     const isInProgress = statusKey === 'in_progress';
 
                     return (
-                      <div key={r.id} className="py-2.5 flex items-start gap-2.5">
-                        <div className="mt-0.5 shrink-0">
-                          {isInProgress ? (
-                            <Play className="w-4 h-4 text-primary fill-current" />
-                          ) : isRejected ? (
-                            <AlertTriangle className="w-4 h-4 text-error" />
-                          ) : isDone ? (
-                            <Check className="w-4 h-4 text-success" />
-                          ) : (
-                            <Clock className="w-4 h-4 text-on-surface-variant" />
-                          )}
+                      <div key={r.id} className="py-2.5 flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                          <div className="mt-0.5 shrink-0">
+                            {isInProgress ? (
+                              <Play className="w-4 h-4 text-primary fill-current" />
+                            ) : isRejected ? (
+                              <AlertTriangle className="w-4 h-4 text-error" />
+                            ) : isDone ? (
+                              <Check className="w-4 h-4 text-success" />
+                            ) : (
+                              <Clock className="w-4 h-4 text-on-surface-variant" />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-on-surface truncate">{r.title}</p>
+                            <p className={`text-[10px] mt-0.5 font-medium ${isRejected ? 'text-error' : isInProgress ? 'text-primary font-bold' : 'text-on-surface-variant'}`}>
+                              {isRejected ? `Couldn't be done: ${r.rejectionNote || 'Staff unavailable'}` : REQUEST_STATUS_LABEL[statusKey]}
+                            </p>
+                          </div>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-bold text-on-surface truncate">{r.title}</p>
-                          <p className={`text-[10px] mt-0.5 font-medium ${isRejected ? 'text-error' : isInProgress ? 'text-primary font-bold' : 'text-on-surface-variant'}`}>
-                            {isRejected ? (r.rejectionNote || "Couldn't be done") : REQUEST_STATUS_LABEL[statusKey]}
-                          </p>
-                        </div>
+
+                        <button
+                          onClick={() => handleDismissRequest(r.id)}
+                          className="p-1 text-gray-400 hover:text-gray-600 rounded-lg shrink-0 mt-0.5"
+                          title="Dismiss request"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     );
                   })}
