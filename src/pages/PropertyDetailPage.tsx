@@ -538,7 +538,7 @@ function downloadRoomsCsvTemplate(hasExternalPms: boolean) {
 const ROOMS_CSV_HEADERS = ['number', 'type', 'floor', 'occupancy', 'price'];
 
 function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChanged }: { propertyId: string; currency: string; rooms: Room[]; hasExternalPms: boolean; onChanged: () => void }) {
-  const emptyForm = { number: '', type: '', floor: '1', occupancy: '2', price: '', image: '', bedsDescription: '', bathroomDetails: '' };
+  const emptyForm = { number: '', type: 'Standard Room', floor: '1', occupancy: '2', price: '', image: '', bedsDescription: '', bathroomDetails: '' };
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -546,34 +546,36 @@ function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChanged }: { 
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<string | null>(null);
   const csvInputRef = React.useRef<HTMLInputElement>(null);
+  const formRef = React.useRef<HTMLFormElement>(null);
 
   const startEdit = (r: Room) => {
     setEditingId(r.id);
     setForm({
       number: r.number,
-      type: r.type,
-      floor: String(r.floor),
-      occupancy: String(r.maxOccupancy),
-      price: String(r.pricePerNight),
+      type: r.type || 'Standard Room',
+      floor: String(r.floor || 1),
+      occupancy: String(r.maxOccupancy || 2),
+      price: String(r.pricePerNight || 0),
       image: r.image ?? '',
       bedsDescription: r.bedsDescription ?? '',
       bathroomDetails: r.bathroomDetails ?? '',
     });
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
   const cancelEdit = () => { setEditingId(null); setForm(emptyForm); };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.number.trim() || (!hasExternalPms && (!form.type.trim() || !form.price.trim()))) return;
+    if (!form.number.trim()) return;
     setSubmitting(true);
     setFormError(null);
     try {
       const payload = {
         number: form.number.trim(),
-        type: hasExternalPms ? 'Room' : form.type.trim(),
+        type: form.type.trim() || 'Standard Room',
         floor: parseInt(form.floor) || 1,
-        maxOccupancy: hasExternalPms ? 2 : (parseInt(form.occupancy) || 2),
-        pricePerNight: hasExternalPms ? 0 : (parseFloat(form.price) || 0),
+        maxOccupancy: parseInt(form.occupancy) || 2,
+        pricePerNight: parseFloat(form.price) || 0,
         image: form.image.trim() || undefined,
         bedsDescription: form.bedsDescription.trim() || undefined,
         bathroomDetails: form.bathroomDetails.trim() || undefined,
@@ -658,63 +660,59 @@ function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChanged }: { 
         {importResult && <span className="text-[11px] text-success font-semibold">{importResult}</span>}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-2.5 bg-surface-container-low p-3.5 rounded-xl border border-outline-variant">
-        <div className={`grid grid-cols-2 ${hasExternalPms ? 'sm:grid-cols-2 max-w-xs' : 'sm:grid-cols-5'} gap-2`}>
-          <div>
-            <label className={labelCls}>Room Number</label>
-            <input value={form.number} onChange={e => setForm(f => ({ ...f, number: e.target.value }))} placeholder="101" className={inputCls} />
-          </div>
-          {hasExternalPms ? (
-            <div>
-              <label className={labelCls}>Floor (optional)</label>
-              <input type="number" value={form.floor} onChange={e => setForm(f => ({ ...f, floor: e.target.value }))} className={inputCls} />
-            </div>
-          ) : (
-            <>
-              <div>
-                <label className={labelCls}>Category / Type</label>
-                <PresetSelect presets={ROOM_TYPE_PRESETS} value={form.type} onChange={v => setForm(f => ({ ...f, type: v }))} className={inputCls} placeholder="Deluxe Room" />
-              </div>
-              <div>
-                <label className={labelCls}>Floor</label>
-                <input type="number" value={form.floor} onChange={e => setForm(f => ({ ...f, floor: e.target.value }))} className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Sleeps (Capacity)</label>
-                <input type="number" min={1} value={form.occupancy} onChange={e => setForm(f => ({ ...f, occupancy: e.target.value }))} placeholder="2" className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Price/night ({currency})</label>
-                <input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="195" className={inputCls} />
-              </div>
-            </>
-          )}
-        </div>
-
-        {!hasExternalPms && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div>
-              <label className={labelCls}>Beds Configuration (optional)</label>
-              <input value={form.bedsDescription} onChange={e => setForm(f => ({ ...f, bedsDescription: e.target.value }))} placeholder="e.g. 1 King Bed, 2 Double Beds" className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Bathroom Features (optional)</label>
-              <input value={form.bathroomDetails} onChange={e => setForm(f => ({ ...f, bathroomDetails: e.target.value }))} placeholder="e.g. En-suite Jacuzzi & Rain Shower" className={inputCls} />
-            </div>
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-3 bg-surface-container-low p-4 rounded-2xl border border-outline-variant shadow-2xs scroll-mt-6">
+        {editingId && (
+          <div className="flex items-center justify-between p-2.5 bg-primary/10 border border-primary/20 rounded-xl text-xs font-bold text-primary">
+            <span>Editing Room {form.number || editingId}</span>
+            <button type="button" onClick={cancelEdit} className="text-on-surface-variant hover:text-on-surface text-[11px] underline cursor-pointer">
+              Cancel Edit
+            </button>
           </div>
         )}
 
-        <div className="flex gap-2 items-end">
-          {!hasExternalPms && (
-            <div className="flex-1">
-              <ImageUploadField label="Photo (optional)" value={form.image} onChange={url => setForm(f => ({ ...f, image: url }))} />
-            </div>
-          )}
-          <button type="submit" disabled={submitting} className="h-9 px-4 rounded-lg bg-primary text-on-primary text-xs font-bold flex items-center justify-center gap-1 hover:bg-primary-hover disabled:opacity-60 whitespace-nowrap">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+          <div>
+            <label className={labelCls}>Room Number *</label>
+            <input value={form.number} onChange={e => setForm(f => ({ ...f, number: e.target.value }))} placeholder="101" className={inputCls} required />
+          </div>
+          <div>
+            <label className={labelCls}>Category / Type</label>
+            <PresetSelect presets={ROOM_TYPE_PRESETS} value={form.type} onChange={v => setForm(f => ({ ...f, type: v }))} className={inputCls} placeholder="Standard Room" />
+          </div>
+          <div>
+            <label className={labelCls}>Floor</label>
+            <input type="number" value={form.floor} onChange={e => setForm(f => ({ ...f, floor: e.target.value }))} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Sleeps (Capacity)</label>
+            <input type="number" min={1} value={form.occupancy} onChange={e => setForm(f => ({ ...f, occupancy: e.target.value }))} placeholder="2" className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Price/night ({currency})</label>
+            <input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="195" className={inputCls} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div>
+            <label className={labelCls}>Beds Configuration (optional)</label>
+            <input value={form.bedsDescription} onChange={e => setForm(f => ({ ...f, bedsDescription: e.target.value }))} placeholder="e.g. 1 King Bed, 2 Double Beds" className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Bathroom Features (optional)</label>
+            <input value={form.bathroomDetails} onChange={e => setForm(f => ({ ...f, bathroomDetails: e.target.value }))} placeholder="e.g. En-suite Jacuzzi & Rain Shower" className={inputCls} />
+          </div>
+        </div>
+
+        <div className="flex gap-2 items-end pt-1">
+          <div className="flex-1">
+            <ImageUploadField label="Room Photo (optional)" value={form.image} onChange={url => setForm(f => ({ ...f, image: url }))} />
+          </div>
+          <button type="submit" disabled={submitting} className="h-9 px-4 rounded-xl bg-primary text-on-primary text-xs font-bold flex items-center justify-center gap-1 hover:bg-primary-hover disabled:opacity-60 whitespace-nowrap shadow-2xs cursor-pointer">
             {editingId ? 'Save Changes' : <><Plus className="w-3.5 h-3.5" /> Add Room</>}
           </button>
           {editingId && (
-            <button type="button" onClick={cancelEdit} className="h-9 px-3 rounded-lg border border-outline-variant text-xs font-semibold text-on-surface-variant">
+            <button type="button" onClick={cancelEdit} className="h-9 px-3 rounded-xl border border-outline-variant text-xs font-semibold text-on-surface-variant hover:bg-surface-container-lowest cursor-pointer">
               Cancel
             </button>
           )}
