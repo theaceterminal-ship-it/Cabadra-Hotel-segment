@@ -259,6 +259,21 @@ function OverviewTab({ property, imageUrl, setImageUrl, onSaveImage, savingImage
         </div>
       )}
 
+      {/* Room Status Summary (TOP) */}
+      {!property.hasExternalPms && (
+        <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-5">
+          <h3 className="text-sm font-bold text-on-surface mb-3">Room Status Overview</h3>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
+            {(['ready', 'occupied', 'occupied_vip', 'cleaning', 'dirty', 'maintenance'] as const).map(status => (
+              <div key={status} className="bg-surface-container-low rounded-lg p-2 border border-outline-variant">
+                <div className="text-lg font-bold text-on-surface">{rooms.filter(r => r.status === status).length}</div>
+                <div className="text-[10px] text-on-surface-variant capitalize">{status.replace('_', ' ')}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard label="Occupancy" value={`${property.occupancy}%`} />
         <StatCard label="Rooms" value={String(property.totalRooms)} />
@@ -330,21 +345,7 @@ function OverviewTab({ property, imageUrl, setImageUrl, onSaveImage, savingImage
       <PmsModeCard property={property} />
 
       <UpiSettingsCard property={property} />
-
-      {/* Housekeeping status is the PMS's job once a property is in PMS mode — showing it here would just be a second, unmaintained copy of a number the PMS already owns. */}
-      {!property.hasExternalPms && (
-        <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-5">
-          <h3 className="text-sm font-bold text-on-surface mb-3">Room Status</h3>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
-            {(['ready', 'occupied', 'occupied_vip', 'cleaning', 'dirty', 'maintenance'] as const).map(status => (
-              <div key={status} className="bg-surface-container-low rounded-lg p-2 border border-outline-variant">
-                <div className="text-lg font-bold text-on-surface">{rooms.filter(r => r.status === status).length}</div>
-                <div className="text-[10px] text-on-surface-variant capitalize">{status.replace('_', ' ')}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+    </div>
     </div>
   );
 }
