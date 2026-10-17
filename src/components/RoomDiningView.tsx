@@ -207,8 +207,8 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
 
   return (
     <div id="room-dining-canvas" className="flex-1 min-h-screen bg-surface flex flex-col">
-      {/* Sticky Header */}
-      <header className="sticky top-0 z-30 bg-surface-container-lowest/95 backdrop-blur-md border-b border-outline-variant px-4 md:px-8 py-3 flex items-center gap-3 shadow-2xs">
+      {/* Sticky Header — pt-12 leaves space for the floating Dynamic Island status bar */}
+      <header className="sticky top-0 z-30 bg-surface-container-lowest/95 backdrop-blur-md border-b border-outline-variant px-4 md:px-8 pt-12 pb-3 flex items-center gap-3 shadow-2xs">
         <button
           id="btn-back-to-guest-home"
           onClick={() => onNavigate('guest_home')}

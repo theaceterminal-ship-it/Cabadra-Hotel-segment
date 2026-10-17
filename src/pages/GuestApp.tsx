@@ -7,8 +7,7 @@ import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { GuestHome } from '../components/GuestHome';
 import { RoomDiningView } from '../components/RoomDiningView';
 import { SupabaseSetupNeeded } from '../components/SupabaseSetupNeeded';
-import { OrderStatusBar } from '../components/OrderStatusBar';
-import { RequestStatusBar } from '../components/RequestStatusBar';
+import { DynamicIslandStatusBar } from '../components/DynamicIslandStatusBar';
 import { GuestFolioChat } from '../components/GuestFolioChat';
 
 /**
@@ -28,16 +27,6 @@ export default function GuestApp() {
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<Extract<AppView, 'guest_home' | 'room_dining'>>('guest_home');
 
-  // Staff get an explicit light/dark toggle (useTheme) that deliberately
-  // ignores the OS, per its own comment — a receptionist's front-desk
-  // machine keeps whatever was picked last. A guest has no such toggle and
-  // no reason to trust a stray `dark` class left on this browser by a
-  // staff session on the same device, so the guest page instead follows
-  // the guest's own phone/browser setting directly via
-  // prefers-color-scheme, live — including if they flip their OS theme
-  // while this page is still open. The `<meta name="theme-color">` tag
-  // keeps the mobile browser's address/status bar matching this page's own
-  // background (bg-surface) rather than showing a mismatched strip.
   useEffect(() => {
     const media = window.matchMedia('(prefers-color-scheme: dark)');
 
@@ -81,21 +70,14 @@ export default function GuestApp() {
     return <CenteredMessage title="Loading your stay…" body="One moment." />;
   }
 
-  // AppView carries views this page doesn't own (owner/reception ones); the
-  // handler below only ever sets the two guest sub-views.
   const handleNavigate = (target: AppView) => {
     if (target === 'guest_home' || target === 'room_dining') setView(target);
   };
 
   return (
     <>
-      {/* OrderStatusBar owns the centered top banner; RequestStatusBar is a
-          small floating button in the top-right corner instead (its own
-          dropdown, not a second banner competing for the same space). */}
-      <div className="fixed top-0 inset-x-0 z-40 flex flex-col items-center gap-2 px-3 pt-3 pointer-events-none">
-        <OrderStatusBar token={token} currency={context.property.currency} />
-      </div>
-      <RequestStatusBar token={token} />
+      {/* Dynamic Island Status Bar: Single, sleek, centered top pill handling both Room Dining and Service Requests */}
+      <DynamicIslandStatusBar token={token} currency={context.property.currency} roomNumber={context.room.number} />
       <GuestPwaInstallPrompt />
       {view === 'guest_home' && (
         <GuestHome
@@ -124,8 +106,7 @@ export default function GuestApp() {
           onPlaceOrder={() => {}}
         />
       )}
-      {/* Always available, across both sub-views — Folio Chat is about the
-          stay, not about whichever screen happens to be open. */}
+      {/* Folio Chat across views */}
       <GuestFolioChat token={token} />
     </>
   );
