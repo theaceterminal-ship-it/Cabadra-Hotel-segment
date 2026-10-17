@@ -239,12 +239,17 @@ export async function fetchRoomsForProperty(propertyId: string): Promise<Room[]>
   return (rooms ?? []).map(r => {
     const stay = occupancyByRoom.get(r.id);
     const guest = stay?.guests as unknown as { name: string; phone: string | null; email: string | null; id_document_url: string | null } | null;
+    const defaultBeds = r.max_occupancy === 1 ? '1 Single Bed' : r.max_occupancy === 2 ? '1 King Bed' : `${r.max_occupancy > 2 ? 2 : 1} Double Beds`;
+    const defaultBath = (r.type || '').toLowerCase().includes('vip') || (r.type || '').toLowerCase().includes('suite') ? 'En-suite Jacuzzi & Rain Shower' : 'Private En-suite Shower';
+
     return {
       id: r.id,
       number: r.number,
       type: r.type,
       floor: r.floor,
       maxOccupancy: r.max_occupancy ?? 2,
+      bedsDescription: r.beds_description || defaultBeds,
+      bathroomDetails: r.bathroom_details || defaultBath,
       status: r.status,
       pricePerNight: r.price_per_night,
       guestName: guest?.name,
@@ -267,6 +272,7 @@ export async function fetchRoomsForProperty(propertyId: string): Promise<Room[]>
 export async function updateRoom(roomId: string, patch: {
   status?: RoomStatus; notes?: string; cleanProgress?: number; maintenanceEta?: string; issueDescription?: string;
   number?: string; type?: string; floor?: number; maxOccupancy?: number; pricePerNight?: number; image?: string;
+  bedsDescription?: string; bathroomDetails?: string;
 }): Promise<void> {
   const { error } = await supabase.from('rooms').update({
     ...(patch.status !== undefined && { status: patch.status }),
@@ -280,12 +286,14 @@ export async function updateRoom(roomId: string, patch: {
     ...(patch.maxOccupancy !== undefined && { max_occupancy: patch.maxOccupancy }),
     ...(patch.pricePerNight !== undefined && { price_per_night: patch.pricePerNight }),
     ...(patch.image !== undefined && { image: patch.image }),
+    ...(patch.bedsDescription !== undefined && { beds_description: patch.bedsDescription }),
+    ...(patch.bathroomDetails !== undefined && { bathroom_details: patch.bathroomDetails }),
   }).eq('id', roomId);
   if (error) throw error;
 }
 
 /** Creates a room for real — the missing piece that made a freshly-created property a dead end (no rooms means nothing for Reception to show or a reservation to point at). */
-export async function addRoom(propertyId: string, room: { number: string; type: string; floor: number; maxOccupancy?: number; pricePerNight: number; image?: string }): Promise<void> {
+export async function addRoom(propertyId: string, room: { number: string; type: string; floor: number; maxOccupancy?: number; pricePerNight: number; image?: string; bedsDescription?: string; bathroomDetails?: string }): Promise<void> {
   const { error } = await supabase.from('rooms').insert({
     id: `${propertyId}-${slugify(room.number)}`,
     property_id: propertyId,
@@ -293,6 +301,8 @@ export async function addRoom(propertyId: string, room: { number: string; type: 
     type: room.type,
     floor: room.floor,
     max_occupancy: room.maxOccupancy ?? 2,
+    beds_description: room.bedsDescription || null,
+    bathroom_details: room.bathroomDetails || null,
     status: 'ready',
     price_per_night: room.pricePerNight,
     image: room.image || null,

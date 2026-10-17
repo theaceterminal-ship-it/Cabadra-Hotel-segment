@@ -57,6 +57,26 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
                 <span className="text-on-surface-variant">Current Status:</span>
                 <span className="font-bold text-on-surface uppercase">{displayRoom.status}</span>
               </div>
+              <div className="flex justify-between">
+                <span className="text-on-surface-variant">Category / Type:</span>
+                <span className="font-bold text-primary">{displayRoom.type}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-on-surface-variant">Occupancy:</span>
+                <span className="font-bold text-on-surface">Sleeps {displayRoom.maxOccupancy} Guests</span>
+              </div>
+              {displayRoom.bedsDescription && (
+                <div className="flex justify-between">
+                  <span className="text-on-surface-variant">Bedding:</span>
+                  <span className="font-semibold text-on-surface">{displayRoom.bedsDescription}</span>
+                </div>
+              )}
+              {displayRoom.bathroomDetails && (
+                <div className="flex justify-between">
+                  <span className="text-on-surface-variant">Bathroom:</span>
+                  <span className="font-semibold text-on-surface">{displayRoom.bathroomDetails}</span>
+                </div>
+              )}
               {displayRoom.guestName && (
                 <div className="flex justify-between">
                   <span className="text-on-surface-variant">Guest Name:</span>
@@ -69,7 +89,7 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
                   <span className="font-medium text-error">{displayRoom.notes}</span>
                 </div>
               )}
-              <div className="flex justify-between">
+              <div className="flex justify-between pt-1 border-t border-outline-variant/60">
                 <span className="text-on-surface-variant">Standard Rate:</span>
                 <span className="font-bold text-success">{formatCurrency(displayRoom.pricePerNight, currency)} / night</span>
               </div>

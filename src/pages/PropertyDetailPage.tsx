@@ -512,12 +512,21 @@ function StatCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-const ROOM_TYPE_PRESETS = ['Standard', 'Deluxe', 'Suite', 'Executive', 'Family Room', 'Studio', 'Villa', 'Presidential Suite'];
+const ROOM_TYPE_PRESETS = [
+  'Standard Room',
+  'Deluxe Room',
+  'Executive Room',
+  'VIP Suite',
+  'Presidential Suite',
+  'Family Suite',
+  'Studio Apartment',
+  'Luxury Villa',
+];
 
 function downloadRoomsCsvTemplate(hasExternalPms: boolean) {
   const csv = hasExternalPms
     ? Papa.unparse({ fields: ['number', 'floor'], data: [['101', '1'], ['102', '1'], ['201', '2']] })
-    : Papa.unparse({ fields: ROOMS_CSV_HEADERS, data: [['101', 'Standard', '1', '2', '95'], ['205', 'Deluxe', '2', '2', '140']] });
+    : Papa.unparse({ fields: ROOMS_CSV_HEADERS, data: [['101', 'Standard Room', '1', '2', '95'], ['205', 'Deluxe Room', '2', '2', '140']] });
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -528,18 +537,8 @@ function downloadRoomsCsvTemplate(hasExternalPms: boolean) {
 }
 const ROOMS_CSV_HEADERS = ['number', 'type', 'floor', 'occupancy', 'price'];
 
-/**
- * Typing every room in one at a time is the thing that made this tab feel
- * "too hectic" for anything past a handful of rooms — CSV import (same
- * pattern as MenuTab's) is the real fix for a 10+ room property. The
- * manual form stays for the odd one-off addition, and collapses to just a
- * room number for a PMS-mode property (0024_pms_mode.sql) — type/floor/
- * price/occupancy are the PMS's concern there, not something Cabadra
- * needs to ask for (bulkAddRooms/addRoom default them harmlessly either
- * way, so the DB's NOT NULL columns are always satisfied).
- */
 function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChanged }: { propertyId: string; currency: string; rooms: Room[]; hasExternalPms: boolean; onChanged: () => void }) {
-  const emptyForm = { number: '', type: '', floor: '1', occupancy: '2', price: '', image: '' };
+  const emptyForm = { number: '', type: '', floor: '1', occupancy: '2', price: '', image: '', bedsDescription: '', bathroomDetails: '' };
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -550,7 +549,16 @@ function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChanged }: { 
 
   const startEdit = (r: Room) => {
     setEditingId(r.id);
-    setForm({ number: r.number, type: r.type, floor: String(r.floor), occupancy: String(r.maxOccupancy), price: String(r.pricePerNight), image: r.image ?? '' });
+    setForm({
+      number: r.number,
+      type: r.type,
+      floor: String(r.floor),
+      occupancy: String(r.maxOccupancy),
+      price: String(r.pricePerNight),
+      image: r.image ?? '',
+      bedsDescription: r.bedsDescription ?? '',
+      bathroomDetails: r.bathroomDetails ?? '',
+    });
   };
   const cancelEdit = () => { setEditingId(null); setForm(emptyForm); };
 
@@ -561,11 +569,14 @@ function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChanged }: { 
     setFormError(null);
     try {
       const payload = {
-        number: form.number.trim(), type: hasExternalPms ? 'Room' : form.type.trim(),
+        number: form.number.trim(),
+        type: hasExternalPms ? 'Room' : form.type.trim(),
         floor: parseInt(form.floor) || 1,
         maxOccupancy: hasExternalPms ? 2 : (parseInt(form.occupancy) || 2),
         pricePerNight: hasExternalPms ? 0 : (parseFloat(form.price) || 0),
         image: form.image.trim() || undefined,
+        bedsDescription: form.bedsDescription.trim() || undefined,
+        bathroomDetails: form.bathroomDetails.trim() || undefined,
       };
       if (editingId) {
         await updateRoom(editingId, payload);
@@ -647,7 +658,7 @@ function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChanged }: { 
         {importResult && <span className="text-[11px] text-success font-semibold">{importResult}</span>}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-2 bg-surface-container-low p-3 rounded-lg border border-outline-variant">
+      <form onSubmit={handleSubmit} className="space-y-2.5 bg-surface-container-low p-3.5 rounded-xl border border-outline-variant">
         <div className={`grid grid-cols-2 ${hasExternalPms ? 'sm:grid-cols-2 max-w-xs' : 'sm:grid-cols-5'} gap-2`}>
           <div>
             <label className={labelCls}>Room Number</label>
@@ -661,15 +672,15 @@ function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChanged }: { 
           ) : (
             <>
               <div>
-                <label className={labelCls}>Type</label>
-                <PresetSelect presets={ROOM_TYPE_PRESETS} value={form.type} onChange={v => setForm(f => ({ ...f, type: v }))} className={inputCls} placeholder="King Suite" />
+                <label className={labelCls}>Category / Type</label>
+                <PresetSelect presets={ROOM_TYPE_PRESETS} value={form.type} onChange={v => setForm(f => ({ ...f, type: v }))} className={inputCls} placeholder="Deluxe Room" />
               </div>
               <div>
                 <label className={labelCls}>Floor</label>
                 <input type="number" value={form.floor} onChange={e => setForm(f => ({ ...f, floor: e.target.value }))} className={inputCls} />
               </div>
               <div>
-                <label className={labelCls}>Sleeps</label>
+                <label className={labelCls}>Sleeps (Capacity)</label>
                 <input type="number" min={1} value={form.occupancy} onChange={e => setForm(f => ({ ...f, occupancy: e.target.value }))} placeholder="2" className={inputCls} />
               </div>
               <div>
@@ -679,6 +690,20 @@ function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChanged }: { 
             </>
           )}
         </div>
+
+        {!hasExternalPms && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label className={labelCls}>Beds Configuration (optional)</label>
+              <input value={form.bedsDescription} onChange={e => setForm(f => ({ ...f, bedsDescription: e.target.value }))} placeholder="e.g. 1 King Bed, 2 Double Beds" className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Bathroom Features (optional)</label>
+              <input value={form.bathroomDetails} onChange={e => setForm(f => ({ ...f, bathroomDetails: e.target.value }))} placeholder="e.g. En-suite Jacuzzi & Rain Shower" className={inputCls} />
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-2 items-end">
           {!hasExternalPms && (
             <div className="flex-1">
@@ -686,7 +711,7 @@ function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChanged }: { 
             </div>
           )}
           <button type="submit" disabled={submitting} className="h-9 px-4 rounded-lg bg-primary text-on-primary text-xs font-bold flex items-center justify-center gap-1 hover:bg-primary-hover disabled:opacity-60 whitespace-nowrap">
-            {editingId ? 'Save Changes' : <><Plus className="w-3.5 h-3.5" /> Add</>}
+            {editingId ? 'Save Changes' : <><Plus className="w-3.5 h-3.5" /> Add Room</>}
           </button>
           {editingId && (
             <button type="button" onClick={cancelEdit} className="h-9 px-3 rounded-lg border border-outline-variant text-xs font-semibold text-on-surface-variant">
@@ -712,10 +737,20 @@ function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChanged }: { 
                   </div>
                 )}
                 <div className="min-w-0">
-                  <p className="font-bold text-on-surface text-sm truncate">Room {r.number}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-bold text-on-surface text-sm truncate">Room {r.number}</p>
+                    <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-bold text-[10px]">
+                      {r.type}
+                    </span>
+                  </div>
                   <p className="text-on-surface-variant text-xs mt-0.5 truncate">
-                    {hasExternalPms ? `Floor ${r.floor}` : `${r.type} · Floor ${r.floor} · Sleeps ${r.maxOccupancy} · ${formatCurrency(r.pricePerNight, currency)}/night`}
+                    {hasExternalPms ? `Floor ${r.floor}` : `Floor ${r.floor} · Sleeps ${r.maxOccupancy} Guests · ${formatCurrency(r.pricePerNight, currency)}/night`}
                   </p>
+                  {(r.bedsDescription || r.bathroomDetails) && (
+                    <p className="text-[11px] text-gray-500 truncate mt-0.5">
+                      {r.bedsDescription ? `🛏️ ${r.bedsDescription}` : ''}{r.bedsDescription && r.bathroomDetails ? ' · ' : ''}{r.bathroomDetails ? `🚿 ${r.bathroomDetails}` : ''}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">

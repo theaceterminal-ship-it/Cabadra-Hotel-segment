@@ -5,7 +5,7 @@ import { RoomDetailModal } from './RoomDetailModal';
 import { NewBookingModal } from './NewBookingModal';
 import { formatCurrency } from '../lib/currency';
 import {
-  Search, User, Brush, AlertCircle, Star, Wrench, QrCode, CalendarPlus,
+  Search, User, Brush, AlertCircle, Star, Wrench, QrCode, CalendarPlus, Users, Bed, Bath,
 } from 'lucide-react';
 
 interface RoomsFloorsViewProps {
@@ -62,17 +62,36 @@ function RoomTileBody({ room, currency }: { room: Room; currency: string }) {
 export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, propertyName, currency, upiId, hasExternalPms, rooms, onUpdateRoom, onRefreshRooms }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<RoomStatus | 'all'>('all');
+  const [occupancyFilter, setOccupancyFilter] = useState<'all' | '1' | '2' | '3+'>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
   const [selectedRoomForDetail, setSelectedRoomForDetail] = useState<Room | null>(null);
   const [qrRoom, setQrRoom] = useState<Room | null>(null);
   const [showNewBooking, setShowNewBooking] = useState(false);
 
+  const availableTypes = React.useMemo(() => {
+    const set = new Set<string>();
+    rooms.forEach(r => { if (r.type) set.add(r.type); });
+    return Array.from(set);
+  }, [rooms]);
+
   const filteredRooms = rooms.filter((r) => {
-    const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
-    const matchesSearch =
-      r.number.includes(searchQuery) ||
-      r.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (r.guestName && r.guestName.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesStatus && matchesSearch;
+    if (statusFilter !== 'all' && r.status !== statusFilter) return false;
+    if (occupancyFilter === '1' && r.maxOccupancy !== 1) return false;
+    if (occupancyFilter === '2' && r.maxOccupancy !== 2) return false;
+    if (occupancyFilter === '3+' && r.maxOccupancy < 3) return false;
+    if (typeFilter !== 'all' && r.type !== typeFilter) return false;
+
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+
+    const matchesNumber = r.number.toLowerCase().includes(q);
+    const matchesType = r.type.toLowerCase().includes(q);
+    const matchesGuest = r.guestName ? r.guestName.toLowerCase().includes(q) : false;
+    const matchesBeds = r.bedsDescription ? r.bedsDescription.toLowerCase().includes(q) : false;
+    const matchesBathroom = r.bathroomDetails ? r.bathroomDetails.toLowerCase().includes(q) : false;
+    const matchesCapacity = `sleeps ${r.maxOccupancy}`.includes(q) || `${r.maxOccupancy} guest`.includes(q) || `${r.maxOccupancy} person`.includes(q);
+
+    return matchesNumber || matchesType || matchesGuest || matchesBeds || matchesBathroom || matchesCapacity;
   });
 
   const floors: number[] = rooms
@@ -97,25 +116,20 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
     <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-semibold text-on-surface">Rooms & Floors</h1>
-          {/* text-on-surface-strong-muted, not -variant: this sits directly
-              on the page's own bg-surface (a saturated color in both themes,
-              see index.css's comment on that token), not inside a white
-              card — -variant/text-on-surface-variant read as ~1.2:1 contrast there,
-              functionally invisible. */}
+          <h1 className="text-2xl md:text-3xl font-semibold text-on-surface">Rooms &amp; Floors</h1>
           <p className="text-sm text-on-surface-strong-muted mt-1">
             {hasExternalPms
               ? 'Your PMS handles bookings — tap a ready room to check the guest in here and switch on their QR.'
-              : 'Manage every room, and print a room-service QR for the door.'}
+              : 'Manage every room, bed configuration, bathroom features, and print room-service QRs.'}
           </p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-72">
+          <div className="relative flex-1 sm:w-80">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search room, type or guest..."
+              placeholder="Search room #, type, beds, jacuzzi, guest..."
               className="w-full h-10 pl-9 pr-3 bg-surface-container-lowest border border-outline-variant rounded-lg text-xs focus:outline-none focus:border-primary"
             />
           </div>
@@ -130,21 +144,100 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
         </div>
       </div>
 
-      {/* Status filter pills + floor quick-nav */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
+      {/* Advanced Filter Bar: Capacity, Room Category, and Status Pills */}
+      <div className="bg-surface-container-lowest p-3.5 rounded-2xl border border-outline-variant shadow-2xs space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* Capacity / Guests Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-on-surface flex items-center gap-1 shrink-0">
+              <Users className="w-3.5 h-3.5 text-primary" /> Capacity:
+            </span>
+            <div className="flex bg-surface-container-low p-0.5 rounded-lg border border-outline-variant text-xs">
+              <button
+                type="button"
+                onClick={() => setOccupancyFilter('all')}
+                className={`px-2.5 py-1 rounded font-semibold transition-colors cursor-pointer ${
+                  occupancyFilter === 'all' ? 'bg-surface-container-lowest text-primary shadow-xs' : 'text-on-surface-variant'
+                }`}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                onClick={() => setOccupancyFilter('1')}
+                className={`px-2.5 py-1 rounded font-semibold transition-colors cursor-pointer ${
+                  occupancyFilter === '1' ? 'bg-surface-container-lowest text-primary shadow-xs' : 'text-on-surface-variant'
+                }`}
+              >
+                1 Person
+              </button>
+              <button
+                type="button"
+                onClick={() => setOccupancyFilter('2')}
+                className={`px-2.5 py-1 rounded font-semibold transition-colors cursor-pointer ${
+                  occupancyFilter === '2' ? 'bg-surface-container-lowest text-primary shadow-xs' : 'text-on-surface-variant'
+                }`}
+              >
+                2 Persons
+              </button>
+              <button
+                type="button"
+                onClick={() => setOccupancyFilter('3+')}
+                className={`px-2.5 py-1 rounded font-semibold transition-colors cursor-pointer ${
+                  occupancyFilter === '3+' ? 'bg-surface-container-lowest text-primary shadow-xs' : 'text-on-surface-variant'
+                }`}
+              >
+                3+ Persons
+              </button>
+            </div>
+          </div>
+
+          {/* Room Category Dropdown */}
+          {availableTypes.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-on-surface flex items-center gap-1 shrink-0">
+                <Bed className="w-3.5 h-3.5 text-primary" /> Category:
+              </span>
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="h-8 px-2.5 text-xs bg-surface-container-low border border-outline-variant rounded-lg text-on-surface font-semibold focus:border-primary focus:outline-none cursor-pointer"
+              >
+                <option value="all">All Categories</option>
+                {availableTypes.map(t => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Floor Quick Jump */}
+          {floors.length > 1 && (
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="text-on-surface-strong-muted font-semibold">Jump:</span>
+              {floors.map(fl => (
+                <button key={fl} onClick={() => scrollToFloor(fl)} className="px-2 py-0.5 rounded bg-surface-container-low text-primary font-bold hover:bg-[#dbe4ed]">
+                  Floor {fl}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Status Filter Pills */}
+        <div className="flex flex-wrap gap-2 pt-1 border-t border-outline-variant/60">
           {([
-            ['all', 'All', '#4e463a'],
-            ['ready', 'Ready', '#4e463a'],
-            ['occupied', 'Occupied', '#4a3301'],
-            ['cleaning', 'Cleaning', '#636467'],
-            ['dirty', 'Dirty', '#93000a'],
-            ['maintenance', 'Maintenance', '#343738'],
+            ['all', 'All Statuses'],
+            ['ready', 'Ready'],
+            ['occupied', 'Occupied'],
+            ['cleaning', 'Cleaning'],
+            ['dirty', 'Dirty'],
+            ['maintenance', 'Maintenance'],
           ] as const).map(([key, label]) => (
             <button
               key={key}
               onClick={() => setStatusFilter(statusFilter === key ? 'all' : (key as RoomStatus | 'all'))}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
                 statusFilter === key ? 'bg-primary text-on-primary border-primary' : 'bg-surface-container-lowest border-outline-variant text-on-surface-variant hover:border-primary'
               }`}
             >
@@ -152,16 +245,6 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
             </button>
           ))}
         </div>
-        {floors.length > 1 && (
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-on-surface-strong-muted font-semibold">Jump to:</span>
-            {floors.map(fl => (
-              <button key={fl} onClick={() => scrollToFloor(fl)} className="px-2.5 py-1 rounded bg-surface-container-low text-primary font-bold hover:bg-[#dbe4ed]">
-                {fl}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Floor sections */}
