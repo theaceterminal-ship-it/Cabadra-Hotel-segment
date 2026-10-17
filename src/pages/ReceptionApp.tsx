@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { LayoutDashboard, BedDouble, ListChecks, UtensilsCrossed, Truck, CalendarClock } from 'lucide-react';
+import { StaffPwaInstallPrompt } from '../components/StaffPwaInstallPrompt';
 import { AppView, KdsOrder, LiveOpsTask, Room, UpcomingArrival, UrgentRequest } from '../types';
 import { useAuth, signOut } from '../hooks/useAuth';
 import {
@@ -347,6 +348,7 @@ export default function ReceptionApp() {
           <ThemeToggle theme={theme} onChange={setTheme} />
           <NotificationBell notifications={notifications} unreadCount={unreadCount} onMarkRead={markRead} onMarkAllRead={markAllRead} date={notificationsDate} onDateChange={setNotificationsDate} />
         </div>
+        <StaffPwaInstallPrompt />
 
         <div className="flex-1 overflow-y-auto pt-0">
           {view === 'dashboard' && (

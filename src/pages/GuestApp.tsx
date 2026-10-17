@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AppView } from '../types';
+import { GuestPwaInstallPrompt } from '../components/GuestPwaInstallPrompt';
 import { fetchGuestContext, GuestContext, submitGuestRequest, bookGuestExperience } from '../lib/guestApi';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { GuestHome } from '../components/GuestHome';
@@ -95,6 +96,7 @@ export default function GuestApp() {
         <OrderStatusBar token={token} currency={context.property.currency} />
       </div>
       <RequestStatusBar token={token} />
+      <GuestPwaInstallPrompt />
       {view === 'guest_home' && (
         <GuestHome
           propertyName={context.property.name}
