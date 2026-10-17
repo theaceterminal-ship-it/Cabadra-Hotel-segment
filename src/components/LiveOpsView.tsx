@@ -123,9 +123,10 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
     setTimeout(() => setIsRefreshing(false), 500);
   };
 
-  function getLocalDateString(d: Date | string): string {
+  function getLocalDateString(d?: Date | string): string {
+    if (!d) return getLocalDateString(new Date());
     const dateObj = typeof d === 'string' ? new Date(d) : d;
-    if (isNaN(dateObj.getTime())) return '';
+    if (isNaN(dateObj.getTime())) return getLocalDateString(new Date());
     const year = dateObj.getFullYear();
     const month = String(dateObj.getMonth() + 1).padStart(2, '0');
     const day = String(dateObj.getDate()).padStart(2, '0');
@@ -138,7 +139,9 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
   const [startDate, setStartDate] = useState<string>(todayStr);
   const [endDate, setEndDate] = useState<string>(todayStr);
 
-  const filteredTasks = tasks.filter(t => {
+  const safeTasks = tasks ?? [];
+
+  const filteredTasks = safeTasks.filter(t => {
     // 1. Category Filter
     if (filterCategory !== 'all' && t.category !== filterCategory) return false;
 
@@ -146,7 +149,6 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
     if (dateFilterMode === 'all') return true;
 
     const taskDateStr = getLocalDateString(t.createdAt);
-    if (!taskDateStr) return true;
 
     if (dateFilterMode === 'today') {
       return taskDateStr === todayStr;
@@ -192,7 +194,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
     setNewDue('');
   };
 
-  const directoryByDept = (dept: DirectoryContact['department']) => directory.filter(d => d.department === dept);
+  const directoryByDept = (dept: DirectoryContact['department']) => (directory ?? []).filter(d => d.department === dept);
 
   return (
     <div id="live-ops-canvas" className="w-full max-w-[1400px] mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
