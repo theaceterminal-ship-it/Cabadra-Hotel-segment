@@ -322,8 +322,8 @@ export default function ReceptionApp() {
   }
 
   const openRequestsCount = urgentRequests.filter(r => r.status === 'open').length;
-  const openTasksCount = tasks.filter(t => t.status !== 'completed').length;
-  const activeOrdersCount = kdsOrders.filter(o => o.status !== 'delivered').length;
+  const openTasksCount = tasks.filter(t => t.status !== 'completed' && t.status !== 'rejected').length;
+  const activeOrdersCount = kdsOrders.filter(o => o.status !== 'delivered' && o.status !== 'rejected').length;
 
   const navItems: SidebarNavItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: openRequestsCount },

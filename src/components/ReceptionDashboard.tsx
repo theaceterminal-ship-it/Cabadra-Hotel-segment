@@ -297,7 +297,7 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
 
   const occupiedCount = rooms.filter(r => r.status === 'occupied' || r.status === 'occupied_vip').length;
   const occupancyPct = rooms.length > 0 ? Math.round((occupiedCount / rooms.length) * 100) : 0;
-  const openTasks = tasks.filter(t => t.status !== 'completed');
+  const openTasks = tasks.filter(t => t.status !== 'completed' && t.status !== 'rejected');
   const notCheckedInArrivals = upcomingArrivals.filter(a => !a.checkedIn);
 
   const today = useMemo(() => new Date().toLocaleDateString(undefined, { month: 'long', day: '2-digit', year: 'numeric' }), []);
