@@ -25,6 +25,7 @@ import {
   Ban,
   Tablet,
   Power,
+  Calendar,
 } from 'lucide-react';
 
 interface LiveOpsViewProps {
@@ -122,11 +123,47 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
     setTimeout(() => setIsRefreshing(false), 500);
   };
 
-  const filteredTasks = tasks.filter(t => filterCategory === 'all' || t.category === filterCategory);
+  function getLocalDateString(d: Date | string): string {
+    const dateObj = typeof d === 'string' ? new Date(d) : d;
+    if (isNaN(dateObj.getTime())) return '';
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
 
-  const urgentCount = tasks.filter(t => t.priority === 'high' && t.status !== 'completed' && t.status !== 'rejected').length;
-  const completedCount = tasks.filter(t => t.status === 'completed').length;
-  const pendingCount = tasks.filter(t => t.status !== 'completed' && t.status !== 'rejected').length;
+  const todayStr = getLocalDateString(new Date());
+
+  const [dateFilterMode, setDateFilterMode] = useState<'today' | 'custom' | 'all'>('today');
+  const [startDate, setStartDate] = useState<string>(todayStr);
+  const [endDate, setEndDate] = useState<string>(todayStr);
+
+  const filteredTasks = tasks.filter(t => {
+    // 1. Category Filter
+    if (filterCategory !== 'all' && t.category !== filterCategory) return false;
+
+    // 2. Date Filter
+    if (dateFilterMode === 'all') return true;
+
+    const taskDateStr = getLocalDateString(t.createdAt);
+    if (!taskDateStr) return true;
+
+    if (dateFilterMode === 'today') {
+      return taskDateStr === todayStr;
+    }
+
+    if (dateFilterMode === 'custom') {
+      if (startDate && taskDateStr < startDate) return false;
+      if (endDate && taskDateStr > endDate) return false;
+      return true;
+    }
+
+    return true;
+  });
+
+  const urgentCount = filteredTasks.filter(t => t.priority === 'high' && t.status !== 'completed' && t.status !== 'rejected').length;
+  const completedCount = filteredTasks.filter(t => t.status === 'completed').length;
+  const pendingCount = filteredTasks.filter(t => t.status !== 'completed' && t.status !== 'rejected').length;
 
   const handleAction = (task: LiveOpsTask) => {
     if (task.status === 'pending') {
@@ -233,8 +270,67 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
         {/* Task List Section — main column */}
         <div className="xl:col-span-8 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <h3 className="text-base font-bold text-on-surface">Active Assignments</h3>
+          {/* Controls Bar: Date Filter + Department Category Filter */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface-container-lowest p-3 rounded-xl border border-outline-variant shadow-2xs">
+            {/* Date Range Selector */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-bold text-on-surface flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-primary" /> Date:
+              </span>
+              <div className="flex bg-surface-container-low p-0.5 rounded-lg border border-outline-variant text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDateFilterMode('today');
+                    setStartDate(todayStr);
+                    setEndDate(todayStr);
+                  }}
+                  className={`px-2.5 py-1 rounded font-semibold transition-colors cursor-pointer ${
+                    dateFilterMode === 'today' ? 'bg-surface-container-lowest text-primary shadow-xs' : 'text-on-surface-variant'
+                  }`}
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDateFilterMode('custom')}
+                  className={`px-2.5 py-1 rounded font-semibold transition-colors cursor-pointer ${
+                    dateFilterMode === 'custom' ? 'bg-surface-container-lowest text-primary shadow-xs' : 'text-on-surface-variant'
+                  }`}
+                >
+                  Custom Range
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDateFilterMode('all')}
+                  className={`px-2.5 py-1 rounded font-semibold transition-colors cursor-pointer ${
+                    dateFilterMode === 'all' ? 'bg-surface-container-lowest text-primary shadow-xs' : 'text-on-surface-variant'
+                  }`}
+                >
+                  All Time
+                </button>
+              </div>
+
+              {dateFilterMode === 'custom' && (
+                <div className="flex items-center gap-1.5 animate-in fade-in duration-200">
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="h-8 px-2 text-xs border border-outline-variant rounded-lg bg-surface-container-lowest text-on-surface focus:border-primary focus:outline-none"
+                  />
+                  <span className="text-xs text-on-surface-variant">to</span>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="h-8 px-2 text-xs border border-outline-variant rounded-lg bg-surface-container-lowest text-on-surface focus:border-primary focus:outline-none"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Department / Category Filter */}
             <div className="flex flex-wrap gap-1 text-[11px] bg-surface-container-low p-1 rounded-lg border border-outline-variant">
               {(['all', 'housekeeping', 'amenities', 'maintenance', 'concierge'] as const).map(cat => (
                 <button
