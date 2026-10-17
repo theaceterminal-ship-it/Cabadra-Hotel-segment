@@ -194,19 +194,32 @@ export default function ReceptionApp() {
   const handleUpdateTask = (updatedTask: LiveOpsTask) => {
     setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
 
+    // Optimistically update corresponding room status for Housekeeping cleaning lifecycle
+    const roomNum = updatedTask.roomNumber?.replace(/[^0-9]/g, '');
+    if (roomNum && (updatedTask.category === 'housekeeping' || updatedTask.title.toLowerCase().includes('clean'))) {
+      if (updatedTask.status === 'in_progress') {
+        setRooms(prev => prev.map(r => r.number === roomNum && r.status !== 'occupied' ? { ...r, status: 'cleaning' } : r));
+      } else if (updatedTask.status === 'completed') {
+        setRooms(prev => prev.map(r => r.number === roomNum && r.status !== 'occupied' ? { ...r, status: 'ready', cleanProgress: 100 } : r));
+      }
+    }
+
     if (updatedTask.status === 'completed') {
-      // Posts the folio charge atomically if the task is priced — a plain
-      // status update can't make that guarantee. Resync from the server on
-      // failure (e.g. a priced task with no reservation to bill) so the
-      // board doesn't keep showing "Completed" for something that wasn't.
-      completeTask(updatedTask.id).catch(err => {
-        console.warn(`Failed to complete task ${updatedTask.id}:`, err);
-        if (propertyId) reloadTasks(propertyId);
-      });
+      completeTask(updatedTask.id)
+        .then(() => {
+          if (propertyId) reloadRoomsAndArrivals(propertyId);
+        })
+        .catch(err => {
+          console.warn(`Failed to complete task ${updatedTask.id}:`, err);
+          if (propertyId) reloadTasks(propertyId);
+        });
       return;
     }
 
     updateTaskStatus(updatedTask.id, updatedTask.status as 'pending' | 'in_progress')
+      .then(() => {
+        if (propertyId) reloadRoomsAndArrivals(propertyId);
+      })
       .catch(err => console.warn(`Failed to update task ${updatedTask.id}:`, err));
   };
 
