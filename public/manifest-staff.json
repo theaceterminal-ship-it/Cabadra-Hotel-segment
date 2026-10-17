@@ -3,24 +3,37 @@
   "short_name": "Staff App",
   "description": "Staff hospitality management app",
   "start_url": "/reception",
+  "scope": "/",
   "id": "/reception",
   "display": "standalone",
-  "theme_color": "#14101f",
+  "theme_color": "#059669",
   "background_color": "#14101f",
   "orientation": "portrait-primary",
-  "display_orientation": "portrait-primary",
+  "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/logo192.png",
+      "src": "/logo192-staff.png",
       "type": "image/png",
       "sizes": "192x192",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/logo512.png",
+      "src": "/logo192-staff.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/logo512-staff.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/logo512-staff.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
   ]
 }

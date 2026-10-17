@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cabadra-pwa-v2';
+const CACHE_NAME = 'cabadra-pwa-v3';
 
 const CORE_ASSETS = [
   '/',
@@ -7,7 +7,9 @@ const CORE_ASSETS = [
   '/manifest-staff.json',
   '/favicon.ico',
   '/logo192.png',
-  '/logo512.png'
+  '/logo512.png',
+  '/logo192-staff.png',
+  '/logo512-staff.png'
 ];
 
 self.addEventListener('install', event => {
