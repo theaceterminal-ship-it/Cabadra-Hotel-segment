@@ -14,17 +14,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
   <script>
 // Dynamically swap manifest based on route for staff vs guest PWA distinction
-const manifestLink = document.querySelector('link[rel="manifest"]');
-if (manifestLink) {
-  const path = window.location.pathname;
-  if (path.includes('/reception') || path === '/') {
-    manifestLink.href = '/manifest-staff.json';
-    manifestLink.setAttribute('title', 'Staff App Manifest');
-  } else if (path.includes('/guest')) {
-    manifestLink.href = '/manifest.json';
-    manifestLink.setAttribute('title', 'Guest App Manifest');
+function updateManifest() {
+  const manifestLink = document.querySelector('link[rel="manifest"]');
+  if (manifestLink) {
+    const path = window.location.pathname;
+    if (path.includes('/reception') || path.includes('/owner') || path === '/') {
+      manifestLink.href = '/manifest-staff.json';
+      manifestLink.setAttribute('title', 'Staff App Manifest');
+    } else if (path.includes('/guest')) {
+      manifestLink.href = '/manifest.json';
+      manifestLink.setAttribute('title', 'Guest App Manifest');
+    }
   }
 }
+updateManifest();
+window.addEventListener('popstate', updateManifest);
 </script>
 </head>
   <body class="bg-[#f6faff] text-[#141d23] antialiased selection:bg-[#bd9b60] selection:text-white">
@@ -32,4 +36,3 @@ if (manifestLink) {
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

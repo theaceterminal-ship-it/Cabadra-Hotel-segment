@@ -3,17 +3,24 @@
   "short_name": "Guest App",
   "description": "Guest experience and hospitality management app",
   "start_url": "/guest",
+  "id": "/guest",
   "display": "standalone",
   "theme_color": "#9992c9",
   "background_color": "#ffffff",
   "orientation": "portrait-primary",
   "display_orientation": "portrait-primary",
-  "icons": [{"src": "/logo192.png",
-      "type": "image/png"
+  "icons": [
+    {
+      "src": "/logo192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "/logo512.png",
-      "type": "image/png"
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ]
 }
