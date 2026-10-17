@@ -283,29 +283,70 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
           </div>
         </section>
 
-        {/* Featured Curated Experiences — owner-managed (Experiences tab), not hardcoded. Section just doesn't render until the owner adds one. */}
+        {/* Featured Curated Experiences — matching Hero Greeting Box Design Language */}
         {(experiences ?? []).length > 0 && (
           <section id="curated-experiences-section" className="space-y-4 pt-2">
-            <h2 className="text-xl font-bold text-on-surface px-1">Curated For You</h2>
+            <div className="flex items-center justify-between px-1">
+              <h2 className="text-xl font-bold text-on-surface">Curated For You</h2>
+              <span className="text-xs font-semibold text-primary">Exclusive Experiences</span>
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {experiences.map((exp) => (
                 <div
                   key={exp.id}
                   id={`exp-card-${exp.id}`}
-                  className="rounded-2xl border border-outline-variant overflow-hidden bg-surface-container-lowest shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row group"
+                  className="relative rounded-[28px] overflow-hidden h-72 sm:h-80 shadow-lg group border border-outline-variant/40 bg-surface-container-high transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl"
                 >
-                  <div
-                    className="h-44 sm:h-auto sm:w-48 bg-cover bg-center bg-surface-container-low shrink-0 group-hover:scale-105 transition-transform duration-500"
-                    style={exp.image ? { backgroundImage: `url('${exp.image}')` } : undefined}
-                  ></div>
-                  <div className="p-5 flex flex-col justify-between flex-grow">
-                    <div>
-                      <h3 className="text-lg font-bold text-on-surface mb-1">{exp.name}</h3>
-                      <p className="text-xs text-on-surface-variant leading-relaxed">{exp.description}</p>
-                    </div>
-                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-outline-variant">
-                      <span className="text-sm font-bold text-primary">{formatCurrency(exp.price, currency)} {exp.unitLabel}</span>
+                  {/* Full-bleed Background Experience Image */}
+                  {exp.image ? (
+                    <img
+                      src={exp.image}
+                      alt={exp.name}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    />
+                  ) : (
+                    <div
+                      className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-700"
+                      style={{
+                        backgroundImage: `url('https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80')`,
+                      }}
+                    />
+                  )}
+
+                  {/* Dark Vignette Gradient Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20" />
+
+                  {/* Top-Right Price Tag Pill */}
+                  <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md rounded-full px-3.5 py-1.5 text-white border border-white/20 shadow-md">
+                    <span className="text-xs sm:text-sm font-extrabold text-amber-300">
+                      {formatCurrency(exp.price, currency)}
+                    </span>
+                    <span className="text-[10px] text-white/80 font-medium ml-1">
+                      {exp.unitLabel}
+                    </span>
+                  </div>
+
+                  {/* Bottom Content Card (Matching Greeting Box) */}
+                  <div className="absolute bottom-5 left-5 right-5 text-white flex flex-col justify-end">
+                    <p className="text-[11px] font-extrabold tracking-widest uppercase text-amber-300/90">
+                      CURATED EXPERIENCE
+                    </p>
+                    <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-white leading-tight mt-0.5">
+                      {exp.name}
+                    </h3>
+
+                    {/* Gold Accent Bar */}
+                    <div className="w-8 h-1 bg-amber-400 rounded-full my-2 shadow-2xs" />
+
+                    {exp.description && (
+                      <p className="text-xs sm:text-sm font-medium text-white/90 line-clamp-2 leading-snug">
+                        {exp.description}
+                      </p>
+                    )}
+
+                    {/* Reserve Action Button */}
+                    <div className="pt-3">
                       <button
                         type="button"
                         onClick={() => {
@@ -314,9 +355,10 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
                           setPreferredTime('');
                           setBookingNotes('');
                         }}
-                        className="px-4 py-2 bg-primary text-on-primary rounded-xl text-xs font-bold hover:bg-primary-hover transition-colors shadow-2xs cursor-pointer"
+                        className="px-5 py-2.5 rounded-full bg-primary text-on-primary text-xs font-extrabold hover:bg-primary-hover transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-2"
                       >
-                        Reserve Now
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Reserve Now</span>
                       </button>
                     </div>
                   </div>
