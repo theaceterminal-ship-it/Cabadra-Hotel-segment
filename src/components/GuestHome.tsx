@@ -37,7 +37,7 @@ interface GuestHomeProps {
   /** Real submission (guest_submit_request), tagged with the service's department so it routes to the right team instead of Reception guessing from the title. */
   onSubmitConciergeRequest: (title: string, department: Department) => Promise<void>;
   /** Real submission (guest_book_experience) for the curated-experience "Reserve Now" buttons. */
-  onBookExperience: (name: string, price: number) => Promise<void>;
+  onBookExperience: (name: string, price: number, guestCount?: number, preferredTime?: string, notes?: string, unitLabel?: string) => Promise<void>;
 }
 
 const SERVICE_ICONS: Record<string, typeof Sparkles> = {
@@ -81,6 +81,11 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
   const [routeSearch, setRouteSearch] = useState('');
   const [submittingRequest, setSubmittingRequest] = useState(false);
   const [bookedExperience, setBookedExperience] = useState<string | null>(null);
+  const [selectedExperience, setSelectedExperience] = useState<GuestExperience | null>(null);
+  const [guestCount, setGuestCount] = useState<number>(1);
+  const [preferredTime, setPreferredTime] = useState<string>('');
+  const [bookingNotes, setBookingNotes] = useState<string>('');
+  const [submittingExperience, setSubmittingExperience] = useState(false);
   const [now, setNow] = useState(() => new Date());
 
   // A live clock in the hero — small touch, but it's the first thing a
@@ -271,8 +276,14 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
                     <div className="flex items-center justify-between mt-4 pt-3 border-t border-outline-variant">
                       <span className="text-sm font-bold text-primary">{formatCurrency(exp.price, currency)} {exp.unitLabel}</span>
                       <button
-                        onClick={() => handleBookExperience(exp.name, exp.price)}
-                        className="px-4 py-2 bg-primary text-on-primary rounded-lg text-xs font-bold hover:bg-primary-hover transition-colors cursor-pointer"
+                        type="button"
+                        onClick={() => {
+                          setSelectedExperience(exp);
+                          setGuestCount(1);
+                          setPreferredTime('');
+                          setBookingNotes('');
+                        }}
+                        className="px-4 py-2 bg-primary text-on-primary rounded-xl text-xs font-bold hover:bg-primary-hover transition-colors shadow-2xs cursor-pointer"
                       >
                         Reserve Now
                       </button>
@@ -378,6 +389,134 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
                 className="px-5 py-2 bg-primary text-on-primary rounded-lg text-xs font-bold hover:bg-primary-hover disabled:opacity-60"
               >
                 {submittingRequest ? 'Sending…' : 'Confirm Request'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Experience Booking Modal with Guest Count & Preferred Schedule */}
+      {selectedExperience && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant space-y-4">
+            <div className="flex justify-between items-start pb-3 border-b border-outline-variant">
+              <div>
+                <h3 className="text-lg font-bold text-on-surface">{selectedExperience.name}</h3>
+                <p className="text-xs text-primary font-bold">{formatCurrency(selectedExperience.price, currency)} {selectedExperience.unitLabel}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedExperience(null)}
+                className="text-gray-400 hover:text-gray-600 text-xl font-bold cursor-pointer"
+              >
+                &times;
+              </button>
+            </div>
+
+            {selectedExperience.image && (
+              <div className="h-36 w-full rounded-xl overflow-hidden bg-surface-container-low border border-outline-variant">
+                <img src={selectedExperience.image} alt={selectedExperience.name} className="w-full h-full object-cover" />
+              </div>
+            )}
+
+            {selectedExperience.description && (
+              <p className="text-xs text-on-surface-variant leading-relaxed">{selectedExperience.description}</p>
+            )}
+
+            {/* Party Size Selector */}
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-on-surface block">Number of Guests / Party Size</label>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center border border-outline-variant rounded-xl bg-surface-container-low overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setGuestCount(g => Math.max(1, g - 1))}
+                    className="w-10 h-10 flex items-center justify-center text-lg font-bold hover:bg-surface-container-high transition-colors cursor-pointer text-on-surface"
+                  >
+                    -
+                  </button>
+                  <span className="w-12 text-center text-sm font-extrabold text-on-surface">{guestCount}</span>
+                  <button
+                    type="button"
+                    onClick={() => setGuestCount(g => g + 1)}
+                    className="w-10 h-10 flex items-center justify-center text-lg font-bold hover:bg-surface-container-high transition-colors cursor-pointer text-on-surface"
+                  >
+                    +
+                  </button>
+                </div>
+                <span className="text-xs font-semibold text-on-surface-variant">
+                  ({selectedExperience.unitLabel || 'per person'})
+                </span>
+              </div>
+            </div>
+
+            {/* Preferred Date & Time */}
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-on-surface block">Preferred Date &amp; Time (Optional)</label>
+              <input
+                type="text"
+                value={preferredTime}
+                onChange={e => setPreferredTime(e.target.value)}
+                placeholder="e.g. Today at 4:30 PM or Tomorrow morning"
+                className="w-full h-10 px-3 text-xs border border-outline-variant rounded-xl focus:border-primary focus:outline-none bg-surface-container-lowest"
+              />
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-on-surface block">Special Requests or Preferences (Optional)</label>
+              <textarea
+                value={bookingNotes}
+                onChange={e => setBookingNotes(e.target.value)}
+                placeholder="e.g. Dietary preferences, surprise setup..."
+                rows={2}
+                className="w-full p-2.5 text-xs border border-outline-variant rounded-xl focus:border-primary focus:outline-none bg-surface-container-lowest resize-none"
+              />
+            </div>
+
+            {/* Total Price Summary */}
+            <div className="flex items-center justify-between p-3 rounded-xl bg-primary/10 border border-primary/20">
+              <span className="text-xs font-bold text-primary">Estimated Total ({currency})</span>
+              <span className="text-base font-extrabold text-primary">
+                {formatCurrency(selectedExperience.price * guestCount, currency)}
+              </span>
+            </div>
+
+            {/* Submit Actions */}
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setSelectedExperience(null)}
+                className="flex-1 h-10 rounded-xl border border-outline-variant text-xs font-semibold text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={submittingExperience}
+                onClick={async () => {
+                  setSubmittingExperience(true);
+                  try {
+                    await onBookExperience(
+                      selectedExperience.name,
+                      selectedExperience.price,
+                      guestCount,
+                      preferredTime,
+                      bookingNotes,
+                      selectedExperience.unitLabel
+                    );
+                    setBookedExperience(selectedExperience.name);
+                    setSelectedExperience(null);
+                    setTimeout(() => setBookedExperience(null), 5000);
+                  } catch (err) {
+                    console.warn('Failed to submit experience booking:', err);
+                  } finally {
+                    setSubmittingExperience(false);
+                  }
+                }}
+                className="flex-1 h-10 rounded-xl bg-primary text-on-primary text-xs font-bold hover:bg-primary-hover disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
+              >
+                {submittingExperience ? 'Sending Request...' : 'Send Reservation Request'}
               </button>
             </div>
           </div>

@@ -464,6 +464,40 @@ export async function deleteExperience(propertyId: string, expId: string): Promi
   if (error) throw error;
 }
 
+export async function fetchStaffExperienceBookings(propertyId: string): Promise<StaffExperienceBooking[]> {
+  const { data, error } = await supabase.rpc('staff_fetch_experience_bookings', { p_property_id: propertyId });
+  if (error) throw new Error(`Failed to fetch experience bookings: ${error.message}`);
+  return (data ?? []) as StaffExperienceBooking[];
+}
+
+export async function confirmExperienceBooking(
+  propertyId: string,
+  bookingId: string,
+  scheduledTime: string,
+  chargeFolio: boolean = true
+): Promise<void> {
+  const { error } = await supabase.rpc('staff_confirm_experience_booking', {
+    p_property_id: propertyId,
+    p_booking_id: bookingId,
+    p_scheduled_time: scheduledTime,
+    p_charge_folio: chargeFolio,
+  });
+  if (error) throw new Error(`Failed to confirm experience booking: ${error.message}`);
+}
+
+export async function cancelExperienceBooking(
+  propertyId: string,
+  bookingId: string,
+  reason?: string
+): Promise<void> {
+  const { error } = await supabase.rpc('staff_cancel_experience_booking', {
+    p_property_id: propertyId,
+    p_booking_id: bookingId,
+    p_reason: reason || null,
+  });
+  if (error) throw new Error(`Failed to cancel experience booking: ${error.message}`);
+}
+
 // ============================================================================
 // STAFF MANAGEMENT — owner granting/revoking access, no SQL required
 // ============================================================================

@@ -157,14 +157,32 @@ export async function dismissGuestRequest(token: string, requestId: string): Pro
   }
 }
 
-export async function bookGuestExperience(token: string, experienceName: string, price: number): Promise<string> {
+export async function bookGuestExperience(
+  token: string,
+  experienceName: string,
+  price: number,
+  guestCount: number = 1,
+  preferredTime?: string,
+  notes?: string,
+  unitLabel?: string
+): Promise<any> {
   const { data, error } = await supabase.rpc('guest_book_experience', {
     p_token: token,
     p_experience_name: experienceName,
     p_price: price,
+    p_guest_count: guestCount,
+    p_preferred_time: preferredTime || null,
+    p_notes: notes || null,
+    p_unit_label: unitLabel || 'per person',
   });
-  if (error) throw new Error(`Failed to book experience: ${error.message}`);
-  return data as string;
+  if (error) throw new Error(`Failed to reserve experience: ${error.message}`);
+  return data;
+}
+
+export async function fetchGuestExperienceBookings(token: string): Promise<GuestExperienceBooking[]> {
+  const { data, error } = await supabase.rpc('guest_fetch_experience_bookings', { p_token: token });
+  if (error) throw new Error(`Failed to load reserved experiences: ${error.message}`);
+  return (data ?? []) as GuestExperienceBooking[];
 }
 
 export interface ActiveOrder {

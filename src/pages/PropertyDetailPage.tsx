@@ -1132,6 +1132,15 @@ const EXPERIENCE_PRESETS = [
   'Adventure Activity', 'Cultural Show', 'Airport Transfer', 'Photography Session', 'Wellness Retreat',
 ];
 
+const UNIT_LABEL_PRESETS = [
+  'per person',
+  'per couple',
+  'per family',
+  'per group',
+  'per session',
+  'per hour',
+];
+
 function ExperiencesTab({ propertyId, currency, experiences, onChanged }: { propertyId: string; currency: string; experiences: Experience[]; onChanged: () => void }) {
   const emptyForm = { name: '', description: '', price: '', unitLabel: 'per person', image: '' };
   const [form, setForm] = useState(emptyForm);
@@ -1197,8 +1206,8 @@ function ExperiencesTab({ propertyId, currency, experiences, onChanged }: { prop
             <input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="350" className={inputCls} />
           </div>
           <div>
-            <label className={labelCls}>Unit</label>
-            <input value={form.unitLabel} onChange={e => setForm(f => ({ ...f, unitLabel: e.target.value }))} placeholder="per couple" className={inputCls} />
+            <label className={labelCls}>Unit Label</label>
+            <PresetSelect presets={UNIT_LABEL_PRESETS} value={form.unitLabel} onChange={v => setForm(f => ({ ...f, unitLabel: v }))} className={inputCls} placeholder="per person" />
           </div>
         </div>
         <div>

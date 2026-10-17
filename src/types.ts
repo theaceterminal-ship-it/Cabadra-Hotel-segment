@@ -5,6 +5,7 @@ export type AppView =
   | 'dashboard'
   | 'rooms_floors'
   | 'live_ops'
+  | 'reserved_experiences'
   | 'kitchen_kds'
   | 'active_deliveries'
   | 'guest_home'
@@ -183,4 +184,33 @@ export interface Folio {
   charges: FolioCharge[];
   totalOutstanding: number;
   totalPaid: number;
+}
+
+export interface GuestExperienceBooking {
+  id: string;
+  experienceName: string;
+  totalPrice: number;
+  guestCount: number;
+  preferredTime?: string;
+  scheduledTime?: string;
+  unitLabel?: string;
+  notes?: string;
+  status: 'pending' | 'requested' | 'confirmed' | 'completed' | 'cancelled';
+  createdAt: string;
+}
+
+export interface StaffExperienceBooking {
+  id: string;
+  reservationId: string;
+  guestName: string;
+  roomNumber: string;
+  experienceName: string;
+  totalPrice: number;
+  guestCount: number;
+  preferredTime?: string;
+  scheduledTime?: string;
+  unitLabel?: string;
+  notes?: string;
+  status: 'pending' | 'requested' | 'confirmed' | 'completed' | 'cancelled';
+  createdAt: string;
 }
