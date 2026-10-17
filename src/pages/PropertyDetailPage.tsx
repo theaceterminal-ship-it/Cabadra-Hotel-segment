@@ -52,7 +52,7 @@ import { ImageUploadField } from '../components/ImageUploadField';
 import { PresetSelect } from '../components/PresetSelect';
 import { formatCurrency } from '../lib/currency';
 import {
-  ArrowLeft, Plus, Trash2, BedDouble, UtensilsCrossed, Users, Pencil,
+  ArrowLeft, Plus, Trash2, BedDouble, Bed, UtensilsCrossed, Users, Pencil,
   LayoutDashboard, Upload, Download, AlertTriangle, Sparkles, ConciergeBell,
   Link2, RefreshCw, Copy, Check, QrCode, Megaphone, CheckCircle2,
 } from 'lucide-react';
@@ -561,6 +561,12 @@ function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChanged }: { 
   const [importResult, setImportResult] = useState<string | null>(null);
   const csvInputRef = React.useRef<HTMLInputElement>(null);
   const formRef = React.useRef<HTMLFormElement>(null);
+
+  const safeRooms = rooms ?? [];
+  const floors: number[] = safeRooms
+    .map(r => r.floor)
+    .filter((floor, index, all) => all.indexOf(floor) === index)
+    .sort((a, b) => a - b);
 
   const startEdit = (r: Room) => {
     setEditingId(r.id);
