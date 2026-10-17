@@ -523,6 +523,20 @@ const ROOM_TYPE_PRESETS = [
   'Luxury Villa',
 ];
 
+const BED_CONFIG_PRESETS = [
+  '1 Single Bed',
+  '1 Double Bed',
+  '1 Queen Bed',
+  '1 King Bed',
+  '2 Single Beds',
+  '2 Twin Beds',
+  '2 Double Beds',
+  '2 Queen Beds',
+  '3 Single Beds (Sleeps 3)',
+  '4 Bunk Beds (Sleeps 4)',
+  '5 Beds (Family Suite)',
+];
+
 function downloadRoomsCsvTemplate(hasExternalPms: boolean) {
   const csv = hasExternalPms
     ? Papa.unparse({ fields: ['number', 'floor'], data: [['101', '1'], ['102', '1'], ['201', '2']] })
@@ -696,7 +710,13 @@ function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChanged }: { 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <div>
             <label className={labelCls}>Beds Configuration (optional)</label>
-            <input value={form.bedsDescription} onChange={e => setForm(f => ({ ...f, bedsDescription: e.target.value }))} placeholder="e.g. 1 King Bed, 2 Double Beds" className={inputCls} />
+            <PresetSelect
+              presets={BED_CONFIG_PRESETS}
+              value={form.bedsDescription}
+              onChange={v => setForm(f => ({ ...f, bedsDescription: v }))}
+              className={inputCls}
+              placeholder="Select beds or type my own..."
+            />
           </div>
           <div>
             <label className={labelCls}>Bathroom Features (optional)</label>
@@ -720,47 +740,108 @@ function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChanged }: { 
       </form>
       {formError && <p className="text-xs text-red-600">{formError}</p>}
 
-      <div className="space-y-2">
-        {rooms.length === 0 ? (
-          <p className="text-xs text-on-surface-variant text-center py-6">No rooms yet — add one above or import a CSV.</p>
+      {/* Floor Plan Tile Grid (Matching Reception View) */}
+      <div className="space-y-6 pt-2">
+        {floors.length === 0 ? (
+          <p className="text-xs text-on-surface-variant text-center py-8">
+            No rooms added yet — fill out the form above to add your first room or import a CSV.
+          </p>
         ) : (
-          rooms.map(r => (
-            <div key={r.id} className={`flex items-center justify-between p-3 rounded-xl border text-xs gap-3 ${editingId === r.id ? 'border-primary bg-highlight' : 'border-outline-variant bg-surface-container-lowest'}`}>
-              <div className="flex items-center gap-3 min-w-0">
-                {r.image ? (
-                  <img src={r.image} alt={`Room ${r.number}`} className="w-12 h-12 rounded-lg object-cover border border-outline-variant shrink-0 shadow-2xs" />
-                ) : (
-                  <div className="w-12 h-12 rounded-lg bg-surface-container-low border border-outline-variant flex items-center justify-center shrink-0 text-on-surface-variant font-bold text-xs">
-                    R{r.number}
-                  </div>
-                )}
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <p className="font-bold text-on-surface text-sm truncate">Room {r.number}</p>
-                    <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-bold text-[10px]">
-                      {r.type}
-                    </span>
-                  </div>
-                  <p className="text-on-surface-variant text-xs mt-0.5 truncate">
-                    {hasExternalPms ? `Floor ${r.floor}` : `Floor ${r.floor} · Sleeps ${r.maxOccupancy} Guests · ${formatCurrency(r.pricePerNight, currency)}/night`}
-                  </p>
-                  {(r.bedsDescription || r.bathroomDetails) && (
-                    <p className="text-[11px] text-gray-500 truncate mt-0.5">
-                      {r.bedsDescription ? `🛏️ ${r.bedsDescription}` : ''}{r.bedsDescription && r.bathroomDetails ? ' · ' : ''}{r.bathroomDetails ? `🚿 ${r.bathroomDetails}` : ''}
-                    </p>
-                  )}
+          floors.map(floor => {
+            const floorRooms = rooms.filter(r => r.floor === floor);
+            return (
+              <section key={floor} className="space-y-3">
+                <div className="flex items-center gap-2 border-b border-outline-variant/60 pb-1.5">
+                  <h3 className="text-xs font-bold text-on-surface uppercase tracking-wider">
+                    Floor {floor}
+                  </h3>
+                  <span className="text-[11px] font-semibold text-on-surface-variant">
+                    ({floorRooms.length} room{floorRooms.length === 1 ? '' : 's'})
+                  </span>
                 </div>
-              </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <button onClick={() => startEdit(r)} className="text-primary hover:text-primary-hover p-1.5 rounded-lg hover:bg-surface-container-low" title="Edit room">
-                  <Pencil className="w-4 h-4" />
-                </button>
-                <button onClick={() => handleDelete(r.id)} className="text-error hover:text-red-700 p-1.5 rounded-lg hover:bg-surface-container-low" title="Delete room">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          ))
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                  {floorRooms.map(r => (
+                    <div
+                      key={r.id}
+                      className={`relative rounded-2xl p-3 border text-xs flex flex-col justify-between transition-all shadow-2xs hover:shadow-md ${
+                        editingId === r.id
+                          ? 'border-primary bg-highlight ring-2 ring-primary/30'
+                          : 'border-outline-variant bg-surface-container-lowest'
+                      }`}
+                    >
+                      {/* Top Header: Room #, Type & Edit/Delete Actions */}
+                      <div className="flex items-start justify-between gap-1.5 mb-2">
+                        <div className="min-w-0">
+                          <span className="text-base font-extrabold text-on-surface block leading-tight">
+                            Room {r.number}
+                          </span>
+                          <span className="text-[10px] font-bold text-primary truncate block mt-0.5">
+                            {r.type}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => startEdit(r)}
+                            className="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+                            title="Edit room details"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(r.id)}
+                            className="p-1.5 rounded-lg text-error hover:bg-error/10 transition-colors cursor-pointer"
+                            title="Delete room"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Room Photo / Icon Box */}
+                      <div className="relative h-24 w-full rounded-xl overflow-hidden bg-surface-container-low border border-outline-variant/60 mb-2.5 group">
+                        {r.image ? (
+                          <img
+                            src={r.image}
+                            alt={`Room ${r.number}`}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-on-surface-variant font-bold text-xs gap-1">
+                            <Bed className="w-5 h-5 opacity-40" />
+                            <span className="text-[10px] opacity-60">No Photo</span>
+                          </div>
+                        )}
+                        <span className="absolute bottom-1.5 right-1.5 bg-black/75 text-white text-[9px] font-bold px-2 py-0.5 rounded-full backdrop-blur-xs">
+                          👤 {r.maxOccupancy} Guests
+                        </span>
+                      </div>
+
+                      {/* Room Details & Pricing */}
+                      <div className="space-y-1 text-[11px]">
+                        <p className="font-extrabold text-success">
+                          {formatCurrency(r.pricePerNight, currency)} <span className="text-[9px] font-normal text-on-surface-variant">/ night</span>
+                        </p>
+                        {r.bedsDescription && (
+                          <p className="text-on-surface-variant font-medium truncate flex items-center gap-1" title={r.bedsDescription}>
+                            <span>🛏️</span> {r.bedsDescription}
+                          </p>
+                        )}
+                        {r.bathroomDetails && (
+                          <p className="text-on-surface-variant font-medium truncate flex items-center gap-1" title={r.bathroomDetails}>
+                            <span>🚿</span> {r.bathroomDetails}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            );
+          })
         )}
       </div>
     </div>
