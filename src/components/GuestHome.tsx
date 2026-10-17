@@ -151,16 +151,16 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
   return (
     <div id="guest-home-canvas" className="w-full min-h-screen bg-surface pb-24">
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 pt-4 sm:pt-6 space-y-5">
-        {/* Top Header Bar: Hotel Name in White on Left, Dynamic Island Status Bar on Right */}
-        <header className="flex flex-wrap items-center justify-between gap-3 px-1 pt-1">
-          <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight truncate drop-shadow-sm">
+        {/* Top Header Bar: Hotel Name on Left, Dynamic Island Status Bar on Right (Single Non-Wrapping Line) */}
+        <header className="flex flex-nowrap items-center justify-between gap-2 sm:gap-4 w-full px-1 py-1">
+          <div className="min-w-0 flex-1 shrink">
+            <h1 className="text-lg sm:text-2xl font-black text-white tracking-tight truncate drop-shadow-sm">
               {propertyName}
             </h1>
           </div>
 
-          <div className="shrink-0 flex items-center gap-2">
-            <DynamicIslandStatusBar token={token} currency={currency} roomNumber={roomNumber} className="relative z-30 flex flex-col items-end" />
+          <div className="shrink-0 flex items-center justify-end">
+            <DynamicIslandStatusBar token={token} currency={currency} roomNumber={roomNumber} className="relative z-30 flex flex-col items-end shrink-0" />
           </div>
         </header>
 
