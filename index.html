@@ -7,11 +7,26 @@
     <meta name="description" content="Luxury Suite & Hotel Management Platform" />
     <!-- Default before React mounts / GuestApp takes over the tag for its own device-theme following (src/pages/GuestApp.tsx). Matches light --color-surface in src/index.css. -->
     <meta name="theme-color" content="#9992c9" />
+    <link rel="manifest" href="/manifest.json" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-  </head>
+  <script>
+// Dynamically swap manifest based on route for staff vs guest PWA distinction
+const manifestLink = document.querySelector('link[rel="manifest"]');
+if (manifestLink) {
+  const path = window.location.pathname;
+  if (path.includes('/reception') || path === '/') {
+    manifestLink.href = '/manifest-staff.json';
+    manifestLink.setAttribute('title', 'Staff App Manifest');
+  } else if (path.includes('/guest')) {
+    manifestLink.href = '/manifest.json';
+    manifestLink.setAttribute('title', 'Guest App Manifest');
+  }
+}
+</script>
+</head>
   <body class="bg-[#f6faff] text-[#141d23] antialiased selection:bg-[#bd9b60] selection:text-white">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

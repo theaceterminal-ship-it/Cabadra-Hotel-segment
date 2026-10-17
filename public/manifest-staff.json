@@ -1,0 +1,28 @@
+{
+  "name": "Cabadra Staff App",
+  "short_name": "Staff App",
+  "description": "Staff hospitality management app",
+  "start_url": "/reception",
+  "display": "standalone",
+  "theme_color": "#14101f",
+  "background_color": "#14101f",
+  "orientation": "portrait-primary",
+  "display_orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}
