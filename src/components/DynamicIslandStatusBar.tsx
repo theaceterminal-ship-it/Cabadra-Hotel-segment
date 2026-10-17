@@ -81,56 +81,49 @@ export function DynamicIslandStatusBar({ token, currency, roomNumber, className 
 
   return (
     <div className={className || "fixed top-3 right-4 sm:right-6 z-50 pointer-events-auto flex flex-col items-end max-w-[94vw]"}>
-      {/* Compact Dynamic Island Capsule */}
+      {/* Compact Dynamic Island Capsule (Half Size) */}
       <button
         onClick={() => setExpanded(e => !e)}
-        className={`group relative h-10 px-4 rounded-full bg-black/90 text-white backdrop-blur-md border border-white/15 shadow-2xl transition-all duration-300 ease-out flex items-center gap-2.5 cursor-pointer hover:bg-black active:scale-95 ${
+        className={`group relative h-8 sm:h-9 px-2.5 sm:px-3 rounded-full bg-black/90 text-white backdrop-blur-md border border-white/20 shadow-xl transition-all duration-300 ease-out flex items-center gap-1.5 sm:gap-2 cursor-pointer hover:bg-black active:scale-95 ${
           expanded ? 'ring-2 ring-white/30' : ''
         }`}
       >
         {/* Status Dot / Icon */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           {hasActiveOrder ? (
-            <div className="w-5 h-5 rounded-full bg-indigo-500 text-white flex items-center justify-center shrink-0 shadow-sm">
-              <ChefHat className="w-3 h-3" />
+            <div className="w-4 h-4 rounded-full bg-indigo-500 text-white flex items-center justify-center shrink-0 shadow-2xs">
+              <ChefHat className="w-2.5 h-2.5" />
             </div>
           ) : hasActiveRequests ? (
-            <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-sm">
-              <Sparkles className="w-3 h-3" />
+            <div className="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-2xs">
+              <Sparkles className="w-2.5 h-2.5" />
             </div>
           ) : (
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
           )}
         </div>
 
-        {/* Dynamic Label */}
-        <div className="text-xs font-medium text-white/90 truncate max-w-[200px] sm:max-w-[280px]">
+        {/* Dynamic Compact Label (Max width ~110px) */}
+        <div className="text-[11px] font-bold text-white/90 truncate max-w-[75px] sm:max-w-[110px]">
           {hasActiveOrder && hasActiveRequests ? (
-            <span>
-              <strong className="text-white font-bold">{totalUpdatesCount} Active Updates</strong> · Dining &amp; Requests
-            </span>
+            <span>{totalUpdatesCount} Updates</span>
           ) : hasActiveOrder && activeOrder ? (
-            <span>
-              <strong className="text-white font-bold">Dining Order #{activeOrder.id.slice(0, 4)}</strong> ·{' '}
-              <span className="text-indigo-300 font-semibold">{orderCountdownText}</span>
-            </span>
+            <span>Dining · <strong className="text-indigo-300">{orderCountdownText}</strong></span>
           ) : hasActiveRequests ? (
-            <span>
-              <strong className="text-white font-bold">{activeRequests.length} Active Request{activeRequests.length > 1 ? 's' : ''}</strong> · {activeRequests[0].title}
-            </span>
+            <span>{activeRequests.length} Ask{activeRequests.length > 1 ? 's' : ''}</span>
           ) : (
-            <span className="text-white/80">Room {roomNumber} · All caught up</span>
+            <span className="text-white/80">Room {roomNumber}</span>
           )}
         </div>
 
         {/* Action / Count Pill */}
         <div className="flex items-center gap-1 shrink-0 text-white/60 group-hover:text-white transition-colors">
           {totalUpdatesCount > 0 && (
-            <span className="bg-white/20 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+            <span className="bg-white/20 text-white text-[9px] font-extrabold px-1.5 py-0.2 rounded-full">
               {totalUpdatesCount}
             </span>
           )}
-          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
         </div>
       </button>
 
