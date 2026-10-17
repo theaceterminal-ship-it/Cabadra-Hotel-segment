@@ -20,6 +20,7 @@ import {
   completeTask,
   rejectTask,
   updateTaskAssignment,
+  reassignTaskDepartment,
   createTask,
   fetchStaffDirectory,
   DirectoryContact,
@@ -136,6 +137,17 @@ export default function ReceptionApp() {
   const handleAssignTask = (taskId: string, assignedTo: string | null) => {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, assignedTo: assignedTo ?? undefined } : t));
     updateTaskAssignment(taskId, assignedTo).catch(err => console.warn(`Failed to assign task ${taskId}:`, err));
+  };
+
+  const handleChangeTaskDepartment = (taskId: string, department: LiveOpsTask['category']) => {
+    // Clears assigned_to locally too — the RPC clears it server-side for
+    // the same reason (0055): whoever was assigned belonged to the old
+    // department's queue, not necessarily this one.
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, category: department, assignedTo: undefined } : t));
+    reassignTaskDepartment(taskId, department).catch(err => {
+      console.warn(`Failed to move task ${taskId} to ${department}:`, err);
+      if (propertyId) reloadTasks(propertyId);
+    });
   };
 
   const handleUpdateRoom = (updatedRoom: Room) => {
@@ -348,8 +360,13 @@ export default function ReceptionApp() {
               urgentRequests={urgentRequests.filter(r => r.status === 'open')}
               upcomingArrivals={upcomingArrivals}
               tasks={tasks}
+              directory={directory}
               stats={stats}
               onResolveUrgentRequest={handleResolveUrgentRequest}
+              onUpdateTask={handleUpdateTask}
+              onRejectTask={handleRejectTask}
+              onAssignTask={handleAssignTask}
+              onChangeDepartment={handleChangeTaskDepartment}
               onCheckInGuest={handleCheckInGuest}
               onCancelBooking={handleCancelBooking}
               onUpdateRoom={handleUpdateRoom}
@@ -379,6 +396,7 @@ export default function ReceptionApp() {
               onUpdateTask={handleUpdateTask}
               onRejectTask={handleRejectTask}
               onAssignTask={handleAssignTask}
+              onChangeDepartment={handleChangeTaskDepartment}
               onAddTask={handleAddTask}
               onRefresh={() => propertyId && reloadTasks(propertyId)}
               onNavigate={(v: AppView) => setView(v as ReceptionTab)}

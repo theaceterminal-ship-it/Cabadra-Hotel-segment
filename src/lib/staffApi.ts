@@ -817,6 +817,12 @@ export async function updateTaskAssignment(taskId: string, assignedTo: string | 
   if (error) throw error;
 }
 
+/** staff_reassign_task_department (0055) — moves a misrouted task to a different department's queue, keeping its linked guest_requests row (if any) in sync, and clears assigned_to since whoever was assigned belonged to the old department. */
+export async function reassignTaskDepartment(taskId: string, department: LiveOpsTask['category']): Promise<void> {
+  const { error } = await supabase.rpc('staff_reassign_task_department', { p_task_id: taskId, p_department: department });
+  if (error) throw new Error(error.message);
+}
+
 /**
  * taskToken is excluded — it's generated server-side by the tasks table's
  * default (gen_random_uuid()), not something a new-task form could know in
