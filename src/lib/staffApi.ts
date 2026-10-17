@@ -1218,13 +1218,21 @@ export async function cancelPendingInvite(propertyId: string, email: string): Pr
 }
 
 // ============================================================================
-// FOLIO CHAT (0052) — plain table reads/writes under RLS (is_staff_for_property),
-// same as fetchGuestRequests/resolveGuestRequest above. The guest side goes
-// through two SECURITY DEFINER RPCs instead (guestApi.ts) since anon has no
-// RLS visibility into this table at all.
+// FOLIO CHAT (0052, 0058) — Uses SECURITY DEFINER RPCs for reliable bi-directional
+// messaging between Reception and Guests without RLS blocking.
 // ============================================================================
 
 export async function fetchChatMessages(reservationId: string): Promise<FolioChatMessage[]> {
+  // First try the SECURITY DEFINER RPC (0058)
+  const { data: rpcData, error: rpcError } = await supabase.rpc('staff_fetch_chat_messages', {
+    p_reservation_id: reservationId,
+  });
+
+  if (!rpcError && Array.isArray(rpcData)) {
+    return rpcData as FolioChatMessage[];
+  }
+
+  // Fallback to direct table query
   const { data, error } = await supabase
     .from('folio_chat_messages')
     .select('id, sender, body, created_at')
@@ -1235,6 +1243,16 @@ export async function fetchChatMessages(reservationId: string): Promise<FolioCha
 }
 
 export async function sendStaffChatMessage(propertyId: string, reservationId: string, body: string): Promise<void> {
+  // First try the SECURITY DEFINER RPC (0058)
+  const { error: rpcError } = await supabase.rpc('staff_send_chat_message', {
+    p_property_id: propertyId,
+    p_reservation_id: reservationId,
+    p_body: body,
+  });
+
+  if (!rpcError) return;
+
+  // Fallback to direct table insert
   const { error } = await supabase
     .from('folio_chat_messages')
     .insert({ property_id: propertyId, reservation_id: reservationId, sender: 'staff', body });

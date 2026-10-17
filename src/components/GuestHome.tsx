@@ -161,19 +161,17 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
           className="relative rounded-2xl overflow-hidden h-64 md:h-96 shadow-[0_4px_24px_rgba(0,0,0,0.1)] group bg-gradient-to-br from-primary to-primary-hover"
         >
           {propertyImage ? (
-            <>
-              <img
-                src={propertyImage}
-                alt={propertyName}
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent"></div>
-            </>
+            <img
+              src={propertyImage}
+              alt={propertyName}
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            />
           ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary-hover"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary-hover" />
           )}
 
-          <div className="absolute top-4 right-4 md:top-6 md:right-6 bg-black/35 backdrop-blur-sm rounded-xl px-3.5 py-2 text-right text-white">
+          {/* Clock Widget */}
+          <div className="absolute top-4 right-4 md:top-6 md:right-6 bg-black/60 backdrop-blur-md rounded-xl px-3.5 py-2 text-right text-white border border-white/20 shadow-md">
             <p className="text-lg md:text-xl font-bold font-mono tabular-nums leading-none">
               {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </p>
@@ -182,16 +180,19 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
             </p>
           </div>
 
-          <div className="absolute bottom-0 left-0 p-6 md:p-8 w-full text-white">
-            <p className="text-xs font-bold tracking-widest uppercase mb-1 opacity-90 text-inverse-primary">
-              Welcome, {guestName}{isVip ? ' ✦' : ''}
-            </p>
-            <h1 className="text-3xl md:text-5xl font-bold mb-1 tracking-tight text-white">
-              at {propertyName}
-            </h1>
-            <p className="text-sm font-medium opacity-90 text-white/90">
-              Room {roomNumber}{isVip ? ' • VIP Guest' : ''}
-            </p>
+          {/* Welcome Text Box Badge */}
+          <div className="absolute bottom-4 left-4 md:bottom-6 md:left-6 right-4 md:right-auto text-white">
+            <div className="bg-black/60 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-white/20 shadow-xl max-w-lg">
+              <p className="text-xs font-bold tracking-widest uppercase mb-1 text-emerald-300">
+                Welcome, {guestName}{isVip ? ' ✦' : ''}
+              </p>
+              <h1 className="text-2xl md:text-4xl font-extrabold mb-1 tracking-tight text-white leading-tight">
+                at {propertyName}
+              </h1>
+              <p className="text-xs sm:text-sm font-semibold text-white/90">
+                Room {roomNumber}{isVip ? ' • VIP Guest' : ''}
+              </p>
+            </div>
           </div>
         </section>
 
