@@ -151,16 +151,16 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
   return (
     <div id="guest-home-canvas" className="w-full min-h-screen bg-surface pb-24">
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 pt-4 sm:pt-6 space-y-5">
-        {/* Top Header Bar: Hotel Name on Left, Dynamic Island Status Bar on Right */}
+        {/* Top Header Bar: Hotel Name in White on Left, Dynamic Island Status Bar on Right */}
         <header className="flex flex-wrap items-center justify-between gap-3 px-1 pt-1">
           <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-black text-on-surface tracking-tight truncate">
+            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight truncate drop-shadow-sm">
               {propertyName}
             </h1>
           </div>
 
           <div className="shrink-0 flex items-center gap-2">
-            <DynamicIslandStatusBar token={token} currency={currency} roomNumber={roomNumber} />
+            <DynamicIslandStatusBar token={token} currency={currency} roomNumber={roomNumber} className="relative z-30 flex flex-col items-end" />
           </div>
         </header>
 
@@ -196,16 +196,6 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
 
           {/* Vignette Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/20" />
-
-          {/* Floating Clock Widget (Top Right) */}
-          <div className="absolute top-4 right-4 sm:top-6 sm:right-6 bg-black/60 backdrop-blur-md rounded-2xl px-4 py-2.5 text-right text-white border border-white/20 shadow-lg">
-            <p className="text-xl sm:text-2xl font-extrabold tabular-nums leading-none tracking-tight">
-              {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </p>
-            <p className="text-[11px] sm:text-xs font-semibold text-white/80 mt-1">
-              {now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
-            </p>
-          </div>
 
           {/* Welcome Text Box Content (Bottom Left) */}
           <div className="absolute bottom-6 left-6 sm:bottom-8 sm:left-8 right-6 text-white max-w-lg">

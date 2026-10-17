@@ -8,6 +8,7 @@ interface DynamicIslandStatusBarProps {
   token: string;
   currency: string;
   roomNumber: string;
+  className?: string;
 }
 
 const STATUS_STEPS: ActiveOrder['status'][] = ['new', 'preparing', 'ready'];
@@ -32,7 +33,7 @@ function formatCountdown(ms: number): string {
  * Merges Room Dining orders and Service Requests into a single, compact,
  * pill-shaped top bar.
  */
-export function DynamicIslandStatusBar({ token, currency, roomNumber }: DynamicIslandStatusBarProps) {
+export function DynamicIslandStatusBar({ token, currency, roomNumber, className }: DynamicIslandStatusBarProps) {
   const [order, setOrder] = useState<ActiveOrder | null>(null);
   const [requests, setRequests] = useState<ActiveGuestRequest[]>([]);
   const [dismissedOrder, setDismissedOrder] = useState<string | null>(null);
@@ -79,7 +80,7 @@ export function DynamicIslandStatusBar({ token, currency, roomNumber }: DynamicI
   }
 
   return (
-    <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 pointer-events-auto flex flex-col items-center max-w-[94vw]">
+    <div className={className || "fixed top-3 right-4 sm:right-6 z-50 pointer-events-auto flex flex-col items-end max-w-[94vw]"}>
       {/* Compact Dynamic Island Capsule */}
       <button
         onClick={() => setExpanded(e => !e)}
