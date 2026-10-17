@@ -100,12 +100,6 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, r
       setSettling(false);
     }
   };
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to settle folio.');
-    } finally {
-      setSettling(false);
-    }
-  };
 
   const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault();
