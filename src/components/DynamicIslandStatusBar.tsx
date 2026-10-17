@@ -104,15 +104,15 @@ export function DynamicIslandStatusBar({ token, currency, roomNumber, className 
         </div>
 
         {/* Dynamic Compact Label (Max width ~110px) */}
-        <div className="text-[11px] font-bold text-white/90 truncate max-w-[75px] sm:max-w-[110px]">
+        <div className="text-[11px] font-bold text-white/90 truncate max-w-[85px] sm:max-w-[120px]">
           {hasActiveOrder && hasActiveRequests ? (
             <span>{totalUpdatesCount} Updates</span>
           ) : hasActiveOrder && activeOrder ? (
             <span>Dining · <strong className="text-indigo-300">{orderCountdownText}</strong></span>
           ) : hasActiveRequests ? (
-            <span>{activeRequests.length} Ask{activeRequests.length > 1 ? 's' : ''}</span>
+            <span>{activeRequests.length} Ask{activeRequests.length > 1 ? 's' : ''} · {REQUEST_STATUS_LABEL[activeRequests[0].taskStatus || 'received']}</span>
           ) : (
-            <span className="text-white/80">Room {roomNumber}</span>
+            <span className="text-white/80">No Active Requests</span>
           )}
         </div>
 

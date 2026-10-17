@@ -17,9 +17,39 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
 
   // Scheduling Modal State
   const [schedulingBooking, setSchedulingBooking] = useState<StaffExperienceBooking | null>(null);
+  const [scheduleDate, setScheduleDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [scheduleTimeSlot, setScheduleTimeSlot] = useState('16:30');
   const [scheduledTime, setScheduledTime] = useState('');
   const [chargeFolio, setChargeFolio] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  const updateFormattedTime = (dateStr: string, timeStr: string) => {
+    try {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      const d = new Date(year, month - 1, day, hours, minutes);
+      const today = new Date();
+      const isToday = d.toDateString() === today.toDateString();
+      const isTomorrow = new Date(today.getTime() + 86400000).toDateString() === d.toDateString();
+
+      const timeFormatted = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      const dayPrefix = isToday ? 'Today' : isTomorrow ? 'Tomorrow' : d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+
+      setScheduledTime(`${dayPrefix} at ${timeFormatted}`);
+    } catch {
+      setScheduledTime(`${dateStr} ${timeStr}`);
+    }
+  };
+
+  const openScheduler = (b: StaffExperienceBooking) => {
+    setSchedulingBooking(b);
+    const dateStr = new Date().toISOString().split('T')[0];
+    const timeStr = '16:30';
+    setScheduleDate(dateStr);
+    setScheduleTimeSlot(timeStr);
+    updateFormattedTime(dateStr, timeStr);
+    setChargeFolio(true);
+  };
 
   // Cancellation State
   const [cancellingBooking, setCancellingBooking] = useState<StaffExperienceBooking | null>(null);
@@ -252,17 +282,15 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
                 {(b.status === 'pending' || b.status === 'requested') && (
                   <div className="flex items-center gap-1.5">
                     <button
+                      type="button"
                       onClick={() => setCancellingBooking(b)}
                       className="px-2.5 py-1.5 rounded-lg border border-outline-variant text-error text-[11px] font-bold hover:bg-error/10 transition-colors cursor-pointer"
                     >
                       Decline
                     </button>
                     <button
-                      onClick={() => {
-                        setSchedulingBooking(b);
-                        setScheduledTime(b.preferredTime || 'Today at 4:30 PM');
-                        setChargeFolio(true);
-                      }}
+                      type="button"
+                      onClick={() => openScheduler(b)}
                       className="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-[11px] font-bold hover:bg-primary-hover transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" /> Confirm &amp; Schedule
@@ -272,11 +300,8 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
 
                 {b.status === 'confirmed' && (
                   <button
-                    onClick={() => {
-                      setSchedulingBooking(b);
-                      setScheduledTime(b.scheduledTime || '');
-                      setChargeFolio(false);
-                    }}
+                    type="button"
+                    onClick={() => openScheduler(b)}
                     className="px-2.5 py-1.5 rounded-lg border border-outline-variant text-xs font-semibold hover:bg-surface-container-low cursor-pointer"
                   >
                     Reschedule
@@ -288,13 +313,14 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
         </div>
       )}
 
-      {/* Confirm & Schedule Modal */}
+      {/* Confirm & Schedule Modal with Date & Time Picker */}
       {schedulingBooking && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
           <form onSubmit={handleConfirmSubmit} className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant space-y-4">
             <div className="flex justify-between items-center pb-3 border-b border-outline-variant">
-              <h3 className="text-base font-bold text-on-surface">
-                Confirm &amp; Schedule Experience
+              <h3 className="text-base font-bold text-on-surface flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-primary" />
+                <span>Confirm &amp; Schedule Experience</span>
               </h3>
               <button
                 type="button"
@@ -313,17 +339,70 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
               <p className="text-primary font-bold">Total: {formatCurrency(schedulingBooking.totalPrice, currency)}</p>
             </div>
 
-            <div>
-              <label className="text-xs font-bold text-on-surface block mb-1">
-                Confirmed Scheduled Date &amp; Time Slot *
-              </label>
-              <input
-                value={scheduledTime}
-                onChange={e => setScheduledTime(e.target.value)}
-                placeholder="e.g. Today at 4:30 PM"
-                className="w-full h-10 px-3 text-xs border border-outline-variant rounded-xl focus:border-primary focus:outline-none bg-surface-container-lowest"
-                required
-              />
+            {/* Date & Time Picker Scheduler */}
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-bold text-on-surface block mb-1">
+                  Select Scheduled Date *
+                </label>
+                <input
+                  type="date"
+                  value={scheduleDate}
+                  onChange={e => {
+                    setScheduleDate(e.target.value);
+                    updateFormattedTime(e.target.value, scheduleTimeSlot);
+                  }}
+                  className="w-full h-10 px-3 text-xs border border-outline-variant rounded-xl focus:border-primary focus:outline-none bg-surface-container-lowest font-medium"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-on-surface block mb-1">
+                  Select Time Slot *
+                </label>
+                <div className="grid grid-cols-3 gap-1.5 mb-2">
+                  {['09:00', '11:00', '14:00', '16:30', '18:30', '20:00'].map(slot => (
+                    <button
+                      key={slot}
+                      type="button"
+                      onClick={() => {
+                        setScheduleTimeSlot(slot);
+                        updateFormattedTime(scheduleDate, slot);
+                      }}
+                      className={`h-8 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
+                        scheduleTimeSlot === slot
+                          ? 'bg-primary text-on-primary border-primary'
+                          : 'bg-surface-container-low border-outline-variant text-on-surface hover:bg-surface-container-high'
+                      }`}
+                    >
+                      {slot}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="time"
+                  value={scheduleTimeSlot}
+                  onChange={e => {
+                    setScheduleTimeSlot(e.target.value);
+                    updateFormattedTime(scheduleDate, e.target.value);
+                  }}
+                  className="w-full h-9 px-3 text-xs border border-outline-variant rounded-xl focus:border-primary focus:outline-none bg-surface-container-lowest font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-on-surface block mb-1">
+                  Confirmed Slot Label (Sent to Guest) *
+                </label>
+                <input
+                  value={scheduledTime}
+                  onChange={e => setScheduledTime(e.target.value)}
+                  placeholder="e.g. Today at 4:30 PM"
+                  className="w-full h-10 px-3 text-xs border border-outline-variant rounded-xl font-bold text-primary focus:border-primary focus:outline-none bg-surface-container-lowest"
+                  required
+                />
+              </div>
             </div>
 
             <label className="flex items-center gap-2 text-xs font-semibold text-on-surface cursor-pointer">
