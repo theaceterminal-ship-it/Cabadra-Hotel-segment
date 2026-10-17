@@ -28,6 +28,7 @@ export default function App() {
       <Route path="/reception/*" element={<ReceptionApp />} />
       <Route path="/guest/room/:roomId" element={<RoomRedirect />} />
       <Route path="/guest/:token" element={<GuestApp />} />
+      <Route path="/guest" element={<GuestApp />} />
       <Route path="/task/:token" element={<TaskScanPage />} />
       <Route path="/display/:token" element={<DepartmentDisplayPage />} />
       <Route path="/access/:token" element={<AccessLinkPage />} />

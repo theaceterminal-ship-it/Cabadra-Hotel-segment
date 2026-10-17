@@ -22,8 +22,12 @@ import { GuestFolioChat } from '../components/GuestFolioChat';
  * is the only thing worth bookmarking.
  */
 export default function GuestApp() {
-  const { token } = useParams<{ token: string }>();
+  const { token: urlToken } = useParams<{ token?: string }>();
+  const [effectiveToken, setEffectiveToken] = useState<string | null>(() => {
+    return urlToken || localStorage.getItem('cabadra_guest_token') || null;
+  });
   const [context, setContext] = useState<GuestContext | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<Extract<AppView, 'guest_home' | 'room_dining'>>('guest_home');
 
@@ -39,7 +43,6 @@ export default function GuestApp() {
         meta.name = 'theme-color';
         document.head.appendChild(meta);
       }
-      // Matches --color-surface for .dark / :root in src/index.css.
       meta.content = isDark ? '#14101f' : '#9992c9';
     };
 
@@ -49,25 +52,67 @@ export default function GuestApp() {
     return () => media.removeEventListener('change', onChange);
   }, []);
 
+  // Update effectiveToken and persist to localStorage when URL token changes
   useEffect(() => {
-    if (!token || !isSupabaseConfigured) return;
-    fetchGuestContext(token)
-      .then(setContext)
-      .catch(err => setError(err.message));
-  }, [token]);
+    if (urlToken) {
+      setEffectiveToken(urlToken);
+      localStorage.setItem('cabadra_guest_token', urlToken);
+    } else {
+      const saved = localStorage.getItem('cabadra_guest_token');
+      if (saved) {
+        setEffectiveToken(saved);
+      }
+    }
+  }, [urlToken]);
+
+  // Load and validate stay context using effectiveToken
+  useEffect(() => {
+    if (!effectiveToken || !isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    fetchGuestContext(effectiveToken)
+      .then(ctx => {
+        setContext(ctx);
+        localStorage.setItem('cabadra_guest_token', effectiveToken);
+      })
+      .catch(err => {
+        console.warn('Failed to load guest context:', err);
+        setError(err.message || 'Your stay has ended or link is no longer active.');
+        localStorage.removeItem('cabadra_guest_token');
+        setEffectiveToken(null);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [effectiveToken]);
 
   if (!isSupabaseConfigured) return <SupabaseSetupNeeded />;
 
-  if (!token) {
-    return <CenteredMessage title="No guest link" body="This page needs a guest link — check the QR code or URL your hotel gave you at check-in." />;
+  if (loading && !context) {
+    return <CenteredMessage title="Opening your room…" body="Restoring your stay session..." />;
   }
 
-  if (error) {
-    return <CenteredMessage title="Link not recognized" body={error} />;
+  if (!effectiveToken) {
+    return (
+      <CenteredMessage
+        title="No active stay"
+        body="Scan the QR code on your room door or check the link provided by reception at check-in."
+      />
+    );
   }
 
-  if (!context) {
-    return <CenteredMessage title="Loading your stay…" body="One moment." />;
+  if (error || !context) {
+    return (
+      <CenteredMessage
+        title="Stay completed or link expired"
+        body={error || "Your reservation may have ended. Please check with the front desk."}
+      />
+    );
   }
 
   const handleNavigate = (target: AppView) => {
@@ -79,7 +124,7 @@ export default function GuestApp() {
       <GuestPwaInstallPrompt />
       {view === 'guest_home' && (
         <GuestHome
-          token={token}
+          token={effectiveToken}
           propertyName={context.property.name}
           propertyImage={context.property.image}
           roomNumber={context.room.number}
@@ -90,15 +135,15 @@ export default function GuestApp() {
           serviceCategories={context.serviceCategories}
           transportRoutes={context.transportRoutes}
           onNavigate={handleNavigate}
-          onSubmitConciergeRequest={(title, department) => submitGuestRequest(token, title, 'Standard', department).then(() => {})}
+          onSubmitConciergeRequest={(title, department) => submitGuestRequest(effectiveToken, title, 'Standard', department).then(() => {})}
           onBookExperience={(name, price, guestCount, preferredTime, notes, unitLabel) =>
-            bookGuestExperience(token, name, price, guestCount, preferredTime, notes, unitLabel).then(() => {})
+            bookGuestExperience(effectiveToken, name, price, guestCount, preferredTime, notes, unitLabel).then(() => {})
           }
         />
       )}
       {view === 'room_dining' && (
         <RoomDiningView
-          token={token}
+          token={effectiveToken}
           propertyName={context.property.name}
           roomNumber={context.room.number}
           menuItems={context.menu}
@@ -108,7 +153,7 @@ export default function GuestApp() {
         />
       )}
       {/* Folio Chat across views */}
-      <GuestFolioChat token={token} />
+      <GuestFolioChat token={effectiveToken} />
     </>
   );
 }
