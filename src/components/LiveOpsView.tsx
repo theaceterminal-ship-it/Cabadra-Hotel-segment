@@ -35,6 +35,8 @@ interface LiveOpsViewProps {
   /** The "can't do this" path — required note, only while still pending. See staff_reject_task (0045). */
   onRejectTask: (task: LiveOpsTask, note: string) => void;
   onAssignTask: (taskId: string, assignedTo: string | null) => void;
+  /** Moves a misrouted task to a different department's queue (staff_reassign_task_department, 0055) — clears its assignee, since whoever was assigned belonged to the old department. */
+  onChangeDepartment: (taskId: string, department: LiveOpsTask['category']) => void;
   onAddTask: (task: Omit<LiveOpsTask, 'id' | 'taskToken' | 'rejectionNote'>) => void;
   onRefresh: () => void;
   onNavigate: (view: AppView) => void;
@@ -51,6 +53,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
   onUpdateTask,
   onRejectTask,
   onAssignTask,
+  onChangeDepartment,
   onAddTask,
   onRefresh,
   onNavigate,
@@ -289,9 +292,19 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
                               Standard
                             </span>
                           )}
-                          <span className="px-2 py-0.5 rounded bg-surface-container-low border border-outline-variant text-primary text-[10px] font-medium uppercase">
-                            {task.category}
-                          </span>
+                          {/* Moves a misrouted request to a different department's
+                              queue — the thing "Assign to" (a person within a
+                              department) couldn't already do. */}
+                          <select
+                            value={task.category}
+                            onChange={(e) => onChangeDepartment(task.id, e.target.value as LiveOpsTask['category'])}
+                            title="Move to a different department"
+                            className="h-6 px-1.5 rounded bg-surface-container-low border border-outline-variant text-primary text-[10px] font-medium uppercase focus:outline-none focus:border-primary"
+                          >
+                            {(Object.keys(DEPT_LABELS) as LiveOpsTask['category'][]).map(d => (
+                              <option key={d} value={d}>{d}</option>
+                            ))}
+                          </select>
                         </div>
                         <span className={`text-xs font-semibold shrink-0 ${isHigh ? 'text-error' : 'text-on-surface-variant'}`}>
                           Due: {task.dueTime}

@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Search, Plus, Star, Clock, CheckCircle2, XCircle, ClipboardList, Megaphone, CalendarPlus, UserPlus, X, Users,
+  Play, Check, Ban, UserCircle2,
 } from 'lucide-react';
 import { Room, RoomStatus, UrgentRequest, UpcomingArrival, LiveOpsTask, AppView } from '../types';
-import { updateArrivalEta, fetchActiveShiftSessions, ActiveShiftSession, PropertyStats } from '../lib/staffApi';
+import { updateArrivalEta, fetchActiveShiftSessions, ActiveShiftSession, DirectoryContact, PropertyStats } from '../lib/staffApi';
 import { formatCurrency } from '../lib/currency';
 import { NewBookingModal } from './NewBookingModal';
 import { RoomDetailModal, CHECKINABLE_STATUSES } from './RoomDetailModal';
@@ -20,14 +21,171 @@ interface ReceptionDashboardProps {
   urgentRequests: UrgentRequest[];
   upcomingArrivals: UpcomingArrival[];
   tasks: LiveOpsTask[];
+  directory: DirectoryContact[];
   stats: PropertyStats | null;
   onResolveUrgentRequest: (id: string) => void;
+  onUpdateTask: (task: LiveOpsTask) => void;
+  onRejectTask: (task: LiveOpsTask, note: string) => void;
+  onAssignTask: (taskId: string, assignedTo: string | null) => void;
+  onChangeDepartment: (taskId: string, department: LiveOpsTask['category']) => void;
   onCheckInGuest: (arrivalId: string) => void;
   onCancelBooking: (arrivalId: string) => void;
   onUpdateRoom: (updated: Room) => void;
   onRefreshRooms: () => void;
   onOpenNewRequest: () => void;
   onNavigate: (view: AppView) => void;
+}
+
+const DEPT_LABELS_FULL: Record<LiveOpsTask['category'], string> = {
+  housekeeping: 'Housekeeping', maintenance: 'Maintenance', amenities: 'Amenities', concierge: 'Concierge',
+};
+
+/**
+ * What a Guest Request click used to do: call onResolveUrgentRequest
+ * directly and the row just vanished — no review, no chance to route it
+ * to the right person. Found live-testing: every request now has a
+ * linked task the moment it's created (0053's auto-create trigger), so
+ * this just surfaces that task's own real actions (reassign department,
+ * assign a person, accept/complete/reject) instead of a second, separate
+ * "resolved" concept. Falls back to a plain "Mark Resolved" for a request
+ * from before 0053 that somehow has no linked task.
+ */
+function RequestActionModal({ request, task, directory, onAssignTask, onChangeDepartment, onUpdateTask, onRejectTask, onResolveDirect, onClose }: {
+  request: UrgentRequest;
+  task: LiveOpsTask | undefined;
+  directory: DirectoryContact[];
+  onAssignTask: (taskId: string, assignedTo: string | null) => void;
+  onChangeDepartment: (taskId: string, department: LiveOpsTask['category']) => void;
+  onUpdateTask: (task: LiveOpsTask) => void;
+  onRejectTask: (task: LiveOpsTask, note: string) => void;
+  onResolveDirect: (id: string) => void;
+  onClose: () => void;
+}) {
+  const [rejecting, setRejecting] = useState(false);
+  const [rejectNote, setRejectNote] = useState('');
+  const candidates = task ? directory.filter(d => d.department === task.category) : [];
+  const isDone = task?.status === 'completed';
+  const isRejected = task?.status === 'rejected';
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant space-y-4">
+        <div className="flex items-start justify-between pb-3 border-b border-outline-variant">
+          <div>
+            <p className="text-[10px] font-bold text-primary uppercase tracking-wider">Room {request.roomNumber}</p>
+            <h3 className="text-base font-bold text-on-surface">{request.title}</h3>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1"><X className="w-5 h-5" /></button>
+        </div>
+
+        {!task ? (
+          <>
+            <p className="text-xs text-on-surface-variant">No linked task found for this request — resolve it directly instead.</p>
+            <button
+              onClick={() => { onResolveDirect(request.id); onClose(); }}
+              className="w-full h-10 rounded-lg bg-success text-on-success text-xs font-bold"
+            >
+              Mark Resolved
+            </button>
+          </>
+        ) : rejecting ? (
+          <div className="space-y-3">
+            <p className="text-xs text-on-surface-variant">Say why so whoever's tracking it knows what happened.</p>
+            <textarea
+              autoFocus
+              rows={3}
+              value={rejectNote}
+              onChange={(e) => setRejectNote(e.target.value)}
+              placeholder="e.g. Short-staffed tonight, no spare linens..."
+              className="w-full p-2.5 text-sm border border-outline-variant rounded-lg focus:border-error focus:outline-none resize-none"
+            />
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setRejecting(false)} className="px-4 py-2 border border-outline-variant rounded-lg text-xs font-semibold text-on-surface-variant">Cancel</button>
+              <button
+                onClick={() => { onRejectTask(task, rejectNote.trim()); onClose(); }}
+                disabled={!rejectNote.trim()}
+                className="px-4 py-2 bg-error text-on-error rounded-lg text-xs font-bold disabled:opacity-50"
+              >
+                Reject Task
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div>
+              <label className="text-[10px] font-bold text-on-surface-variant block mb-1">Department</label>
+              <select
+                value={task.category}
+                onChange={(e) => onChangeDepartment(task.id, e.target.value as LiveOpsTask['category'])}
+                className="w-full h-9 px-2.5 text-xs border border-outline-variant rounded-lg bg-surface-container-lowest focus:border-primary focus:outline-none"
+              >
+                {(Object.keys(DEPT_LABELS_FULL) as LiveOpsTask['category'][]).map(d => (
+                  <option key={d} value={d}>{DEPT_LABELS_FULL[d]}</option>
+                ))}
+              </select>
+              <p className="text-[10px] text-on-surface-variant mt-1">Misrouted? Move it to the right department's queue.</p>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-on-surface-variant block mb-1">Assign to</label>
+              <div className="flex items-center gap-2">
+                <UserCircle2 className="w-4 h-4 text-on-surface-variant shrink-0" />
+                <select
+                  value={task.assignedTo ?? ''}
+                  onChange={(e) => onAssignTask(task.id, e.target.value || null)}
+                  className="flex-1 h-9 px-2.5 text-xs border border-outline-variant rounded-lg bg-surface-container-lowest focus:border-primary focus:outline-none"
+                >
+                  <option value="">Unassigned — {DEPT_LABELS_FULL[task.category]} queue</option>
+                  {candidates.map(c => <option key={c.id} value={c.name}>{c.name} · {c.phone}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {isRejected && task.rejectionNote && (
+              <div className="bg-error-container/30 text-on-error-container p-2.5 rounded-lg text-xs border border-error-container">
+                <span className="font-bold">Rejected: </span>{task.rejectionNote}
+              </div>
+            )}
+
+            {isDone ? (
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-success bg-success/10 px-3 py-2 rounded-lg w-full justify-center">
+                <Check className="w-4 h-4" /> Completed
+              </span>
+            ) : isRejected ? (
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-error bg-error/10 px-3 py-2 rounded-lg w-full justify-center">
+                <Ban className="w-4 h-4" /> Rejected
+              </span>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setRejecting(true)}
+                  className="h-10 px-3 rounded-lg border border-error text-error flex items-center justify-center"
+                  title="Reject this task"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                {task.status === 'in_progress' ? (
+                  <button
+                    onClick={() => { onUpdateTask({ ...task, status: 'completed' }); onClose(); }}
+                    className="flex-1 h-10 rounded-lg bg-success text-on-success text-xs font-bold flex items-center justify-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4" /> Mark Complete
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => onUpdateTask({ ...task, status: 'in_progress' })}
+                    className="flex-1 h-10 rounded-lg bg-primary text-on-primary text-xs font-bold flex items-center justify-center gap-1.5"
+                  >
+                    <Play className="w-4 h-4 fill-current" /> Start
+                  </button>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
 }
 
 const ROOM_STATUS_LABEL: Record<RoomStatus, string> = {
@@ -122,11 +280,13 @@ function WhoIsOnShiftCard({ propertyId }: { propertyId: string }) {
  * room/guest search where the reference had "Today" filling the rest.
  */
 export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
-  propertyId, propertyName, currency, upiId, hasExternalPms, rooms, urgentRequests, upcomingArrivals, tasks, stats,
-  onResolveUrgentRequest, onCheckInGuest, onCancelBooking, onUpdateRoom, onRefreshRooms, onOpenNewRequest, onNavigate,
+  propertyId, propertyName, currency, upiId, hasExternalPms, rooms, urgentRequests, upcomingArrivals, tasks, directory, stats,
+  onResolveUrgentRequest, onUpdateTask, onRejectTask, onAssignTask, onChangeDepartment,
+  onCheckInGuest, onCancelBooking, onUpdateRoom, onRefreshRooms, onOpenNewRequest, onNavigate,
 }) => {
   const [etaEditArrivalId, setEtaEditArrivalId] = useState<string | null>(null);
   const [savingEta, setSavingEta] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<UrgentRequest | null>(null);
   const [showNewBooking, setShowNewBooking] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedRoomForDetail, setSelectedRoomForDetail] = useState<Room | null>(null);
@@ -214,7 +374,7 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
 
           <ListCard title="Guest Requests" count={urgentRequests.length} icon={Megaphone} empty="Nothing outstanding — nice.">
             {urgentRequests.map(req => (
-              <div key={req.id} onClick={() => onResolveUrgentRequest(req.id)} className="p-3 hover:bg-surface-container-low transition-colors cursor-pointer group flex items-center justify-between gap-3">
+              <div key={req.id} onClick={() => setSelectedRequest(req)} className="p-3 hover:bg-surface-container-low transition-colors cursor-pointer group flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-on-surface group-hover:text-primary truncate">{req.title}</p>
                   <div className="flex items-center gap-2 mt-1">
@@ -407,6 +567,20 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
             onRefreshRooms();
             setCheckInRoom(null);
           }}
+        />
+      )}
+
+      {selectedRequest && (
+        <RequestActionModal
+          request={selectedRequest}
+          task={tasks.find(t => t.guestRequestId === selectedRequest.id)}
+          directory={directory}
+          onAssignTask={onAssignTask}
+          onChangeDepartment={onChangeDepartment}
+          onUpdateTask={onUpdateTask}
+          onRejectTask={onRejectTask}
+          onResolveDirect={onResolveUrgentRequest}
+          onClose={() => setSelectedRequest(null)}
         />
       )}
     </div>
