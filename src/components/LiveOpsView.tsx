@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { LiveOpsTask, AppView } from '../types';
+import { LiveOpsTask, AppView, Room } from '../types';
 import {
   DirectoryContact,
   DepartmentDisplayAdmin,
@@ -32,6 +32,7 @@ interface LiveOpsViewProps {
   propertyId: string;
   tasks: LiveOpsTask[];
   directory: DirectoryContact[];
+  rooms?: Room[];
   onUpdateTask: (task: LiveOpsTask) => void;
   /** The "can't do this" path — required note, only while still pending. See staff_reject_task (0045). */
   onRejectTask: (task: LiveOpsTask, note: string) => void;
@@ -51,6 +52,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
   propertyId,
   tasks,
   directory,
+  rooms,
   onUpdateTask,
   onRejectTask,
   onAssignTask,
@@ -613,14 +615,19 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
             </h3>
             <form onSubmit={handleCreateTask} className="space-y-3 text-xs">
               <div>
-                <label className="font-semibold text-on-surface block mb-1">Room Number (optional)</label>
-                <input
-                  type="text"
+                <label className="font-semibold text-on-surface block mb-1">Target Room / Area</label>
+                <select
                   value={newRoom}
                   onChange={(e) => setNewRoom(e.target.value)}
-                  placeholder="e.g. 308"
-                  className="w-full h-10 px-3 border border-outline-variant rounded-lg focus:border-primary focus:outline-none"
-                />
+                  className="w-full h-10 px-3 border border-outline-variant rounded-lg focus:border-primary focus:outline-none bg-surface-container-lowest text-xs text-on-surface cursor-pointer"
+                >
+                  <option value="">General / Property-wide</option>
+                  {(rooms ?? []).map(r => (
+                    <option key={r.id} value={r.number}>
+                      Room {r.number}{r.type ? ` (${r.type})` : ''}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>

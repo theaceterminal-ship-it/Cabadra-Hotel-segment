@@ -368,10 +368,26 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-        {/* Left column — Guest Requests, Upcoming Arrivals, Live Operations, On Shift Now */}
+        {/* Left column — Live Operations (top), Guest Requests (top), Upcoming Arrivals (2nd last), On Shift (last) */}
         <div className="xl:col-span-4 flex flex-col gap-4">
-          <WhoIsOnShiftCard propertyId={propertyId} />
+          {/* 1. Live Operations (Top) */}
+          <ListCard title="Live Operations" count={openTasks.length} icon={ClipboardList} viewAllLabel="Open board" onViewAll={() => onNavigate('live_ops')} empty="Nothing open right now.">
+            {openTasks.map(task => (
+              <div key={task.id} className="p-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-on-surface truncate">{task.title}</p>
+                  <p className="text-[10px] text-on-surface-variant truncate">Room {task.roomNumber} · {task.category}</p>
+                </div>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded capitalize shrink-0 ${
+                  task.status === 'in_progress' ? 'bg-warning/15 text-warning' : 'bg-surface-container-low text-on-surface-variant'
+                }`}>
+                  {task.status.replace('_', ' ')}
+                </span>
+              </div>
+            ))}
+          </ListCard>
 
+          {/* 2. Guest Requests (Top) */}
           <ListCard title="Guest Requests" count={urgentRequests.length} icon={Megaphone} empty="Nothing outstanding — nice.">
             {urgentRequests.map(req => (
               <div key={req.id} onClick={() => setSelectedRequest(req)} className="p-3 hover:bg-surface-container-low transition-colors cursor-pointer group flex items-center justify-between gap-3">
@@ -387,6 +403,7 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
             ))}
           </ListCard>
 
+          {/* 3. Upcoming Arrivals (Second to last) */}
           <ListCard title="Upcoming Arrivals" count={upcomingArrivals.length} icon={Star} empty="No arrivals scheduled today.">
             {upcomingArrivals.map(arr => (
               <div key={arr.id} className="relative p-3 flex items-center gap-3">
@@ -429,21 +446,8 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
             ))}
           </ListCard>
 
-          <ListCard title="Live Operations" count={openTasks.length} icon={ClipboardList} viewAllLabel="Open board" onViewAll={() => onNavigate('live_ops')} empty="Nothing open right now.">
-            {openTasks.map(task => (
-              <div key={task.id} className="p-3 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-on-surface truncate">{task.title}</p>
-                  <p className="text-[10px] text-on-surface-variant truncate">Room {task.roomNumber} · {task.category}</p>
-                </div>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded capitalize shrink-0 ${
-                  task.status === 'in_progress' ? 'bg-warning/15 text-warning' : 'bg-surface-container-low text-on-surface-variant'
-                }`}>
-                  {task.status.replace('_', ' ')}
-                </span>
-              </div>
-            ))}
-          </ListCard>
+          {/* 4. On Shift Now (Last) */}
+          <WhoIsOnShiftCard propertyId={propertyId} />
         </div>
 
         {/* Right — date/search header + room grid, replacing the reference's calendar */}

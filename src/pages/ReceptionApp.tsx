@@ -395,6 +395,7 @@ export default function ReceptionApp() {
               propertyId={propertyId ?? ''}
               tasks={tasks}
               directory={directory}
+              rooms={rooms}
               onUpdateTask={handleUpdateTask}
               onRejectTask={handleRejectTask}
               onAssignTask={handleAssignTask}
