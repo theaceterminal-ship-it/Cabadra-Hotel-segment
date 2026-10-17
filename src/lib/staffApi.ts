@@ -1110,6 +1110,13 @@ export async function checkoutReservation(reservationId: string, paymentMethod: 
   return data as { reservationId: string; amountCharged: number; paymentMethod: string };
 }
 
+/** Fallback room checkout directly by room ID — handles occupied rooms even when reservationId is unlinked. */
+export async function checkoutRoom(roomId: string, paymentMethod: 'cash' | 'card' | 'upi' | 'other'): Promise<{ amountCharged: number; paymentMethod: string }> {
+  const { data, error } = await supabase.rpc('staff_checkout_room', { p_room_id: roomId, p_payment_method: paymentMethod });
+  if (error) throw error;
+  return data as { amountCharged: number; paymentMethod: string };
+}
+
 /** A deposit at check-in, a UPI payment mid-stay — recorded as a negative folio line that nets against real charges immediately, not held separately until checkout (staff_record_folio_payment, 0021_folio_payments_and_upi.sql). */
 export async function recordFolioPayment(reservationId: string, amount: number, description: string, method: 'cash' | 'card' | 'upi' | 'other'): Promise<void> {
   const { error } = await supabase.rpc('staff_record_folio_payment', {

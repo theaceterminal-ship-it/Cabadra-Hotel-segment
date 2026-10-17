@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import { Receipt, X, Plus, Printer, QrCode } from 'lucide-react';
 import { Folio } from '../types';
-import { fetchFolio, checkoutReservation, recordFolioPayment } from '../lib/staffApi';
+import { fetchFolio, checkoutReservation, checkoutRoom, recordFolioPayment } from '../lib/staffApi';
 import { formatCurrency } from '../lib/currency';
 
 interface RoomFolioModalProps {
-  reservationId: string;
+  reservationId?: string;
+  roomId?: string;
   roomNumber: string;
   guestName?: string;
   propertyName: string;
@@ -31,7 +32,7 @@ const PAYMENT_METHODS: { id: 'cash' | 'card' | 'upi' | 'other'; label: string }[
  * immediately). Settling here at checkout doesn't assume nothing was paid
  * yet; it just closes out whatever's left.
  */
-export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, roomNumber, guestName, propertyName, currency, upiId, onClose, onCheckedOut }) => {
+export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, roomId, roomNumber, guestName, propertyName, currency, upiId, onClose, onCheckedOut }) => {
   const [folio, setFolio] = useState<Folio | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,20 +50,56 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, r
   const [upiQrDataUrl, setUpiQrDataUrl] = useState<string | null>(null);
   const [billMessage, setBillMessage] = useState('Thank you for staying with us!');
 
-  const reload = () => fetchFolio(reservationId)
-    .then(setFolio)
-    .catch(err => setError(err instanceof Error ? err.message : 'Failed to load folio.'))
-    .finally(() => setLoading(false));
+  const reload = () => {
+    if (reservationId) {
+      fetchFolio(reservationId)
+        .then(setFolio)
+        .catch(err => setError(err instanceof Error ? err.message : 'Failed to load folio.'))
+        .finally(() => setLoading(false));
+    } else {
+      setFolio({
+        reservationId: roomId || 'room-fallback',
+        status: 'checked_in',
+        checkIn: new Date().toISOString(),
+        checkOut: new Date().toISOString(),
+        charges: [],
+        totalOutstanding: 0,
+        totalPaid: 0,
+      });
+      setLoading(false);
+    }
+  };
 
-  useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [reservationId]);
+  useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [reservationId, roomId]);
 
   const handleCheckout = async () => {
     setSettling(true);
     setError(null);
     try {
-      const outcome = await checkoutReservation(reservationId, method);
+      let outcome: { amountCharged: number };
+      if (reservationId) {
+        try {
+          outcome = await checkoutReservation(reservationId, method);
+        } catch (resErr) {
+          if (roomId) {
+            outcome = await checkoutRoom(roomId, method);
+          } else {
+            throw resErr;
+          }
+        }
+      } else if (roomId) {
+        outcome = await checkoutRoom(roomId, method);
+      } else {
+        throw new Error('No reservation or room specified to checkout.');
+      }
       setResult({ amountCharged: outcome.amountCharged });
       onCheckedOut();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to settle folio.');
+    } finally {
+      setSettling(false);
+    }
+  };
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to settle folio.');
     } finally {

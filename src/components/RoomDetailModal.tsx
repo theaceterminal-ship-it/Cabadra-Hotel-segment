@@ -165,15 +165,16 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
                   <MessageCircle className="w-3.5 h-3.5" /> Chat
                 </button>
               )}
-              {displayRoom.reservationId && (
+              {(displayRoom.reservationId || displayRoom.status === 'occupied' || displayRoom.status === 'occupied_vip') && (
                 <button
+                  type="button"
                   onClick={() => setShowFolio(true)}
-                  className="h-9 px-3 rounded-lg border border-primary text-primary text-xs font-bold hover:bg-highlight flex items-center gap-1.5 whitespace-nowrap"
+                  className="h-9 px-3 rounded-lg border border-primary text-primary text-xs font-bold hover:bg-highlight flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
                 >
-                  <Receipt className="w-3.5 h-3.5" /> Folio & Checkout
+                  <Receipt className="w-3.5 h-3.5" /> Folio &amp; Checkout
                 </button>
               )}
-              <button onClick={onClose} className="px-4 py-2 bg-on-surface text-inverse-on-surface rounded-lg text-xs font-semibold whitespace-nowrap">
+              <button onClick={onClose} className="px-4 py-2 bg-on-surface text-inverse-on-surface rounded-lg text-xs font-semibold whitespace-nowrap cursor-pointer">
                 Done
               </button>
             </div>
@@ -181,9 +182,10 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
         </div>
       </div>
 
-      {showFolio && displayRoom.reservationId && (
+      {showFolio && (displayRoom.reservationId || displayRoom.id) && (
         <RoomFolioModal
           reservationId={displayRoom.reservationId}
+          roomId={displayRoom.id}
           roomNumber={displayRoom.number}
           guestName={displayRoom.guestName}
           propertyName={propertyName}
