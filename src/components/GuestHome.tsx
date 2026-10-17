@@ -367,25 +367,6 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
             </div>
           </section>
         )}
-                        type="button"
-                        onClick={() => {
-                          setSelectedExperience(exp);
-                          setGuestCount(1);
-                          setPreferredTime('');
-                          setBookingNotes('');
-                        }}
-                        className="px-5 py-2.5 rounded-full bg-primary text-on-primary text-xs font-extrabold hover:bg-primary-hover transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-2"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Reserve Now</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
       </div>
 
       {/* Service Request Modal — one generic form for any owner-defined category, tagged with its department on submit */}
