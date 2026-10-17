@@ -41,6 +41,7 @@ export interface BadgeScanResult {
   action: 'claimed' | 'released' | 'handover';
   staffName: string;
   shiftName?: string;
+  claimedAt?: string;
 }
 
 /** Whoever's badge was just scanned — claims the display, releases it if it's their own already-active claim, or hands it over from whoever else was on. */
