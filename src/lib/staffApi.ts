@@ -146,17 +146,21 @@ export async function fetchPropertyMeta(propertyId: string): Promise<{ name: str
   };
 }
 
-/** Property-level settings an owner can change after creation — name/location/status/photo URL/PMS mode. All optional; only the fields passed are updated. */
+/** Property-level settings an owner or staff can change after creation — name/location/status/photo URL/PMS mode. All optional; only the fields passed are updated. */
 export async function updateProperty(propertyId: string, patch: { name?: string; location?: string; status?: string; image?: string; upiId?: string; hasExternalPms?: boolean }): Promise<void> {
-  const { error } = await supabase.from('properties').update({
+  const { data, error } = await supabase.from('properties').update({
     ...(patch.name !== undefined && { name: patch.name }),
     ...(patch.location !== undefined && { location: patch.location }),
     ...(patch.status !== undefined && { status: patch.status }),
     ...(patch.image !== undefined && { image: patch.image }),
     ...(patch.upiId !== undefined && { upi_id: patch.upiId }),
     ...(patch.hasExternalPms !== undefined && { has_external_pms: patch.hasExternalPms }),
-  }).eq('id', propertyId);
+  }).eq('id', propertyId).select();
+
   if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error('Property update failed: Permission denied or property not found.');
+  }
 }
 
 export interface PortfolioStats {
