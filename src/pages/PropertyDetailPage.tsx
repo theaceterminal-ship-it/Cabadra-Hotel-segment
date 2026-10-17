@@ -346,7 +346,6 @@ function OverviewTab({ property, imageUrl, setImageUrl, onSaveImage, savingImage
 
       <UpiSettingsCard property={property} />
     </div>
-    </div>
   );
 }
 
