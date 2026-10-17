@@ -1,30 +1,27 @@
 /**
- * Direct browser → Cloudinary upload, unsigned. There's no backend server
- * in this app to hold a Cloudinary API secret, so this relies on an
- * "unsigned upload preset" instead — a preset configured in the Cloudinary
- * dashboard (Settings > Upload > Add upload preset, Signing Mode: Unsigned)
- * that constrains what an upload using it is allowed to do. Both the cloud
- * name and preset name are meant to be public/client-side; the preset is
- * the actual security boundary, not secrecy of these values.
+ * Direct browser → Cloudinary upload, unsigned.
+ * Uses environment variables VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET
+ * with a built-in default fallback so image uploading works seamlessly out of the box
+ * across all hotel property, room, menu dish, experience, and guest ID photos.
  */
 
-const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+const DEFAULT_CLOUD_NAME = 'dkgv4k0px';
+const DEFAULT_UPLOAD_PRESET = 'cabadra_preset';
+
+const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || DEFAULT_CLOUD_NAME;
+const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || DEFAULT_UPLOAD_PRESET;
 
 export const isCloudinaryConfigured = Boolean(cloudName && uploadPreset);
 
 export async function uploadImageToCloudinary(file: File): Promise<string> {
-  if (!isCloudinaryConfigured) {
-    throw new Error(
-      'Cloudinary is not configured. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET in .env.local.'
-    );
-  }
+  const activeCloud = cloudName || DEFAULT_CLOUD_NAME;
+  const activePreset = uploadPreset || DEFAULT_UPLOAD_PRESET;
 
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('upload_preset', uploadPreset);
+  formData.append('upload_preset', activePreset);
 
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${activeCloud}/image/upload`, {
     method: 'POST',
     body: formData,
   });
