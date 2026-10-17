@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { AppView } from '../types';
 import { GuestExperience, GuestServiceCategory, GuestTransportRoute, Department } from '../lib/guestApi';
 import { formatCurrency } from '../lib/currency';
+import { DynamicIslandStatusBar } from './DynamicIslandStatusBar';
 import {
   Utensils,
   Sparkles,
   Car,
   BedDouble,
+  Bed,
   Wine,
   Clock,
   MapPin,
@@ -20,6 +22,7 @@ import {
 } from 'lucide-react';
 
 interface GuestHomeProps {
+  token: string;
   propertyName: string;
   /** The property's own uploaded photo (Owner > Overview > Property Photo). Falls back to a generic hotel image when the owner hasn't set one yet. */
   propertyImage?: string;
@@ -62,6 +65,7 @@ const REQUEST_PRESETS: Record<Department, string[]> = {
 };
 
 export const GuestHome: React.FC<GuestHomeProps> = ({
+  token,
   propertyName,
   propertyImage,
   roomNumber,
@@ -146,8 +150,20 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
 
   return (
     <div id="guest-home-canvas" className="w-full min-h-screen bg-surface pb-24">
-      {/* Main Container — pt-14/16 leaves clear top space above the hero banner for the floating Dynamic Island status bar */}
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 pt-14 sm:pt-16 space-y-6">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 pt-4 sm:pt-6 space-y-5">
+        {/* Top Header Bar: Hotel Name on Left, Dynamic Island Status Bar on Right */}
+        <header className="flex flex-wrap items-center justify-between gap-3 px-1 pt-1">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-black text-on-surface tracking-tight truncate">
+              {propertyName}
+            </h1>
+          </div>
+
+          <div className="shrink-0 flex items-center gap-2">
+            <DynamicIslandStatusBar token={token} currency={currency} roomNumber={roomNumber} />
+          </div>
+        </header>
+
         {/* Booking Notification Toast */}
         {bookedExperience && (
           <div className="bg-success text-on-success p-4 rounded-xl shadow-lg flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
@@ -158,45 +174,61 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
           </div>
         )}
 
-        {/* Hero Section — a real property photo once the owner's uploaded
-            one; a plain brand-gradient otherwise, never a generic stock
-            photo standing in for a hotel that hasn't added their own yet. */}
+        {/* Hero Card Box */}
         <section
           id="guest-hero-banner"
-          className="relative rounded-2xl overflow-hidden h-64 md:h-96 shadow-[0_4px_24px_rgba(0,0,0,0.1)] group bg-gradient-to-br from-primary to-primary-hover"
+          className="relative rounded-[32px] overflow-hidden h-72 sm:h-80 md:h-[360px] shadow-xl group border border-outline-variant/40 bg-surface-container-high"
         >
           {propertyImage ? (
             <img
               src={propertyImage}
               alt={propertyName}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
             />
           ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary-hover" />
+            <div
+              className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-700"
+              style={{
+                backgroundImage: `url('https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80')`,
+              }}
+            />
           )}
 
-          {/* Clock Widget */}
-          <div className="absolute top-4 right-4 md:top-6 md:right-6 bg-black/60 backdrop-blur-md rounded-xl px-3.5 py-2 text-right text-white border border-white/20 shadow-md">
-            <p className="text-lg md:text-xl font-bold font-mono tabular-nums leading-none">
+          {/* Vignette Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/20" />
+
+          {/* Floating Clock Widget (Top Right) */}
+          <div className="absolute top-4 right-4 sm:top-6 sm:right-6 bg-black/60 backdrop-blur-md rounded-2xl px-4 py-2.5 text-right text-white border border-white/20 shadow-lg">
+            <p className="text-xl sm:text-2xl font-extrabold tabular-nums leading-none tracking-tight">
               {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </p>
-            <p className="text-[10px] md:text-[11px] opacity-80 mt-0.5">
-              {now.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}
+            <p className="text-[11px] sm:text-xs font-semibold text-white/80 mt-1">
+              {now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
             </p>
           </div>
 
-          {/* Welcome Text Box Badge */}
-          <div className="absolute bottom-4 left-4 md:bottom-6 md:left-6 right-4 md:right-auto text-white">
-            <div className="bg-black/60 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-white/20 shadow-xl max-w-lg">
-              <p className="text-xs font-bold tracking-widest uppercase mb-1 text-emerald-300">
-                Welcome, {guestName}{isVip ? ' ✦' : ''}
-              </p>
-              <h1 className="text-2xl md:text-4xl font-extrabold mb-1 tracking-tight text-white leading-tight">
-                at {propertyName}
-              </h1>
-              <p className="text-xs sm:text-sm font-semibold text-white/90">
-                Room {roomNumber}{isVip ? ' • VIP Guest' : ''}
-              </p>
+          {/* Welcome Text Box Content (Bottom Left) */}
+          <div className="absolute bottom-6 left-6 sm:bottom-8 sm:left-8 right-6 text-white max-w-lg">
+            <p className="text-xs sm:text-sm font-extrabold tracking-widest uppercase text-white/80">
+              WELCOME,
+            </p>
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-none mt-1">
+              {guestName}{isVip ? ' ✦' : ''}
+            </h2>
+
+            {/* Gold/Amber Accent Bar */}
+            <div className="w-10 h-1 bg-amber-400 rounded-full my-3 shadow-xs" />
+
+            <p className="text-sm sm:text-base font-medium text-white/90 drop-shadow-xs">
+              Your stay, our priority.
+            </p>
+
+            {/* Room Pill */}
+            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white shadow-lg mt-4">
+              <Bed className="w-4 h-4 text-white shrink-0" />
+              <span className="text-xs sm:text-sm font-bold tracking-wide">
+                Room {roomNumber}{isVip ? ' • VIP' : ''}
+              </span>
             </div>
           </div>
         </section>

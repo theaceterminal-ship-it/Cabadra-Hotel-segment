@@ -76,11 +76,10 @@ export default function GuestApp() {
 
   return (
     <>
-      {/* Dynamic Island Status Bar: Single, sleek, centered top pill handling both Room Dining and Service Requests */}
-      <DynamicIslandStatusBar token={token} currency={context.property.currency} roomNumber={context.room.number} />
       <GuestPwaInstallPrompt />
       {view === 'guest_home' && (
         <GuestHome
+          token={token}
           propertyName={context.property.name}
           propertyImage={context.property.image}
           roomNumber={context.room.number}
@@ -92,7 +91,9 @@ export default function GuestApp() {
           transportRoutes={context.transportRoutes}
           onNavigate={handleNavigate}
           onSubmitConciergeRequest={(title, department) => submitGuestRequest(token, title, 'Standard', department).then(() => {})}
-          onBookExperience={(name, price) => bookGuestExperience(token, name, price).then(() => {})}
+          onBookExperience={(name, price, guestCount, preferredTime, notes, unitLabel) =>
+            bookGuestExperience(token, name, price, guestCount, preferredTime, notes, unitLabel).then(() => {})
+          }
         />
       )}
       {view === 'room_dining' && (
