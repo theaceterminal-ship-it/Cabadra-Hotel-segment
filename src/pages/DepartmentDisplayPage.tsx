@@ -47,6 +47,10 @@ export default function DepartmentDisplayPage() {
   const [showCameraScanner, setShowCameraScanner] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
   const badgeInputRef = useRef<HTMLInputElement>(null);
+  // Belt-and-suspenders against a double-submit of the identical badge —
+  // the backend now also debounces this (0054), but a client-side guard
+  // costs nothing and catches it before a network round trip either way.
+  const lastSubmitRef = useRef<{ value: string; at: number } | null>(null);
 
   const load = useCallback(() => {
     if (!token) return;
@@ -80,10 +84,29 @@ export default function DepartmentDisplayPage() {
     const value = (rawValue ?? badgeValue).trim();
     if (!value) return;
     setBadgeValue('');
+
+    const now = Date.now();
+    const last = lastSubmitRef.current;
+    if (last && last.value === value && now - last.at < 5000) {
+      // Same badge, same few seconds — almost certainly a duplicate (a
+      // second camera frame, a double-tap) rather than someone genuinely
+      // scanning twice on purpose. Skip the round trip entirely.
+      return;
+    }
+    lastSubmitRef.current = { value, at: now };
+
     try {
       const result = await scanBadge(token, value);
       const verb = result.action === 'released' ? 'clocked out' : 'clocked in';
       setScanFeedback(`${result.staffName} ${verb}${result.shiftName ? ` — ${result.shiftName}` : ''}`);
+      // Reflect the change immediately instead of waiting for the next
+      // 8s poll — the header used to look like nothing happened for a
+      // few seconds right after a scan.
+      setDisplay(d => d && {
+        ...d,
+        activeStaffName: result.action === 'released' ? undefined : result.staffName,
+        activeSince: result.action === 'released' ? undefined : (result.claimedAt ?? d.activeSince),
+      });
     } catch (err) {
       setScanFeedback(err instanceof Error ? err.message : 'Badge not recognized.');
     } finally {
