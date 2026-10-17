@@ -124,16 +124,25 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
     setImageUrl(property?.image ?? '');
   }, [property?.image]);
 
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
+
   const handleReload = async () => {
     await reload();
     onChanged();
   };
 
   const handleSaveImage = async () => {
+    if (!imageUrl.trim()) return;
     setSavingImage(true);
+    setSaveSuccessMsg(null);
     try {
       await updateProperty(propertyId, { image: imageUrl.trim() });
-      onChanged();
+      if (property) {
+        property.image = imageUrl.trim();
+      }
+      setSaveSuccessMsg('Property cover photo saved successfully!');
+      setTimeout(() => setSaveSuccessMsg(null), 3500);
+      await handleReload();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save photo.');
     } finally {
@@ -212,6 +221,7 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
           setImageUrl={setImageUrl}
           onSaveImage={handleSaveImage}
           savingImage={savingImage}
+          saveSuccessMsg={saveSuccessMsg}
           rooms={rooms}
           staff={staff}
           ticketAnalytics={ticketAnalytics}
@@ -231,8 +241,8 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
   );
 }
 
-function OverviewTab({ property, imageUrl, setImageUrl, onSaveImage, savingImage, rooms, staff, ticketAnalytics }: {
-  property: Property; imageUrl: string; setImageUrl: (v: string) => void; onSaveImage: () => void; savingImage: boolean;
+function OverviewTab({ property, imageUrl, setImageUrl, onSaveImage, savingImage, saveSuccessMsg, rooms, staff, ticketAnalytics }: {
+  property: Property; imageUrl: string; setImageUrl: (v: string) => void; onSaveImage: () => void; savingImage: boolean; saveSuccessMsg: string | null;
   rooms: Room[]; staff: StaffMember[]; ticketAnalytics: TicketSizeAnalytics | null;
 }) {
   const hasReceptionist = staff.some(s => s.role === 'receptionist');
@@ -256,9 +266,6 @@ function OverviewTab({ property, imageUrl, setImageUrl, onSaveImage, savingImage
         <StatCard label="Open Requests" value={String(property.requestsCount)} />
       </div>
 
-      {/* "View Property" from Owner Overview's Attention Required card lands
-          here — it used to land on a bare "Open Requests: N" count with no
-          way to see what any of them actually were. This is that list. */}
       {property.requestsCount > 0 && <OpenRequestsCard propertyId={property.id} />}
 
       {ticketAnalytics && ticketAnalytics.ordersTotal > 0 && (
@@ -280,18 +287,42 @@ function OverviewTab({ property, imageUrl, setImageUrl, onSaveImage, savingImage
         </div>
       )}
 
-      <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-5 space-y-3">
-        <h3 className="text-sm font-bold text-on-surface">Property Photo</h3>
-        <div className="flex items-end gap-2 max-w-md">
+      <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-on-surface">Property Banner Photo</h3>
+          {saveSuccessMsg && (
+            <span className="text-xs font-bold text-success animate-in fade-in duration-200">
+              ✓ {saveSuccessMsg}
+            </span>
+          )}
+        </div>
+
+        {/* Live Photo Preview */}
+        {(imageUrl || property.image) && (
+          <div className="relative h-44 sm:h-52 w-full max-w-lg rounded-2xl overflow-hidden border border-outline-variant shadow-sm bg-surface-container-low group">
+            <img
+              src={imageUrl || property.image}
+              alt={property.name}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end p-4">
+              <p className="text-xs font-bold text-white uppercase tracking-wider">
+                Current Property Banner
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-end gap-2 max-w-lg">
           <div className="flex-1">
-            <ImageUploadField label="" value={imageUrl} onChange={setImageUrl} />
+            <ImageUploadField label="Upload or paste image URL" value={imageUrl} onChange={setImageUrl} />
           </div>
           <button
             onClick={onSaveImage}
             disabled={savingImage || imageUrl === property.image}
-            className="h-9 px-3 rounded bg-primary text-on-primary text-xs font-bold hover:bg-primary-hover disabled:opacity-40 whitespace-nowrap"
+            className="h-9 px-4 rounded-xl bg-primary text-on-primary text-xs font-bold hover:bg-primary-hover disabled:opacity-40 whitespace-nowrap shadow-sm cursor-pointer"
           >
-            {savingImage ? 'Saving…' : 'Save'}
+            {savingImage ? 'Saving…' : 'Save Photo'}
           </button>
         </div>
       </div>
@@ -666,22 +697,33 @@ function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChanged }: { 
       </form>
       {formError && <p className="text-xs text-red-600">{formError}</p>}
 
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         {rooms.length === 0 ? (
           <p className="text-xs text-on-surface-variant text-center py-6">No rooms yet — add one above or import a CSV.</p>
         ) : (
           rooms.map(r => (
-            <div key={r.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs ${editingId === r.id ? 'border-primary bg-highlight' : 'border-outline-variant'}`}>
-              <span className="font-semibold text-on-surface">Room {r.number}</span>
-              <span className="text-on-surface-variant">
-                {hasExternalPms ? `Floor ${r.floor}` : `${r.type} · Floor ${r.floor} · Sleeps ${r.maxOccupancy} · ${formatCurrency(r.pricePerNight, currency)}/night`}
-              </span>
-              <div className="flex items-center gap-1">
-                <button onClick={() => startEdit(r)} className="text-primary hover:text-primary-hover p-1">
-                  <Pencil className="w-3.5 h-3.5" />
+            <div key={r.id} className={`flex items-center justify-between p-3 rounded-xl border text-xs gap-3 ${editingId === r.id ? 'border-primary bg-highlight' : 'border-outline-variant bg-surface-container-lowest'}`}>
+              <div className="flex items-center gap-3 min-w-0">
+                {r.image ? (
+                  <img src={r.image} alt={`Room ${r.number}`} className="w-12 h-12 rounded-lg object-cover border border-outline-variant shrink-0 shadow-2xs" />
+                ) : (
+                  <div className="w-12 h-12 rounded-lg bg-surface-container-low border border-outline-variant flex items-center justify-center shrink-0 text-on-surface-variant font-bold text-xs">
+                    R{r.number}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="font-bold text-on-surface text-sm truncate">Room {r.number}</p>
+                  <p className="text-on-surface-variant text-xs mt-0.5 truncate">
+                    {hasExternalPms ? `Floor ${r.floor}` : `${r.type} · Floor ${r.floor} · Sleeps ${r.maxOccupancy} · ${formatCurrency(r.pricePerNight, currency)}/night`}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <button onClick={() => startEdit(r)} className="text-primary hover:text-primary-hover p-1.5 rounded-lg hover:bg-surface-container-low" title="Edit room">
+                  <Pencil className="w-4 h-4" />
                 </button>
-                <button onClick={() => handleDelete(r.id)} className="text-error hover:text-red-700 p-1">
-                  <Trash2 className="w-3.5 h-3.5" />
+                <button onClick={() => handleDelete(r.id)} className="text-error hover:text-red-700 p-1.5 rounded-lg hover:bg-surface-container-low" title="Delete room">
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -865,20 +907,41 @@ function MenuTab({ propertyId, currency, menu, onChanged }: { propertyId: string
       </form>
       {formError && <p className="text-xs text-red-600">{formError}</p>}
 
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         {menu.length === 0 ? (
           <p className="text-xs text-on-surface-variant text-center py-6">No menu items yet — add one above or import a CSV.</p>
         ) : (
           menu.map(m => (
-            <div key={m.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs ${editingId === m.id ? 'border-primary bg-highlight' : 'border-outline-variant'}`}>
-              <span className="font-semibold text-on-surface">{m.name}</span>
-              <span className="text-on-surface-variant">{m.category} · {formatCurrency(m.price, currency)} · {m.isVeg ? 'Veg' : 'Non-veg'}{m.prepTime ? ` · ${m.prepTime}` : ''}</span>
-              <div className="flex items-center gap-1">
-                <button onClick={() => startEdit(m)} className="text-primary hover:text-primary-hover p-1">
-                  <Pencil className="w-3.5 h-3.5" />
+            <div key={m.id} className={`flex items-center justify-between p-3 rounded-xl border text-xs gap-3 ${editingId === m.id ? 'border-primary bg-highlight' : 'border-outline-variant bg-surface-container-lowest'}`}>
+              <div className="flex items-center gap-3 min-w-0">
+                {m.image ? (
+                  <img src={m.image} alt={m.name} className="w-12 h-12 rounded-lg object-cover border border-outline-variant shrink-0 shadow-2xs" />
+                ) : (
+                  <div className="w-12 h-12 rounded-lg bg-surface-container-low border border-outline-variant flex items-center justify-center shrink-0 text-on-surface-variant">
+                    <Utensils className="w-5 h-5 opacity-40" />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-bold text-on-surface text-sm truncate">{m.name}</p>
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${m.isVeg ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                      {m.isVeg ? 'VEG' : 'NON-VEG'}
+                    </span>
+                  </div>
+                  <p className="text-on-surface-variant text-xs mt-0.5 truncate">
+                    {m.category} · <strong className="text-primary">{formatCurrency(m.price, currency)}</strong>
+                    {m.prepTime ? ` · ${m.prepTime}` : ''}
+                  </p>
+                  {m.description && <p className="text-[11px] text-gray-500 truncate mt-0.5">{m.description}</p>}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1 shrink-0">
+                <button onClick={() => startEdit(m)} className="text-primary hover:text-primary-hover p-1.5 rounded-lg hover:bg-surface-container-low transition-colors" title="Edit item">
+                  <Pencil className="w-4 h-4" />
                 </button>
-                <button onClick={() => handleDelete(m.id)} className="text-error hover:text-red-700 p-1">
-                  <Trash2 className="w-3.5 h-3.5" />
+                <button onClick={() => handleDelete(m.id)} className="text-error hover:text-red-700 p-1.5 rounded-lg hover:bg-surface-container-low transition-colors" title="Delete item">
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -984,20 +1047,34 @@ function ExperiencesTab({ propertyId, currency, experiences, onChanged }: { prop
       </form>
       {formError && <p className="text-xs text-red-600">{formError}</p>}
 
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         {experiences.length === 0 ? (
           <p className="text-xs text-on-surface-variant text-center py-6">No experiences yet — add one above.</p>
         ) : (
           experiences.map(exp => (
-            <div key={exp.id} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs ${editingId === exp.id ? 'border-primary bg-highlight' : 'border-outline-variant'}`}>
-              <span className="font-semibold text-on-surface">{exp.name}</span>
-              <span className="text-on-surface-variant">{formatCurrency(exp.price, currency)} {exp.unitLabel}</span>
-              <div className="flex items-center gap-1">
-                <button onClick={() => startEdit(exp)} className="text-primary hover:text-primary-hover p-1">
-                  <Pencil className="w-3.5 h-3.5" />
+            <div key={exp.id} className={`flex items-center justify-between p-3 rounded-xl border text-xs gap-3 ${editingId === exp.id ? 'border-primary bg-highlight' : 'border-outline-variant bg-surface-container-lowest'}`}>
+              <div className="flex items-center gap-3 min-w-0">
+                {exp.image ? (
+                  <img src={exp.image} alt={exp.name} className="w-12 h-12 rounded-lg object-cover border border-outline-variant shrink-0 shadow-2xs" />
+                ) : (
+                  <div className="w-12 h-12 rounded-lg bg-surface-container-low border border-outline-variant flex items-center justify-center shrink-0 text-on-surface-variant">
+                    <Sparkles className="w-5 h-5 opacity-40" />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="font-bold text-on-surface text-sm truncate">{exp.name}</p>
+                  <p className="text-on-surface-variant text-xs mt-0.5 truncate">
+                    {formatCurrency(exp.price, currency)} · {exp.unitLabel}
+                  </p>
+                  {exp.description && <p className="text-[11px] text-gray-500 truncate mt-0.5">{exp.description}</p>}
+                </div>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <button onClick={() => startEdit(exp)} className="text-primary hover:text-primary-hover p-1.5 rounded-lg hover:bg-surface-container-low" title="Edit experience">
+                  <Pencil className="w-4 h-4" />
                 </button>
-                <button onClick={() => handleDelete(exp.id)} className="text-error hover:text-red-700 p-1">
-                  <Trash2 className="w-3.5 h-3.5" />
+                <button onClick={() => handleDelete(exp.id)} className="text-error hover:text-red-700 p-1.5 rounded-lg hover:bg-surface-container-low" title="Delete experience">
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
