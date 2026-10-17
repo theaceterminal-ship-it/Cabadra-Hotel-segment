@@ -148,6 +148,20 @@ export async function fetchPropertyMeta(propertyId: string): Promise<{ name: str
 
 /** Property-level settings an owner or staff can change after creation — name/location/status/photo URL/PMS mode. All optional; only the fields passed are updated. */
 export async function updateProperty(propertyId: string, patch: { name?: string; location?: string; status?: string; image?: string; upiId?: string; hasExternalPms?: boolean }): Promise<void> {
+  // First try the SECURITY DEFINER RPC (0057)
+  const { error: rpcError } = await supabase.rpc('staff_update_property', {
+    p_property_id: propertyId,
+    ...(patch.name !== undefined && { p_name: patch.name }),
+    ...(patch.location !== undefined && { p_location: patch.location }),
+    ...(patch.image !== undefined && { p_image: patch.image }),
+    ...(patch.status !== undefined && { p_status: patch.status }),
+    ...(patch.upiId !== undefined && { p_upi_id: patch.upiId }),
+    ...(patch.hasExternalPms !== undefined && { p_has_external_pms: patch.hasExternalPms }),
+  });
+
+  if (!rpcError) return;
+
+  // Fallback to direct table update if RPC migration hasn't been executed yet
   const { data, error } = await supabase.from('properties').update({
     ...(patch.name !== undefined && { name: patch.name }),
     ...(patch.location !== undefined && { location: patch.location }),
