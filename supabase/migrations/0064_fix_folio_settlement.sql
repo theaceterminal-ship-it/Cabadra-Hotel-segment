@@ -16,6 +16,7 @@ declare
   v_room rooms%rowtype;
   v_total numeric(10, 2);
   v_task_id uuid;
+  v_effective_payment_method text;
 begin
   select * into v_reservation from reservations where id = p_reservation_id;
   if not found then
@@ -26,37 +27,33 @@ begin
     raise exception 'Not authorized for this property';
   end if;
 
-  if v_reservation.status = 'checked_out' or v_reservation.status = 'cancelled' then
-    raise exception 'Reservation is already closed or checked out';
-  end if;
-
-  if p_payment_method not in ('cash', 'card', 'upi', 'other') then
-    raise exception 'Invalid payment method: %', p_payment_method;
-  end if;
+  v_effective_payment_method := coalesce(nullif(trim(p_payment_method), ''), 'cash');
 
   -- Locate room row
   if v_reservation.room_id is not null then
     select * into v_room from rooms where id = v_reservation.room_id;
   end if;
 
-  -- Calculate total outstanding
+  -- Calculate total outstanding unsettled charges
   select coalesce(sum(amount), 0) into v_total
   from folio_charges
   where reservation_id = p_reservation_id and settled_at is null;
 
   -- Settle all unsettled charges
   update folio_charges
-  set settled_at = now(), payment_method = coalesce(payment_method, p_payment_method)
+  set settled_at = now(), payment_method = coalesce(payment_method, v_effective_payment_method)
   where reservation_id = p_reservation_id and settled_at is null;
 
   -- Mark reservation checked_out
   update reservations
-  set status = 'checked_out', checked_out_at = now()
+  set status = 'checked_out', checked_out_at = coalesce(checked_out_at, now())
   where id = p_reservation_id;
 
-  -- Update room status to dirty
+  -- Update room status to dirty and clear guest_token
   if v_reservation.room_id is not null then
-    update rooms set status = 'dirty' where id = v_reservation.room_id;
+    update rooms
+    set status = 'dirty', guest_token = null
+    where id = v_reservation.room_id;
   end if;
 
   -- Auto-dispatch cleaning task for Housekeeping
@@ -82,7 +79,7 @@ begin
   return jsonb_build_object(
     'reservationId', p_reservation_id,
     'amountCharged', v_total,
-    'paymentMethod', p_payment_method
+    'paymentMethod', v_effective_payment_method
   );
 end;
 $$;
@@ -116,16 +113,16 @@ begin
   -- Find active or most recent reservation for this room
   select id into v_res_id
   from reservations
-  where room_id = p_room_id and status in ('checked_in', 'upcoming', 'imported')
-  order by created_at desc
+  where room_id = p_room_id
+  order by (case when status = 'checked_in' then 1 else 2 end), created_at desc
   limit 1;
 
   if v_res_id is not null then
     return staff_checkout_reservation(v_res_id, p_payment_method);
   else
     -- Direct room status override if no reservation row exists
-    update rooms set status = 'dirty' where id = p_room_id;
-    return jsonb_build_object('roomId', p_room_id, 'amountCharged', 0, 'paymentMethod', p_payment_method);
+    update rooms set status = 'dirty', guest_token = null where id = p_room_id;
+    return jsonb_build_object('roomId', p_room_id, 'amountCharged', 0, 'paymentMethod', coalesce(p_payment_method, 'cash'));
   end if;
 end;
 $$;

@@ -94,8 +94,10 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, r
       }
       setResult({ amountCharged: outcome.amountCharged });
       onCheckedOut();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to settle folio.');
+    } catch (err: any) {
+      console.error('Folio settlement error:', err);
+      const msg = err?.message || err?.details || (typeof err === 'string' ? err : 'Failed to settle folio.');
+      setError(msg);
     } finally {
       setSettling(false);
     }
