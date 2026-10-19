@@ -191,46 +191,42 @@ export default function ReceptionApp() {
     }
   };
 
-  const handleUpdateTask = (updatedTask: LiveOpsTask) => {
+  const handleUpdateTask = async (updatedTask: LiveOpsTask) => {
     setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
 
-    // Extract room number and find matching room
-    const roomNum = updatedTask.roomNumber?.replace(/[^0-9]/g, '');
+    // Extract digits and find target room for real-time status transition
+    const digits = updatedTask.roomNumber?.replace(/[^0-9]/g, '');
     const isHousekeeping = updatedTask.category === 'housekeeping' || updatedTask.title.toLowerCase().includes('clean');
 
-    if (roomNum && isHousekeeping) {
-      const targetRoom = rooms.find(r => r.number === roomNum || r.id === updatedTask.roomNumber);
+    if (digits && isHousekeeping) {
+      const targetRoom = rooms.find(r => r.number === digits || r.id.endsWith(`-${digits}`) || r.id === updatedTask.roomNumber);
 
       if (updatedTask.status === 'in_progress') {
-        setRooms(prev => prev.map(r => (r.number === roomNum || r.id === updatedTask.roomNumber) ? { ...r, status: 'cleaning' } : r));
+        setRooms(prev => prev.map(r => (r.number === digits || r.id === targetRoom?.id) ? { ...r, status: 'cleaning' } : r));
         if (targetRoom) {
           updateRoom(targetRoom.id, { status: 'cleaning' }).catch(err => console.warn('Failed to update room to cleaning:', err));
         }
       } else if (updatedTask.status === 'completed') {
-        setRooms(prev => prev.map(r => (r.number === roomNum || r.id === updatedTask.roomNumber) ? { ...r, status: 'ready', cleanProgress: 100 } : r));
+        setRooms(prev => prev.map(r => (r.number === digits || r.id === targetRoom?.id) ? { ...r, status: 'ready', cleanProgress: 100 } : r));
         if (targetRoom) {
           updateRoom(targetRoom.id, { status: 'ready', cleanProgress: 100 }).catch(err => console.warn('Failed to update room to ready:', err));
         }
       }
     }
 
-    if (updatedTask.status === 'completed') {
-      completeTask(updatedTask.id)
-        .then(() => {
-          if (propertyId) reloadRoomsAndArrivals(propertyId);
-        })
-        .catch(err => {
-          console.warn(`Failed to complete task ${updatedTask.id}:`, err);
-          if (propertyId) reloadTasks(propertyId);
-        });
-      return;
+    try {
+      if (updatedTask.status === 'completed') {
+        await completeTask(updatedTask.id);
+      } else {
+        await updateTaskStatus(updatedTask.id, updatedTask.status as 'pending' | 'in_progress');
+      }
+    } catch (err) {
+      console.warn(`Failed to update task ${updatedTask.id}:`, err);
+    } finally {
+      if (propertyId) {
+        await Promise.all([reloadRoomsAndArrivals(propertyId), reloadTasks(propertyId)]);
+      }
     }
-
-    updateTaskStatus(updatedTask.id, updatedTask.status as 'pending' | 'in_progress')
-      .then(() => {
-        if (propertyId) reloadRoomsAndArrivals(propertyId);
-      })
-      .catch(err => console.warn(`Failed to update task ${updatedTask.id}:`, err));
   };
 
   const handleRejectTask = (task: LiveOpsTask, note: string) => {
@@ -313,15 +309,16 @@ export default function ReceptionApp() {
     return () => { cancelled = true; clearInterval(interval); };
   }, [propertyId]);
 
-  // Found live-testing: a guest's request/task only ever showed up after a
-  // manual refresh — reloadRequests/reloadTasks were only called once on
-  // mount and after a staff action, nothing polled them the way orders
-  // above already do. Same cadence as orders, so "is a guest asking for
-  // something" never depends on someone remembering to hit refresh.
+  // Live Realtime Polling for Rooms, Guest Requests & Live Ops Tasks
   useEffect(() => {
     if (!propertyId) return;
-    const poll = () => { reloadRequests(propertyId); reloadTasks(propertyId); };
-    const interval = setInterval(poll, 5000);
+    const poll = () => {
+      reloadRoomsAndArrivals(propertyId);
+      reloadRequests(propertyId);
+      reloadTasks(propertyId);
+    };
+    poll();
+    const interval = setInterval(poll, 4000);
     return () => clearInterval(interval);
   }, [propertyId]);
 
