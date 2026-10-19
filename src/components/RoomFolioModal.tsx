@@ -51,21 +51,13 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({ reservationId, r
   const [billMessage, setBillMessage] = useState('Thank you for staying with us!');
 
   const reload = () => {
-    if (reservationId) {
-      fetchFolio(reservationId)
+    const target = reservationId || roomId;
+    if (target) {
+      fetchFolio(target)
         .then(setFolio)
         .catch(err => setError(err instanceof Error ? err.message : 'Failed to load folio.'))
         .finally(() => setLoading(false));
     } else {
-      setFolio({
-        reservationId: roomId || 'room-fallback',
-        status: 'checked_in',
-        checkIn: new Date().toISOString(),
-        checkOut: new Date().toISOString(),
-        charges: [],
-        totalOutstanding: 0,
-        totalPaid: 0,
-      });
       setLoading(false);
     }
   };
