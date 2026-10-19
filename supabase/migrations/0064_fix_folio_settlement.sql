@@ -1,6 +1,7 @@
 -- Migration 0064: Fix Room Folio Settlement & Room Checkout in Reception
 -- Ensures staff_checkout_reservation, staff_checkout_room, and staff_get_folio accept text Room IDs
--- (e.g. "the-ace-terminal-104") or UUID reservation IDs, eliminating Postgres 22P02 invalid input syntax errors.
+-- (e.g. "the-ace-terminal-104") or UUID reservation IDs, eliminating Postgres 22P02 invalid input syntax errors
+-- and fixing the "guest_token of relation rooms does not exist" column error.
 
 drop function if exists staff_checkout_reservation(uuid, text);
 drop function if exists staff_checkout_reservation(text, text);
@@ -123,7 +124,7 @@ begin
   if v_reservation.id is null then
     select * into v_room from rooms where id = p_reservation_id;
     if v_room.id is not null then
-      update rooms set status = 'dirty', guest_token = null where id = v_room.id;
+      update rooms set status = 'dirty' where id = v_room.id;
       return jsonb_build_object('roomId', v_room.id, 'amountCharged', 0, 'paymentMethod', v_effective_payment_method);
     else
       raise exception 'Reservation or room not found: %', p_reservation_id;
@@ -154,10 +155,10 @@ begin
   set status = 'checked_out', checked_out_at = coalesce(checked_out_at, now())
   where id = v_reservation.id;
 
-  -- Update room status to dirty and clear guest_token
+  -- Update room status to dirty
   if v_reservation.room_id is not null then
     update rooms
-    set status = 'dirty', guest_token = null
+    set status = 'dirty'
     where id = v_reservation.room_id;
   end if;
 
