@@ -1,7 +1,7 @@
 -- Migration 0064: Fix Room Folio Settlement & Room Checkout in Reception
 -- Ensures staff_checkout_reservation, staff_checkout_room, and staff_get_folio accept text Room IDs
 -- (e.g. "the-ace-terminal-104") or UUID reservation IDs, eliminating Postgres 22P02 invalid input syntax errors
--- and fixing the "guest_token of relation rooms does not exist" column error.
+-- and using 'high' priority for housekeeping tasks to satisfy tasks_priority_check constraint.
 
 drop function if exists staff_checkout_reservation(uuid, text);
 drop function if exists staff_checkout_reservation(text, text);
@@ -169,7 +169,7 @@ begin
     )
     values (
       v_reservation.property_id, v_room.number, 'Room ' || v_room.number,
-      'Deep Clean Room ' || v_room.number, 'Urgent', 'pending', 'housekeeping'
+      'Deep Clean Room ' || v_room.number, 'high', 'pending', 'housekeeping'
     )
     returning id into v_task_id;
 

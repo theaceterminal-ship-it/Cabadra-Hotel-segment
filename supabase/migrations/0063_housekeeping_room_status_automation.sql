@@ -57,7 +57,7 @@ begin
     )
     values (
       v_reservation.property_id, v_room.number, 'Room ' || v_room.number,
-      'Deep Clean Room ' || v_room.number, 'Urgent', 'pending', 'housekeeping'
+      'Deep Clean Room ' || v_room.number, 'high', 'pending', 'housekeeping'
     )
     returning id into v_task_id;
 
