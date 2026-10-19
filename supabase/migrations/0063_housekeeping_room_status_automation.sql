@@ -64,7 +64,7 @@ begin
     -- 3. Notify Housekeeping department
     insert into notifications (property_id, type, title, body, room_number, ref_id)
     values (
-      v_reservation.property_id, 'housekeeping',
+      v_reservation.property_id, 'task_created',
       'Cleaning Required — Room ' || v_room.number,
       'Guest checked out. Room ' || v_room.number || ' is now dirty and needs cleaning.',
       v_room.number, v_task_id

@@ -1,7 +1,15 @@
 -- Migration 0064: Fix Room Folio Settlement & Room Checkout in Reception
 -- Ensures staff_checkout_reservation, staff_checkout_room, and staff_get_folio accept text Room IDs
--- (e.g. "the-ace-terminal-104") or UUID reservation IDs, eliminating Postgres 22P02 invalid input syntax errors
--- and using 'high' priority for housekeeping tasks to satisfy tasks_priority_check constraint.
+-- (e.g. "the-ace-terminal-104") or UUID reservation IDs, eliminating Postgres 22P02 invalid input syntax errors,
+-- using 'high' priority for housekeeping tasks to satisfy tasks_priority_check constraint,
+-- and updating notifications_type_check to allow 'task_created' and 'housekeeping'.
+
+alter table notifications drop constraint if exists notifications_type_check;
+alter table notifications add constraint notifications_type_check
+  check (type in (
+    'new_order', 'guest_request', 'high_priority_request', 'task_created',
+    'new_arrival', 'task_completed', 'task_rejected', 'folio_chat_message', 'housekeeping'
+  ));
 
 drop function if exists staff_checkout_reservation(uuid, text);
 drop function if exists staff_checkout_reservation(text, text);
@@ -175,7 +183,7 @@ begin
 
     insert into notifications (property_id, type, title, body, room_number, ref_id)
     values (
-      v_reservation.property_id, 'housekeeping',
+      v_reservation.property_id, 'task_created',
       'Cleaning Required — Room ' || v_room.number,
       'Guest checked out. Room ' || v_room.number || ' is now dirty and needs cleaning.',
       v_room.number, v_task_id
