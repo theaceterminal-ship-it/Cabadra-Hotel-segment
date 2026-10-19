@@ -194,13 +194,23 @@ export default function ReceptionApp() {
   const handleUpdateTask = (updatedTask: LiveOpsTask) => {
     setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
 
-    // Optimistically update corresponding room status for Housekeeping cleaning lifecycle
+    // Extract room number and find matching room
     const roomNum = updatedTask.roomNumber?.replace(/[^0-9]/g, '');
-    if (roomNum && (updatedTask.category === 'housekeeping' || updatedTask.title.toLowerCase().includes('clean'))) {
+    const isHousekeeping = updatedTask.category === 'housekeeping' || updatedTask.title.toLowerCase().includes('clean');
+
+    if (roomNum && isHousekeeping) {
+      const targetRoom = rooms.find(r => r.number === roomNum || r.id === updatedTask.roomNumber);
+
       if (updatedTask.status === 'in_progress') {
-        setRooms(prev => prev.map(r => r.number === roomNum && r.status !== 'occupied' ? { ...r, status: 'cleaning' } : r));
+        setRooms(prev => prev.map(r => (r.number === roomNum || r.id === updatedTask.roomNumber) ? { ...r, status: 'cleaning' } : r));
+        if (targetRoom) {
+          updateRoom(targetRoom.id, { status: 'cleaning' }).catch(err => console.warn('Failed to update room to cleaning:', err));
+        }
       } else if (updatedTask.status === 'completed') {
-        setRooms(prev => prev.map(r => r.number === roomNum && r.status !== 'occupied' ? { ...r, status: 'ready', cleanProgress: 100 } : r));
+        setRooms(prev => prev.map(r => (r.number === roomNum || r.id === updatedTask.roomNumber) ? { ...r, status: 'ready', cleanProgress: 100 } : r));
+        if (targetRoom) {
+          updateRoom(targetRoom.id, { status: 'ready', cleanProgress: 100 }).catch(err => console.warn('Failed to update room to ready:', err));
+        }
       }
     }
 
