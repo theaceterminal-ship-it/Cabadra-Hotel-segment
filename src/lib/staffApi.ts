@@ -8,7 +8,7 @@
  */
 
 import { supabase } from './supabaseClient';
-import type { Property, Room, RoomStatus, UpcomingArrival, UrgentRequest, LiveOpsTask, MenuItem, AppNotification, Folio, FolioChatMessage } from '../types';
+import type { Property, Room, RoomStatus, UpcomingArrival, UrgentRequest, LiveOpsTask, MenuItem, AppNotification, Folio, FolioChatMessage, GuestCrmEntry, SalesReportData } from '../types';
 import { formatCurrency } from './currency';
 
 /** Turns "Deluxe King 204" into a URL/id-safe slug. Rooms' primary key is global (not scoped by property_id), so this is prefixed with the property id to guarantee uniqueness — same convention as supabase/seed.sql. */
@@ -1308,4 +1308,36 @@ export async function sendStaffChatMessage(propertyId: string, reservationId: st
     .from('folio_chat_messages')
     .insert({ property_id: propertyId, reservation_id: reservationId, sender: 'staff', body });
   if (error) throw error;
+}
+
+export async function fetchGuestCrmDirectory(
+  propertyId: string,
+  search?: string,
+  status?: string,
+  startDate?: string,
+  endDate?: string
+): Promise<GuestCrmEntry[]> {
+  const { data, error } = await supabase.rpc('staff_fetch_guest_crm', {
+    p_property_id: propertyId,
+    p_search: search || null,
+    p_status: status || null,
+    p_start_date: startDate || null,
+    p_end_date: endDate || null,
+  });
+  if (error) throw new Error(`Failed to load guest CRM directory: ${error.message}`);
+  return (data ?? []) as GuestCrmEntry[];
+}
+
+export async function fetchSalesReport(
+  propertyId: string,
+  startDate?: string,
+  endDate?: string
+): Promise<SalesReportData> {
+  const { data, error } = await supabase.rpc('staff_fetch_sales_report', {
+    p_property_id: propertyId,
+    p_start_date: startDate || null,
+    p_end_date: endDate || null,
+  });
+  if (error) throw new Error(`Failed to load sales report: ${error.message}`);
+  return data as SalesReportData;
 }

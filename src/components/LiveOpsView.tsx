@@ -9,6 +9,7 @@ import {
 } from '../lib/staffApi';
 import { TaskQrModal } from './TaskQrModal';
 import { DisplayQrModal } from './DisplayQrModal';
+import { LiveOpsSpreadsheetModal } from './LiveOpsSpreadsheetModal';
 import {
   CheckCircle2,
   AlertTriangle,
@@ -18,6 +19,7 @@ import {
   Brush,
   CheckCheck,
   RefreshCw,
+  FileSpreadsheet,
   Phone,
   UserCircle2,
   QrCode,
@@ -63,6 +65,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
 }) => {
   const [filterCategory, setFilterCategory] = useState<'all' | 'housekeeping' | 'maintenance' | 'amenities' | 'concierge'>('all');
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
+  const [showSpreadsheetModal, setShowSpreadsheetModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [qrTask, setQrTask] = useState<LiveOpsTask | null>(null);
   const [rejectingTask, setRejectingTask] = useState<LiveOpsTask | null>(null);
@@ -334,20 +337,31 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
               )}
             </div>
 
-            {/* Department / Category Filter */}
-            <div className="flex flex-wrap gap-1 text-[11px] bg-surface-container-low p-1 rounded-lg border border-outline-variant">
-              {(['all', 'housekeeping', 'amenities', 'maintenance', 'concierge'] as const).map(cat => (
-                <button
-                  key={cat}
-                  id={`filter-cat-${cat}`}
-                  onClick={() => setFilterCategory(cat)}
-                  className={`px-2.5 py-1 rounded capitalize font-semibold transition-colors cursor-pointer ${
-                    filterCategory === cat ? 'bg-surface-container-lowest text-primary shadow-xs' : 'text-on-surface-variant'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+            {/* Department / Category Filter & Spreadsheet Button */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap gap-1 text-[11px] bg-surface-container-low p-1 rounded-lg border border-outline-variant">
+                {(['all', 'housekeeping', 'amenities', 'maintenance', 'concierge'] as const).map(cat => (
+                  <button
+                    key={cat}
+                    id={`filter-cat-${cat}`}
+                    onClick={() => setFilterCategory(cat)}
+                    className={`px-2.5 py-1 rounded capitalize font-semibold transition-colors cursor-pointer ${
+                      filterCategory === cat ? 'bg-surface-container-lowest text-primary shadow-xs' : 'text-on-surface-variant'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowSpreadsheetModal(true)}
+                className="h-8 px-3 rounded-lg bg-surface-container-lowest border border-outline-variant text-primary text-xs font-bold hover:bg-highlight flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Spreadsheet View</span>
+              </button>
             </div>
           </div>
 
@@ -700,6 +714,14 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Live Ops Work History Excel-Style Spreadsheet Modal */}
+      <LiveOpsSpreadsheetModal
+        isOpen={showSpreadsheetModal}
+        onClose={() => setShowSpreadsheetModal(false)}
+        tasks={tasks}
+        propertyName={propertyId}
+      />
     </div>
   );
 };

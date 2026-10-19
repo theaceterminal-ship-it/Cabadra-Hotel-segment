@@ -6,6 +6,8 @@ export type AppView =
   | 'rooms_floors'
   | 'live_ops'
   | 'reserved_experiences'
+  | 'guest_crm'
+  | 'sales_reports'
   | 'kitchen_kds'
   | 'active_deliveries'
   | 'guest_home'
@@ -213,4 +215,36 @@ export interface StaffExperienceBooking {
   notes?: string;
   status: 'pending' | 'requested' | 'confirmed' | 'completed' | 'cancelled';
   createdAt: string;
+}
+
+export interface GuestCrmEntry {
+  reservationId: string;
+  guestName: string;
+  guestPhone: string;
+  guestEmail: string;
+  guestIdDocumentUrl?: string;
+  vip: boolean;
+  roomNumber: string;
+  roomType: string;
+  checkIn: string;
+  checkOut: string;
+  checkedOutAt?: string;
+  status: 'checked_in' | 'checked_out' | 'upcoming' | 'cancelled';
+  guestToken?: string;
+  totalSpend: number;
+}
+
+export interface SalesReportData {
+  startDate: string;
+  endDate: string;
+  roomSales: number;
+  diningSales: number;
+  experienceSales: number;
+  otherSales: number;
+  totalSales: number;
+  cashSales: number;
+  cardSales: number;
+  upiSales: number;
+  checkinsCount: number;
+  completedOrdersCount: number;
 }
