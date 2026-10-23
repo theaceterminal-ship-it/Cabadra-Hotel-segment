@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cabadra-hotel-segment",
+  "compatibility_date": "2026-10-19",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "./dist",
+    // The real fix for client-side routing on this deployment type (Workers
+    // with static assets, not classic Cloudflare Pages) — a public/_redirects
+    // file's "/* /index.html 200" rule, the standard Pages-era SPA fallback,
+    // gets rejected here with "Invalid _redirects configuration: Infinite
+    // loop detected" (error 100324), because /index.html itself also
+    // matches /*. This setting is the native equivalent for this deployment
+    // model: any path with no matching static file serves index.html
+    // instead of a 404, letting React Router handle it client-side.
+    "not_found_handling": "single-page-application"
+  }
+}
