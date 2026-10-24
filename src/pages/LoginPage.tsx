@@ -211,6 +211,14 @@ export default function LoginPage({ roleLabel, initialMode = 'sign_in' }: LoginP
               </button>
             </form>
 
+            {mode === 'sign_up' && (
+              <p className="mt-4 text-center text-[12px] leading-relaxed text-[#111]/50">
+                By creating an account you agree to our{' '}
+                <Link to="/terms" className="underline underline-offset-2 hover:text-[#111]">Terms</Link> and{' '}
+                <Link to="/privacy" className="underline underline-offset-2 hover:text-[#111]">Privacy policy</Link>.
+              </p>
+            )}
+
             {roleLabel && (
               <p className="mt-5 text-center text-[13px] text-[#111]/55">
                 New to Cabadra?{' '}

@@ -179,3 +179,10 @@
   --color-room-maintenance: #6a6494;
   --color-room-maintenance-on: #f1effb;
 }
+
+/* Smooth in-page jumps on the public website's #section links only; the staff apps keep instant scrolling. */
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.site-shell) {
+    scroll-behavior: smooth;
+  }
+}
