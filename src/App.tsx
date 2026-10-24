@@ -6,6 +6,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
+import AuthPage from './pages/AuthPage';
 import OwnerApp from './pages/OwnerApp';
 import ReceptionApp from './pages/ReceptionApp';
 import GuestApp from './pages/GuestApp';
@@ -24,6 +25,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+      <Route path="/login" element={<AuthPage mode="sign_in" />} />
+      <Route path="/signup" element={<AuthPage mode="sign_up" />} />
       <Route path="/owner/*" element={<OwnerApp />} />
       <Route path="/reception/*" element={<ReceptionApp />} />
       <Route path="/guest/room/:roomId" element={<RoomRedirect />} />
