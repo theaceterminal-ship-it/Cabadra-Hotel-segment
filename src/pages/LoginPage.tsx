@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { rememberWebsiteSetupDraft } from '../lib/setupPayment';
 
 interface LoginPageProps {
   /** Just for copy — which staff page sent the user here. Omitted at /login and /signup, which don't ask a new user to pick a role at all; where a role is known, it's shown for a bookmarked direct link to /owner or /reception while signed out. */
@@ -33,6 +34,11 @@ export default function LoginPage({ roleLabel, initialMode = 'sign_in' }: LoginP
   // Set when the visitor typed a property name into the website's setup bar.
   const [searchParams] = useSearchParams();
   const propertyName = searchParams.get('property');
+  // Kept in sessionStorage so onboarding can prefill it, even after the
+  // Google redirect drops the query string.
+  useEffect(() => {
+    rememberWebsiteSetupDraft(searchParams);
+  }, [searchParams]);
 
   // Full-page redirect to Google, then back to this exact URL — no
   // password, no confirmation email, so it sidesteps Supabase's auth email

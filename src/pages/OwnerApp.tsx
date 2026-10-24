@@ -1,34 +1,43 @@
-import React, { useEffect, useState } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Building2 } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
 import { AppView, Property } from '../types';
 import { useAuth, signOut } from '../hooks/useAuth';
-import { fetchStaffProperties, createProperty } from '../lib/staffApi';
+import { fetchStaffProperties } from '../lib/staffApi';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
+import { fetchMyOrganization, finishPendingSetupPayments, type Organization } from '../lib/setupPayment';
 import { OwnerOverview } from '../components/OwnerOverview';
 import { PropertiesPortfolio } from '../components/PropertiesPortfolio';
-import { NewPropertyForm, NewPropertyInput } from '../components/NewPropertyForm';
 import { SupabaseSetupNeeded } from '../components/SupabaseSetupNeeded';
 import { NotificationBell } from '../components/NotificationBell';
-import { Sidebar, SidebarNavItem } from '../components/Sidebar';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { useTheme } from '../hooks/useTheme';
+import { useTheme, useSiteTheme } from '../hooks/useTheme';
 import { usePortfolioNotifications } from '../hooks/useNotifications';
 import PropertyDetailPage from './PropertyDetailPage';
 import LoginPage from './LoginPage';
+import OwnerOnboarding from './OwnerOnboarding';
 
 /**
  * The owner page: `/owner`. Supabase Auth-gated — see useAuth. Real nested
  * routes (not a local view switch) so a property's page is bookmarkable
  * and the browser back button works, same as everywhere else in the app.
+ *
+ * Wears the public website's look (useSiteTheme), with a pill top bar in
+ * place of the staff icon rail. A signed-in owner with no properties gets
+ * OwnerOnboarding instead: business details, then the first property and
+ * its one-time setup fee.
  */
 export default function OwnerApp() {
+  useSiteTheme();
   const { loading, session, assignments, refreshAssignments } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [theme, setTheme] = useTheme();
   const [properties, setProperties] = useState<Property[]>([]);
   const [, setSelectedPropertyId] = useState<string>('');
+  // undefined until loaded, null when this account hasn't filled it in yet.
+  const [organization, setOrganization] = useState<Organization | null | undefined>(undefined);
+  const checkedPendingPayments = useRef(false);
 
   const ownedPropertyIds = assignments.filter(a => a.role === 'owner').map(a => a.propertyId);
   const { notifications, unreadCount, markRead, date: notificationsDate, setDate: setNotificationsDate } = usePortfolioNotifications(ownedPropertyIds);
@@ -41,18 +50,38 @@ export default function OwnerApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, ownedPropertyIds.join(',')]);
 
-  const handleAddProperty = async (input: NewPropertyInput) => {
-    await createProperty(input.id, input.name, input.location, input.image, input.country, input.currency, input.hasExternalPms, input.pmsName);
-    // The RPC just granted this user an owner row on a property that didn't
-    // exist a moment ago — useAuth's assignments won't know that until we
-    // ask it to look again. Awaited so a brand-new owner's very first
-    // property doesn't flash the "no properties yet" screen for a frame
+  useEffect(() => {
+    if (!session) return;
+    fetchMyOrganization()
+      .then(setOrganization)
+      .catch(err => {
+        console.warn('Failed to load organization:', err);
+        setOrganization(null);
+      });
+
+    // A setup fee paid in a tab that closed before it was confirmed:
+    // finish it now, once per visit.
+    if (checkedPendingPayments.current) return;
+    checkedPendingPayments.current = true;
+    finishPendingSetupPayments().then(async created => {
+      if (created.length === 0) return;
+      await refreshAssignments();
+      await reloadProperties();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user.id]);
+
+  const handlePropertyCreated = async (propertyId: string) => {
+    // The payment just granted this user an owner row on a property that
+    // didn't exist a moment ago — useAuth's assignments won't know that
+    // until we ask it to look again. Awaited so a brand-new owner's very
+    // first property doesn't flash the onboarding screen for a frame
     // before the route below actually has somewhere to land.
     await refreshAssignments();
     await reloadProperties();
     // Land straight on the new property's own page — rooms, staff, and
     // everything else live there, not on the portfolio grid.
-    navigate(`/owner/properties/${input.id}`);
+    navigate(`/owner/properties/${propertyId}`);
   };
 
   // Old prop-drilled `(view: AppView) => void` interface, kept as-is on
@@ -64,52 +93,68 @@ export default function OwnerApp() {
   };
 
   if (!isSupabaseConfigured) return <SupabaseSetupNeeded />;
-  if (loading) return <CenteredMessage title="Loading…" body="" />;
+  if (loading || (session && organization === undefined)) return <CenteredMessage title="Loading…" body="" />;
   if (!session) return <LoginPage roleLabel="Owner" />;
 
-  // A brand-new sign-up has no properties yet, and self-serve creation is
-  // real (staff_create_property grants the caller owner on whatever they
-  // just created) — so this is "set up your first hotel," never a dead
-  // end. A receptionist with zero assignments is different (that path is
-  // never self-serve — see ReceptionApp's own empty state), but an owner
-  // account always has this door open.
   if (ownedPropertyIds.length === 0) {
     return (
-      <div className="min-h-screen w-full bg-surface flex items-center justify-center p-4 sm:p-6">
-        <div className="w-full max-w-md bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-6">
-          <h1 className="text-xl font-bold text-on-surface">Welcome to Cabadra</h1>
-          <p className="text-sm text-on-surface-variant mt-1 mb-5">Let's set up your first hotel — this takes about a minute.</p>
-          <NewPropertyForm onCreate={handleAddProperty} submitLabel="Create Hotel" />
-          <button onClick={() => signOut()} className="w-full text-center text-xs font-semibold text-on-surface-variant hover:text-on-surface mt-4">
-            Sign out
-          </button>
-        </div>
-      </div>
+      <OwnerOnboarding
+        organization={organization ?? null}
+        onOrganizationSaved={setOrganization}
+        onCreated={handlePropertyCreated}
+        email={session.user.email}
+        onSignOut={() => signOut()}
+      />
     );
   }
 
   const isOverview = location.pathname === '/owner' || location.pathname === '/owner/';
 
-  const navItems: SidebarNavItem[] = [
-    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { id: 'properties', label: 'Properties', icon: Building2 },
-  ];
-
   return (
-    <div className="min-h-screen w-full bg-surface flex">
-      <Sidebar
-        navItems={navItems}
-        activeId={isOverview ? 'overview' : 'properties'}
-        onNavigate={(id) => navigate(id === 'overview' ? '/owner' : '/owner/properties')}
-        onSignOut={() => signOut()}
-      />
+    <div className="min-h-screen w-full bg-surface">
+      <header className="sticky top-0 z-40 px-2 sm:px-4 pt-2 sm:pt-4">
+        <div className="mx-auto max-w-7xl h-16 rounded-full bg-surface-container-lowest/85 backdrop-blur-md border border-outline-variant flex items-center justify-between gap-1.5 sm:gap-2 pl-4 sm:pl-6 pr-2">
+          <Link to="/owner" className="max-[359px]:hidden text-lg sm:text-[22px] font-semibold tracking-[-0.03em] text-on-surface shrink-0">
+            Cabadra
+          </Link>
 
-      <div className="flex-1 min-w-0">
-        <div className="h-14 flex items-center justify-end gap-3 px-4 sm:px-6">
-          <ThemeToggle theme={theme} onChange={setTheme} />
-          <NotificationBell notifications={notifications} unreadCount={unreadCount} onMarkRead={markRead} date={notificationsDate} onDateChange={setNotificationsDate} />
+          <nav className="flex items-center gap-0.5 sm:gap-1 rounded-full bg-surface-container p-1 text-[13px] sm:text-sm">
+            {[
+              { to: '/owner', label: 'Overview', active: isOverview },
+              { to: '/owner/properties', label: 'Properties', active: !isOverview },
+            ].map(item => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`h-9 px-2.5 sm:px-4 inline-flex items-center rounded-full font-medium transition-colors ${
+                  item.active ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:text-on-surface'
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {organization && (
+              <span className="hidden lg:block text-sm text-on-surface-variant max-w-[180px] truncate pr-1">{organization.name}</span>
+            )}
+            <div className="hidden sm:block">
+              <ThemeToggle theme={theme} onChange={setTheme} />
+            </div>
+            <NotificationBell notifications={notifications} unreadCount={unreadCount} onMarkRead={markRead} date={notificationsDate} onDateChange={setNotificationsDate} />
+            <button
+              onClick={() => signOut()}
+              title="Sign out"
+              className="size-11 rounded-full border border-outline-variant flex items-center justify-center text-on-surface hover:bg-surface-container-low transition-colors"
+            >
+              <LogOut className="size-4" />
+            </button>
+          </div>
         </div>
+      </header>
 
+      <main className="pb-10">
         <Routes>
           <Route
             index
@@ -127,8 +172,10 @@ export default function OwnerApp() {
               <PropertiesPortfolio
                 properties={properties}
                 onSelectProperty={setSelectedPropertyId}
-                onNavigate={handleLegacyNavigate}
-                onAddProperty={handleAddProperty}
+                organization={organization ?? null}
+                onOrganizationSaved={setOrganization}
+                onPropertyCreated={handlePropertyCreated}
+                email={session.user.email}
               />
             }
           />
@@ -137,7 +184,7 @@ export default function OwnerApp() {
             element={<PropertyDetailPage properties={properties} onChanged={reloadProperties} />}
           />
         </Routes>
-      </div>
+      </main>
     </div>
   );
 }
