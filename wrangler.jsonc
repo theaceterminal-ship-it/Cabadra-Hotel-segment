@@ -16,5 +16,12 @@
     // model: any path with no matching static file serves index.html
     // instead of a 404, letting React Router handle it client-side.
     "not_found_handling": "single-page-application"
-  }
+  },
+  // Required by `npx wrangler preview`, the deploy command Workers Builds runs
+  // for non-production branches; without it every PR build fails at the
+  // deploy step. Empty because this Worker has no vars or bindings — assets
+  // and compatibility settings stay at the top level and apply to previews.
+  // If vars or bindings are ever added, give them Preview-safe values here:
+  // previews do not inherit them from the top level.
+  "previews": {}
 }
