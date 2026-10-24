@@ -1,16 +1,11 @@
 import { supabase } from './supabaseClient';
 
 /**
- * Every owner account should work with email + password, including ones
- * created with Google (which have no password until one is set here).
- * See 0069_auth_has_password.sql.
+ * Owners sign up with Google only. Passwords are optional and set from an
+ * emailed link (Resend): verify-setup-payment sends one once the first
+ * property is paid for, and send-password-link sends one on request from
+ * the sign-in page. The link opens /set-password (SetPasswordPage).
  */
-
-export async function fetchHasPassword(): Promise<boolean> {
-  const { data, error } = await supabase.rpc('my_auth_has_password');
-  if (error) throw error;
-  return data === true;
-}
 
 export const MIN_PASSWORD_LENGTH = 8;
 
@@ -24,9 +19,19 @@ export function checkNewPassword(password: string, confirm: string): string | nu
 export async function setAccountPassword(password: string): Promise<void> {
   const { error } = await supabase.auth.updateUser({ password });
   if (!error) return;
-  // Supabase's "secure password change" setting asks for a recent sign-in.
-  if (/reauthenticat/i.test(error.message)) {
-    throw new Error('For security, sign out and sign in again with Google, then set your password.');
+  if (/should be different/i.test(error.message)) {
+    throw new Error('That’s already your password. Choose a different one, or just sign in.');
   }
   throw error;
+}
+
+/** Asks for a set-password email. Resolves with the message to show (the same whether or not the account exists). */
+export async function requestPasswordLink(email: string): Promise<string> {
+  const { data, error } = await supabase.functions.invoke('send-password-link', { body: { email } });
+  if (error) {
+    const context = (error as { context?: Response }).context;
+    const body = context && typeof context.json === 'function' ? await context.json().catch(() => null) : null;
+    throw new Error(body?.message ?? 'Couldn’t send the link. Please try again.');
+  }
+  return (data as { message?: string })?.message ?? 'If there’s a Cabadra account for that email, we’ve sent it a link.';
 }

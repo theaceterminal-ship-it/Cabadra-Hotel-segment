@@ -6,7 +6,6 @@ import {
   saveMyOrganization,
   type Organization,
 } from '../lib/setupPayment';
-import { MIN_PASSWORD_LENGTH, checkNewPassword, setAccountPassword } from '../lib/accountPassword';
 
 export type AddPropertyStage = 'business' | 'property' | 'payment';
 
@@ -18,9 +17,6 @@ interface AddPropertyFlowProps {
   onCancel?: () => void;
   email?: string;
   onStageChange?: (stage: AddPropertyStage) => void;
-  /** True for an account with no password yet (signed up with Google): the business step also sets one. */
-  needsPassword?: boolean;
-  onPasswordSet?: () => void;
 }
 
 /**
@@ -37,8 +33,6 @@ export function AddPropertyFlow({
   onCancel,
   email,
   onStageChange,
-  needsPassword = false,
-  onPasswordSet,
 }: AddPropertyFlowProps) {
   const [busyLabel, setBusyLabel] = useState<string | undefined>();
   const websiteDraft = readWebsiteSetupDraft();
@@ -46,9 +40,6 @@ export function AddPropertyFlow({
   if (!organization) {
     return (
       <OrganizationForm
-        email={email}
-        needsPassword={needsPassword}
-        onPasswordSet={onPasswordSet}
         onCancel={onCancel}
         onSaved={org => {
           onOrganizationSaved(org);
@@ -95,43 +86,18 @@ export function AddPropertyFlow({
 const inputClass =
   'w-full h-12 px-5 rounded-full border border-outline-variant bg-surface-container-lowest text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:border-on-surface focus:outline-none transition-colors';
 
-function OrganizationForm({
-  onSaved,
-  onCancel,
-  email,
-  needsPassword,
-  onPasswordSet,
-}: {
-  onSaved: (org: Organization) => void;
-  onCancel?: () => void;
-  email?: string;
-  needsPassword: boolean;
-  onPasswordSet?: () => void;
-}) {
+function OrganizationForm({ onSaved, onCancel }: { onSaved: (org: Organization) => void; onCancel?: () => void }) {
   const [name, setName] = useState('');
   const [ownerName, setOwnerName] = useState('');
   const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (needsPassword) {
-      const problem = checkNewPassword(password, confirmPassword);
-      if (problem) {
-        setError(problem);
-        return;
-      }
-    }
     setSaving(true);
     setError(null);
     try {
-      if (needsPassword) {
-        await setAccountPassword(password);
-        onPasswordSet?.();
-      }
       onSaved(await saveMyOrganization({ name, ownerName, phone }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Couldn’t save your details.');
@@ -177,36 +143,6 @@ function OrganizationForm({
           className={inputClass}
         />
       </label>
-
-      {needsPassword && (
-        <div className="pt-2 space-y-3">
-          <div className="pl-1">
-            <p className="text-sm font-medium text-on-surface">Create a password</p>
-            <p className="text-xs text-on-surface-variant mt-1">
-              You signed in with Google. With a password you can also sign in with {email ? <span className="text-on-surface">{email}</span> : 'your email'} and the password.
-            </p>
-          </div>
-          <input
-            required
-            type="password"
-            autoComplete="new-password"
-            minLength={MIN_PASSWORD_LENGTH}
-            placeholder={`Password (at least ${MIN_PASSWORD_LENGTH} characters)`}
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            className={inputClass}
-          />
-          <input
-            required
-            type="password"
-            autoComplete="new-password"
-            placeholder="Repeat password"
-            value={confirmPassword}
-            onChange={e => setConfirmPassword(e.target.value)}
-            className={inputClass}
-          />
-        </div>
-      )}
 
       {error && <p className="text-[13px] text-error pl-1">{error}</p>}
 

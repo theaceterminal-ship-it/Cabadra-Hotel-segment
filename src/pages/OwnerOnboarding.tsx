@@ -10,9 +10,6 @@ interface OwnerOnboardingProps {
   onCreated: (propertyId: string) => Promise<void>;
   email?: string;
   onSignOut: () => void;
-  /** Signed up with Google and has no password yet: step 1 also sets one. */
-  needsPassword: boolean;
-  onPasswordSet: () => void;
 }
 
 const STEPS: { id: AddPropertyStage; label: string }[] = [
@@ -33,7 +30,7 @@ const COPY: Record<AddPropertyStage, { title: string; body: string }> = {
  * the website and sign-in page, so sign-up → onboarding feels like one
  * place.
  */
-export default function OwnerOnboarding({ organization, onOrganizationSaved, onCreated, email, onSignOut, needsPassword, onPasswordSet }: OwnerOnboardingProps) {
+export default function OwnerOnboarding({ organization, onOrganizationSaved, onCreated, email, onSignOut }: OwnerOnboardingProps) {
   const [stage, setStage] = useState<AddPropertyStage>(organization ? 'property' : 'business');
   const stageIndex = STEPS.findIndex(s => s.id === stage);
 
@@ -85,11 +82,7 @@ export default function OwnerOnboarding({ organization, onOrganizationSaved, onC
             </ol>
 
             <h1 className="text-2xl sm:text-[28px] font-semibold tracking-[-0.02em]">{COPY[stage].title}</h1>
-            <p className="mt-1.5 text-sm text-on-surface-variant">
-              {stage === 'business' && needsPassword
-                ? 'A few details about your business, and a password for your account. You’ll only do this once.'
-                : COPY[stage].body}
-            </p>
+            <p className="mt-1.5 text-sm text-on-surface-variant">{COPY[stage].body}</p>
 
             <div className="mt-6">
               <AddPropertyFlow
@@ -98,8 +91,6 @@ export default function OwnerOnboarding({ organization, onOrganizationSaved, onC
                 onCreated={onCreated}
                 email={email}
                 onStageChange={setStage}
-                needsPassword={needsPassword}
-                onPasswordSet={onPasswordSet}
               />
             </div>
           </div>

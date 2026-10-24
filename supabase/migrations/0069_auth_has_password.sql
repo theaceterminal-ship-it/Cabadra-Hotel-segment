@@ -1,9 +1,8 @@
--- Owners who signed up with Google have no password, but every owner
--- account should also work with email + password. The browser can't see
--- whether a password is set (auth.users isn't exposed), so this answers
--- that one question for the signed-in user only. Onboarding uses it to ask
--- Google sign-ups for a password, and the owner dashboard shows an "Add a
--- password" banner to older accounts that don't have one.
+-- Owners sign up with Google, so most have no password. The browser
+-- can't see whether one is set (auth.users isn't exposed), so this
+-- answers that one question for the signed-in user only.
+-- verify-setup-payment calls it with the owner's own token to decide
+-- whether to email a "set a password" link (0070).
 -- Apply after 0001-0068.
 
 create or replace function my_auth_has_password()
