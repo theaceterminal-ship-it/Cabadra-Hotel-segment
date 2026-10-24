@@ -8,10 +8,10 @@ import { COMPANY_LOCATION, COMPANY_NAME, CONTACT_EMAIL } from '../../components/
  * added.
  *
  * TODO(owner): not yet reviewed by a lawyer against India's DPDP Act, 2023.
- * The 30-day ID-document deletion promised below is done by
- * system_purge_expired_id_documents (0019_id_document_retention.sql) on a
- * pg_cron schedule — confirm pg_cron is enabled on the live Supabase
- * project, or the promise isn't being kept.
+ * The 30-day ID-document deletion promised below: pg_cron runs
+ * system_purge_expired_id_documents daily (0019, widened in 0068) to drop
+ * the photo from the guest record, and purge-id-document-files then
+ * deletes the file itself from Cloudinary (0068). Both jobs are live.
  */
 export default function PrivacyPage() {
   return (
@@ -63,7 +63,7 @@ export default function PrivacyPage() {
 
       <H2>How long we keep it</H2>
       <UL>
-        <li>ID document photos are deleted automatically 30 days after checkout.</li>
+        <li>ID document photos are deleted automatically, including from our image storage, 30 days after the stay ends.</li>
         <li>Other stay records (orders, charges, messages) are kept while the hotel’s account is active, because the hotel needs them for its own accounts and records.</li>
         <li>When a hotel closes its account, we delete its data on request, except where the law requires us to keep it.</li>
       </UL>

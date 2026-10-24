@@ -40,6 +40,18 @@ Hotel operations & guest experience — three pages (`/owner`, `/reception`, `/g
    ```
    The fee is ₹4,999 per property; set `SETUP_FEE_PAISE` the same way to change it (and `SETUP_FEE_INR` in `src/lib/setupPayment.ts`, which is display-only). Going live is replacing the two keys with the `rzp_live_` pair. Deploy the functions and set the secrets **before** applying 0067, so there's no window where nobody can add a property.
 
+   3e. **ID photo deletion** — guest ID photos are removed from the guest record 30 days after their last stay ends (pg_cron, 03:00 UTC) and the files are deleted from Cloudinary half an hour later by the `purge-id-document-files` Edge Function, which pg_cron calls through pg_net (`0068_id_document_file_deletion.sql`). One-time setup, with a random secret of your own in place of `<secret>`:
+   ```sql
+   -- SQL Editor
+   select vault.create_secret('https://<project-ref>.supabase.co', 'project_url');
+   select vault.create_secret('<secret>', 'id_document_purge_cron_secret');
+   ```
+   ```bash
+   supabase secrets set CRON_SECRET=<secret> CLOUDINARY_CLOUD_NAME=<same as VITE_CLOUDINARY_CLOUD_NAME> CLOUDINARY_API_KEY=xxx CLOUDINARY_API_SECRET=xxx
+   supabase functions deploy purge-id-document-files --no-verify-jwt
+   ```
+   The Cloudinary key and secret are under Cloudinary Settings > API Keys. Until they're set, files wait in `id_document_deletions` and are deleted on the first run after. Check progress with `select result, count(*) from id_document_deletions group by 1;`.
+
 3. **Configure environment**
    ```bash
    cp .env.example .env.local
