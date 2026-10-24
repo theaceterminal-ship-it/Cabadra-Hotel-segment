@@ -58,6 +58,9 @@ export async function fetchGuestContext(token: string): Promise<GuestContext> {
 export async function resolveRoomToken(roomId: string): Promise<string> {
   const { data, error } = await supabase.rpc('guest_resolve_room_token', { p_room_id: roomId });
   if (error) throw new Error(error.message.includes('No guest is currently') ? error.message : `Couldn't open this room: ${error.message}`);
+  // Since 0072 "no one checked in" comes back as NULL (so failed lookups
+  // still count toward the rate limit) rather than as an error.
+  if (!data) throw new Error('No guest is currently checked into this room');
   return data as string;
 }
 
