@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { SiteFooter, SiteNav, SiteShell } from '../components/site/SiteChrome';
 import { Reveal, RevealGroup, RevealItem, fadeUp, stagger } from '../components/site/motion';
+// Per property, once. Display only; the amount charged is set in the create-setup-order Edge Function.
+import { SETUP_FEE_INR } from '../lib/setupPayment';
 
 /**
  * Public website at `/` for signed-out visitors — what a hotelier sees
@@ -44,9 +46,6 @@ import { Reveal, RevealGroup, RevealItem, fadeUp, stagger } from '../components/
  * never renders on a blank background.
  */
 
-/** Set once the one-time setup fee is decided. While null, the pricing card says the fee is shared during onboarding instead of showing a number. */
-const SETUP_FEE_INR: number | null = null;
-
 const HERO_BG =
   "url('/landing/hero.jpg'), linear-gradient(180deg, #e9ecea 0%, #c9d3cc 38%, #6f8a6a 72%, #8fa64e 100%)";
 
@@ -65,7 +64,7 @@ const FEATURES = [
 
 const STEPS = [
   { n: '01', title: 'Sign up', body: 'Create your account with Google or email and password.' },
-  { n: '02', title: 'One-time setup', body: 'Pay the setup fee once and your owner dashboard opens.' },
+  { n: '02', title: 'One-time setup', body: 'Add your property and pay its ₹4,999 setup fee. Your owner dashboard opens straight away.' },
   { n: '03', title: 'Add your property', body: 'Add your menu, services and departments, then put a QR in each room. Keep your PMS as it is.' },
 ];
 
@@ -74,7 +73,7 @@ const FAQS = [
   { q: 'What if I don’t have a PMS?', a: 'A simple one is built in, with rooms, bookings and check-in. Use it for as long as it’s enough.' },
   { q: 'Do guests need to download an app?', a: 'No. They scan the QR in their room and it opens in the browser. They can add it to their home screen if they like.' },
   { q: 'Does every staff member need a login?', a: 'No. Departments work from their own screen, and staff start a shift by scanning their badge.' },
-  { q: 'Can I run more than one property?', a: 'Yes. Add properties from your owner dashboard at any time. Each one keeps its own menu, services, staff and settings.' },
+  { q: 'Can I run more than one property?', a: 'Yes. Add properties from your owner dashboard at any time, each with its own one-time ₹4,999 setup fee. Each one keeps its own menu, services, staff and settings.' },
 ];
 
 export default function MarketingPage() {
@@ -490,15 +489,15 @@ function Experiences() {
 function Pricing() {
   return (
     <section id="pricing" className="scroll-mt-6 mx-auto max-w-6xl px-5 sm:px-8 pt-24 sm:pt-32">
-      <SectionHeading eyebrow="Pricing" title="One setup fee. Then it’s yours to run." />
+      <SectionHeading eyebrow="Pricing" title="One setup fee per property. Then it’s yours to run." />
       <div className="mt-12 grid gap-3 lg:grid-cols-[1.3fr_1fr]">
         <Reveal className="rounded-[28px] bg-[#111] text-white p-7 sm:p-10">
           <p className="text-sm text-white/60">One-time setup</p>
           <p className="mt-4 text-5xl sm:text-6xl font-semibold tracking-[-0.03em]">
-            {SETUP_FEE_INR !== null ? `₹${SETUP_FEE_INR.toLocaleString('en-IN')}` : 'Setup fee'}
+            ₹{SETUP_FEE_INR.toLocaleString('en-IN')}
           </p>
           <p className="mt-3 text-[15px] text-white/60">
-            {SETUP_FEE_INR !== null ? 'Paid once when you sign up.' : 'Shared with you during sign-up, before you pay anything.'}
+            Per property, paid once when you add it.
           </p>
           <Link
             to="/signup"

@@ -186,3 +186,144 @@
     scroll-behavior: smooth;
   }
 }
+
+/*
+ * Website theme for the owner side (onboarding + owner dashboard): the
+ * fog-and-ink palette of the public site (src/pages/MarketingPage.tsx)
+ * instead of the staff lavender. OwnerApp puts `theme-site` on <html>
+ * while it's mounted (useSiteTheme), so every component that uses the
+ * semantic tokens follows without per-component edits, and Reception and
+ * the guest app keep their own look. Radii are rounder too, matching the
+ * site's pill buttons and soft cards.
+ *
+ * `.dark.theme-site` has to out-rank plain `.theme-site`, since both
+ * classes sit on the same <html> element.
+ */
+.theme-site {
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.75rem;
+
+  --color-primary: #111111;
+  --color-primary-hover: #000000;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #dfe3dc;
+  --color-on-primary-container: #111111;
+  --color-primary-fixed: #dfe3dc;
+  --color-primary-fixed-dim: #c9cec5;
+  --color-inverse-primary: #b5d96a;
+  --color-surface-tint: #111111;
+  --color-highlight: #eef0ec;
+  --color-on-highlight: #111111;
+
+  --color-surface: #eef0ec;
+  --color-surface-dim: #e4e7e1;
+  --color-surface-bright: #eef0ec;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f6f7f4;
+  --color-surface-container: #f0f2ee;
+  --color-surface-container-high: #e9ece6;
+  --color-surface-container-highest: #e1e5de;
+  --color-surface-variant: #e9ece6;
+
+  --color-on-surface: #111111;
+  --color-on-surface-variant: #60645e;
+  --color-inverse-surface: #111111;
+  --color-inverse-on-surface: #f6f7f4;
+
+  --color-outline: #c4c8c0;
+  --color-outline-variant: #e3e6df;
+
+  --color-secondary: #60645e;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #eef0ec;
+  --color-on-secondary-container: #2b2e2a;
+  --color-secondary-fixed: #eef0ec;
+  --color-secondary-fixed-dim: #e3e6df;
+
+  --color-tertiary: #60645e;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #e3e6df;
+  --color-on-tertiary-container: #2b2e2a;
+  --color-tertiary-fixed: #e3e6df;
+  --color-tertiary-fixed-dim: #d5d9d1;
+
+  --color-success: #4f9a32;
+  --color-info: #60645e;
+  --color-stone-gray: #e9ece6;
+  --color-background: #eef0ec;
+  --color-on-background: #111111;
+
+  /* The page background is light here, so text placed straight on it is ink, not white. */
+  --color-on-surface-strong: #111111;
+  --color-on-surface-strong-muted: rgba(17, 17, 17, 0.6);
+
+  --color-room-ready: #b5d96a;
+  --color-room-ready-on: #111111;
+  --color-room-occupied: #111111;
+  --color-room-occupied-on: #ffffff;
+  --color-room-maintenance: #9aa095;
+  --color-room-maintenance-on: #ffffff;
+}
+
+.dark.theme-site {
+  --color-primary: #f2f3f0;
+  --color-primary-hover: #ffffff;
+  --color-on-primary: #111111;
+  --color-primary-container: #2b2f2b;
+  --color-on-primary-container: #f2f3f0;
+  --color-primary-fixed: #2b2f2b;
+  --color-primary-fixed-dim: #353a35;
+  --color-inverse-primary: #111111;
+  --color-surface-tint: #f2f3f0;
+  --color-highlight: #1f231f;
+  --color-on-highlight: #f2f3f0;
+
+  --color-surface: #0e100e;
+  --color-surface-dim: #0e100e;
+  --color-surface-bright: #1c1f1c;
+  --color-surface-container-lowest: #151815;
+  --color-surface-container-low: #1a1d1a;
+  --color-surface-container: #1f231f;
+  --color-surface-container-high: #262a26;
+  --color-surface-container-highest: #2e332e;
+  --color-surface-variant: #2e332e;
+
+  --color-on-surface: #f2f3f0;
+  --color-on-surface-variant: #a3a89f;
+  --color-inverse-surface: #f2f3f0;
+  --color-inverse-on-surface: #111111;
+
+  --color-outline: #40453f;
+  --color-outline-variant: #2a2e2a;
+
+  --color-secondary: #a3a89f;
+  --color-on-secondary: #111111;
+  --color-secondary-container: #262a26;
+  --color-on-secondary-container: #dfe3dc;
+  --color-secondary-fixed: #262a26;
+  --color-secondary-fixed-dim: #2e332e;
+
+  --color-tertiary: #a3a89f;
+  --color-on-tertiary: #111111;
+  --color-tertiary-container: #262a26;
+  --color-on-tertiary-container: #dfe3dc;
+  --color-tertiary-fixed: #262a26;
+  --color-tertiary-fixed-dim: #2e332e;
+
+  --color-success: #8cc46a;
+  --color-info: #a3a89f;
+  --color-stone-gray: #262a26;
+  --color-background: #0e100e;
+  --color-on-background: #f2f3f0;
+
+  --color-on-surface-strong: #f2f3f0;
+  --color-on-surface-strong-muted: rgba(242, 243, 240, 0.65);
+
+  --color-room-ready: #8cc46a;
+  --color-room-ready-on: #111111;
+  --color-room-occupied: #3a3f3a;
+  --color-room-occupied-on: #f2f3f0;
+  --color-room-maintenance: #5c615a;
+  --color-room-maintenance-on: #f2f3f0;
+}

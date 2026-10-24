@@ -48,7 +48,8 @@ export default function TermsPage() {
 
       <H2>Setup fee</H2>
       <P>
-        Access to the owner dashboard requires a one-time setup fee, shown before you pay. Payments are processed by
+        Each property added to Cabadra requires a one-time setup fee (currently ₹4,999 per property), shown before you
+        pay. Payments are processed by
         Razorpay. Refunds are covered by our{' '}
         <Link to="/refund-policy" className="font-medium text-[#111] underline underline-offset-4">
           refund & cancellation policy
@@ -75,7 +76,7 @@ export default function TermsPage() {
       <P>
         To the fullest extent the law allows, {COMPANY_NAME} is not liable for indirect, incidental or consequential
         losses arising from use of Cabadra, including a missed or late request, a charge entered incorrectly, or an
-        outage. Our total liability to a hotel is limited to the setup fee it paid.
+        outage. Our total liability to a hotel is limited to the setup fees it paid.
       </P>
 
       <H2>Ending use</H2>

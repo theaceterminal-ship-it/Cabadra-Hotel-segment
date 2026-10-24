@@ -18,20 +18,20 @@ export default function RefundPage() {
     >
       <H2>Delivery of the service</H2>
       <P>
-        Cabadra is online software. Nothing is shipped. Your owner dashboard opens as soon as your setup fee payment is
-        confirmed, and you can start adding your property straight away.
+        Cabadra is online software. Nothing is shipped. Each property is set up as soon as its setup fee payment is
+        confirmed, and you can start adding its rooms, menu and staff straight away.
       </P>
 
       <H2>The setup fee</H2>
       <P>
-        The setup fee is paid once, and the amount is shown before you pay. Once your owner dashboard has been activated,
-        the fee is non-refundable.
+        The setup fee is paid once for each property you add (currently ₹4,999 per property), and the amount is shown
+        before you pay. Once a property has been set up, its fee is non-refundable.
       </P>
 
       <H2>When we refund in full</H2>
       <UL>
-        <li>You were charged but your owner dashboard was not activated.</li>
-        <li>You were charged more than once for the same account.</li>
+        <li>You were charged but the property was not set up.</li>
+        <li>You were charged more than once for the same property.</li>
       </UL>
       <P>
         Email{' '}

@@ -1,32 +1,33 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Property, AppView } from '../types';
-import { NewPropertyForm, NewPropertyInput } from './NewPropertyForm';
+import { Property } from '../types';
+import { AddPropertyFlow } from './AddPropertyFlow';
+import { SETUP_FEE_INR, type Organization } from '../lib/setupPayment';
 import {
   Search,
   Plus,
   MapPin,
-  ArrowLeft,
   Building,
-  CheckCircle2,
-  AlertTriangle,
-  SlidersHorizontal,
   X
 } from 'lucide-react';
 
 interface PropertiesPortfolioProps {
   properties: Property[];
   onSelectProperty: (propertyId: string) => void;
-  onNavigate: (view: AppView) => void;
-  /** Creates the property for real (staff_create_property) — throws on failure so the modal can show why. Rooms aren't created here yet; that's a separate step, on the property's own detail page. */
-  onAddProperty: (input: NewPropertyInput) => Promise<void>;
+  organization: Organization | null;
+  onOrganizationSaved: (org: Organization) => void;
+  /** Runs after a new property's setup fee is paid and the property exists. Rooms aren't created here yet; that's a separate step, on the property's own detail page. */
+  onPropertyCreated: (propertyId: string) => Promise<void>;
+  email?: string;
 }
 
 export const PropertiesPortfolio: React.FC<PropertiesPortfolioProps> = ({
   properties,
   onSelectProperty,
-  onNavigate,
-  onAddProperty,
+  organization,
+  onOrganizationSaved,
+  onPropertyCreated,
+  email,
 }) => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,27 +41,18 @@ export const PropertiesPortfolio: React.FC<PropertiesPortfolioProps> = ({
     return matchesSearch && matchesStatus;
   });
 
-  const handleCreateProperty = async (input: NewPropertyInput) => {
-    await onAddProperty(input);
+  const handleCreated = async (propertyId: string) => {
     setShowAddModal(false);
+    await onPropertyCreated(propertyId);
   };
 
   return (
     <div id="properties-portfolio-canvas" className="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-      {/* Back link & Header */}
       <div className="flex flex-col gap-2">
-        <button
-          onClick={() => onNavigate('owner_overview')}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline cursor-pointer w-fit"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Owner Overview</span>
-        </button>
-
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pt-2">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 pt-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-semibold text-on-surface">Properties</h1>
-            <p className="text-sm text-on-surface-variant mt-1">Manage your portfolio across all regions.</p>
+            <h1 className="text-[32px] sm:text-[40px] leading-tight font-semibold tracking-[-0.03em] text-on-surface">Properties</h1>
+            <p className="text-sm text-on-surface-variant mt-1">Each property keeps its own rooms, menu, staff and settings.</p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
@@ -109,10 +101,10 @@ export const PropertiesPortfolio: React.FC<PropertiesPortfolioProps> = ({
             <button
               id="btn-add-new-property"
               onClick={() => setShowAddModal(true)}
-              className="h-11 px-4 rounded-lg bg-primary text-on-primary text-xs font-semibold hover:bg-primary-hover transition-colors flex items-center justify-center gap-2 shadow-sm cursor-pointer whitespace-nowrap w-full sm:w-auto"
+              className="h-11 px-5 rounded-full bg-primary text-on-primary text-sm font-medium hover:bg-primary-hover transition-colors flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap w-full sm:w-auto"
             >
               <Plus className="w-4 h-4" />
-              <span>Add New Property</span>
+              <span>Add property</span>
             </button>
           </div>
         </div>
@@ -204,7 +196,7 @@ export const PropertiesPortfolio: React.FC<PropertiesPortfolioProps> = ({
                     onSelectProperty(prop.id);
                     navigate(`/owner/properties/${prop.id}`);
                   }}
-                  className="w-full h-11 rounded-lg bg-primary text-on-primary font-semibold text-xs hover:bg-primary-hover transition-colors cursor-pointer"
+                  className="w-full h-11 rounded-full bg-primary text-on-primary font-medium text-sm hover:bg-primary-hover transition-colors cursor-pointer"
                 >
                   Manage Property
                 </button>
@@ -220,22 +212,35 @@ export const PropertiesPortfolio: React.FC<PropertiesPortfolioProps> = ({
           id="modal-add-property"
           className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150"
         >
-          <div className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant">
-            <div className="flex items-center justify-between pb-4 border-b border-outline-variant">
-              <div className="flex items-center gap-2">
-                <Building className="w-5 h-5 text-primary" />
-                <h3 className="font-semibold text-lg text-on-surface">Add New Property</h3>
+          <div className="bg-surface-container-lowest rounded-[32px] max-w-lg w-full max-h-[calc(100svh-2rem)] overflow-y-auto p-6 sm:p-8 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-2xl font-semibold tracking-[-0.02em] text-on-surface">
+                  {organization ? 'Add a property' : 'Your business details'}
+                </h3>
+                <p className="text-sm text-on-surface-variant mt-1">
+                  {organization
+                    ? `One-time setup fee of ₹${SETUP_FEE_INR.toLocaleString('en-IN')} for this property.`
+                    : 'Needed once, before your next property.'}
+                </p>
               </div>
-              <button 
+              <button
                 onClick={() => setShowAddModal(false)}
-                className="p-1 rounded-full hover:bg-gray-100 text-gray-500"
+                className="size-10 shrink-0 rounded-full border border-outline-variant flex items-center justify-center text-on-surface hover:bg-surface-container-low"
+                aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="pt-4">
-              <NewPropertyForm onCreate={handleCreateProperty} onCancel={() => setShowAddModal(false)} />
+            <div className="pt-6">
+              <AddPropertyFlow
+                organization={organization}
+                onOrganizationSaved={onOrganizationSaved}
+                onCreated={handleCreated}
+                onCancel={() => setShowAddModal(false)}
+                email={email}
+              />
             </div>
           </div>
         </div>

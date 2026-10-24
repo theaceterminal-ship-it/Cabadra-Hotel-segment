@@ -32,6 +32,14 @@ Hotel operations & guest experience — three pages (`/owner`, `/reception`, `/g
    ```
    `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically for every Edge Function on a linked project — no `supabase secrets set` needed. See `supabase/functions/invite-staff/index.ts` for what it does and why it can't be plain SQL.
 
+   3d. **Setup-fee payments (Razorpay)** — required for creating any new property since `0067_organizations_and_setup_fee.sql`, which removes free property creation. In the Razorpay dashboard (Test Mode while trying it out) go to Account & Settings > API Keys and generate a key pair, then:
+   ```bash
+   supabase secrets set RAZORPAY_KEY_ID=rzp_test_xxx RAZORPAY_KEY_SECRET=xxx
+   supabase functions deploy create-setup-order
+   supabase functions deploy verify-setup-payment
+   ```
+   The fee is ₹4,999 per property; set `SETUP_FEE_PAISE` the same way to change it (and `SETUP_FEE_INR` in `src/lib/setupPayment.ts`, which is display-only). Going live is replacing the two keys with the `rzp_live_` pair. Deploy the functions and set the secrets **before** applying 0067, so there's no window where nobody can add a property.
+
 3. **Configure environment**
    ```bash
    cp .env.example .env.local
