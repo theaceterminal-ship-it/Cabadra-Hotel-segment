@@ -6,8 +6,8 @@ import { CONTACT_EMAIL } from '../../components/site/SiteChrome';
  * Razorpay's website checks expect a refund/cancellation page and a
  * service-delivery section; both live here.
  *
- * TODO(owner): the refund window and timelines below are a starting
- * point — confirm they match what you actually want to offer.
+ * Refund terms confirmed by the owner (25 Oct 2026): hotels claim by
+ * emailing info@churmuri.com within 30 days; refunds within 7 working days.
  */
 export default function RefundPage() {
   return (
@@ -34,7 +34,7 @@ export default function RefundPage() {
         <li>You were charged more than once for the same property.</li>
       </UL>
       <P>
-        Email{' '}
+        To request a refund, the hotel emails{' '}
         <a href={`mailto:${CONTACT_EMAIL}`} className="font-medium text-[#111] underline underline-offset-4">
           {CONTACT_EMAIL}
         </a>{' '}
