@@ -95,8 +95,8 @@ function Hero() {
         className="relative overflow-hidden rounded-[28px] sm:rounded-[40px] min-h-[100svh] sm:min-h-[calc(100svh-2rem)] flex flex-col bg-cover bg-center"
         style={{ backgroundImage: HERO_BG }}
       >
-        {/* Fog at the top keeps the dark headline readable on any photo; a light shade at the bottom lifts the setup bar. */}
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(242,244,242,0.78)_0%,rgba(242,244,242,0.35)_32%,rgba(0,0,0,0)_55%,rgba(0,0,0,0.18)_100%)]" />
+        {/* A light haze at the top keeps the dark headline readable without washing out the sky behind the white highlight; a light shade at the bottom lifts the setup bar. */}
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(242,244,242,0.45)_0%,rgba(242,244,242,0.15)_30%,rgba(0,0,0,0)_55%,rgba(0,0,0,0.12)_100%)]" />
 
         <div className="relative z-10 flex flex-col flex-1 px-5 sm:px-10 lg:px-14 pt-5 sm:pt-8 pb-5 sm:pb-10">
           <Nav />
@@ -123,13 +123,13 @@ function Hero() {
 
             <div className="hidden lg:flex justify-center">
               <a href="#how" className="group relative block size-[120px]" aria-label="See how it works">
-                <span className="absolute -top-7 -left-6 text-left text-[17px] leading-tight font-medium text-white [text-shadow:0_1px_12px_rgba(0,0,0,0.3)]">
+                <span className="absolute z-10 -top-9 -left-8 text-left text-[17px] leading-tight font-medium text-[#111]">
                   See how
                   <br />
                   <span className="pl-8">it works</span>
                 </span>
-                <span className="absolute inset-0 rounded-full border-2 border-white/90 transition-transform duration-300 group-hover:scale-105" />
-                <span className="absolute inset-0 flex items-center justify-center text-white">
+                <span className="absolute inset-0 rounded-full border-2 border-[#111]/80 bg-white/15 backdrop-blur-sm transition-transform duration-300 group-hover:scale-105" />
+                <span className="absolute inset-0 flex items-center justify-center text-[#111]">
                   <ArrowDown className="size-7 transition-transform duration-300 group-hover:translate-y-1" />
                 </span>
               </a>
@@ -178,16 +178,25 @@ function Nav() {
   );
 }
 
-/** Outlined label with a pointed left edge and a line that fades out to the right. Fixed width so the notch is the same size on every chip. */
+/**
+ * Outlined label with a pointed left edge and a line that fades out to the
+ * right. Fixed width so the notch is the same size on every chip. The
+ * frosted backing (clipped to the same notch) keeps the dark text readable
+ * whether the chip lands on sky or on dark hillside.
+ */
 function NotchedChip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="relative flex items-center h-12 w-[290px] pl-7 text-[15px] text-white [text-shadow:0_1px_10px_rgba(0,0,0,0.25)]">
+    <span className="relative flex items-center h-12 w-[290px] pl-7 text-[15px] font-medium text-[#111]">
+      <span
+        aria-hidden="true"
+        className="absolute inset-0 backdrop-blur-md bg-[linear-gradient(90deg,rgba(255,255,255,0.72)_0%,rgba(255,255,255,0.55)_75%,rgba(255,255,255,0)_100%)] [clip-path:polygon(15px_0,100%_0,100%_100%,15px_100%,0_50%)]"
+      />
       <svg className="absolute inset-0 h-full w-full" viewBox="0 0 290 48" fill="none" aria-hidden="true">
         <defs>
           <linearGradient id="chip-fade" x1="0" x2="290" y1="0" y2="0" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="white" stopOpacity="0.9" />
-            <stop offset="0.75" stopColor="white" stopOpacity="0.5" />
-            <stop offset="1" stopColor="white" stopOpacity="0" />
+            <stop offset="0" stopColor="#111" stopOpacity="0.75" />
+            <stop offset="0.75" stopColor="#111" stopOpacity="0.35" />
+            <stop offset="1" stopColor="#111" stopOpacity="0" />
           </linearGradient>
         </defs>
         <path d="M290 0.75H15L1 24L15 47.25H290" stroke="url(#chip-fade)" strokeWidth="1.5" />
