@@ -52,6 +52,14 @@ Hotel operations & guest experience — three pages (`/owner`, `/reception`, `/g
    ```
    The Cloudinary key and secret are under Cloudinary Settings > API Keys. Until they're set, files wait in `id_document_deletions` and are deleted on the first run after. Check progress with `select result, count(*) from id_document_deletions group by 1;`.
 
+   3f. **Owner sign-up and password emails (Resend)** — owners sign up with Google only (`/signup`). After their first property is paid for, `verify-setup-payment` emails a "set a password" link; "Forgot your password?" on `/login` sends one on request (`send-password-link`). The link opens `/set-password`. Needs `0069` and `0070`, and:
+   ```bash
+   supabase secrets set RESEND_API_KEY=re_xxx RESEND_FROM="Cabadra <hello@churmuri.com>"
+   supabase functions deploy send-password-link
+   supabase functions deploy verify-setup-payment
+   ```
+   `RESEND_FROM` must be on a domain verified in Resend (Domains > Add domain, then the DNS records it shows). Links expire after Supabase's email OTP expiry (Authentication > Email, default 1 hour); a new one can always be requested from the sign-in page. Optional `SITE_URL` (default `https://hotel.churmuri.com`) sets where links land.
+
 3. **Configure environment**
    ```bash
    cp .env.example .env.local

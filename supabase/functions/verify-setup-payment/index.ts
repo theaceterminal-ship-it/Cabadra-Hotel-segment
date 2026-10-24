@@ -13,11 +13,17 @@
 // but not yet captured payment is captured here, so it can't lapse and be
 // refunded after the property already exists.
 //
+//
+// After the owner's first property is created it also emails them a
+// "set a password" link (Resend), since sign-up is Google-only.
+//
 // Deploy: supabase functions deploy verify-setup-payment
-// Secrets: RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET (see ../_shared/razorpay.ts)
+// Secrets: RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET (see ../_shared/razorpay.ts),
+//          RESEND_API_KEY, RESEND_FROM (see ../_shared/passwordEmail.ts)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { corsHeaders, isValidCheckoutSignature, json, razorpay, razorpayKeys } from '../_shared/razorpay.ts';
+import { sendPasswordEmail } from '../_shared/passwordEmail.ts';
 
 interface RazorpayPayment {
   id: string;
@@ -102,5 +108,42 @@ Deno.serve(async (req) => {
   });
   if (fulfilErr) return json({ success: false, message: fulfilErr.message }, 500);
 
+  // The account is fully set up now: email the "set a password" link
+  // (once per owner). In the background, and never allowed to affect the
+  // payment result.
+  const welcome = sendWelcomePasswordEmail(admin, callerClient, userData.user.id, userData.user.email, propertyId as string)
+    .catch(err => console.error('Welcome password email failed:', err instanceof Error ? err.message : err));
+  // deno-lint-ignore no-explicit-any
+  const runtime = (globalThis as any).EdgeRuntime;
+  if (runtime?.waitUntil) runtime.waitUntil(welcome);
+  else await welcome;
+
   return json({ success: true, status: 'paid', propertyId });
 });
+
+// deno-lint-ignore no-explicit-any
+async function sendWelcomePasswordEmail(admin: any, callerClient: any, userId: string, email: string | undefined, propertyId: string) {
+  if (!email) return;
+
+  // Already has a password (or we can't tell): nothing to set up.
+  const { data: hasPassword, error: pwErr } = await callerClient.rpc('my_auth_has_password');
+  if (pwErr || hasPassword !== false) return;
+
+  // Claim the send first, so two confirmations racing can't email twice.
+  const { data: claimed } = await admin
+    .from('organizations')
+    .update({ password_email_sent_at: new Date().toISOString() })
+    .eq('owner_user_id', userId)
+    .is('password_email_sent_at', null)
+    .select('id, owner_name');
+  if (!claimed?.length) return;
+
+  const { data: property } = await admin.from('properties').select('name').eq('id', propertyId).maybeSingle();
+  try {
+    await sendPasswordEmail(admin, email, 'welcome', { name: claimed[0].owner_name, propertyName: property?.name });
+  } catch (err) {
+    // Let a later payment (or the sign-in page's link) try again.
+    await admin.from('organizations').update({ password_email_sent_at: null }).eq('id', claimed[0].id);
+    throw err;
+  }
+}
