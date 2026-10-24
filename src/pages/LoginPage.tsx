@@ -104,7 +104,7 @@ export default function LoginPage({ roleLabel, initialMode = 'sign_in' }: LoginP
     ? 'Cabadra staff access — not for guests.'
     : mode === 'sign_in'
       ? 'Sign in to your Cabadra dashboard.'
-      : 'For hotel owners. Your staff get access from your dashboard.';
+      : 'For hotel owners. Works alongside the PMS you already use.';
 
   return (
     <div className="min-h-screen w-full bg-[#eef0ec] p-2 sm:p-4 font-sans antialiased text-[#111]">

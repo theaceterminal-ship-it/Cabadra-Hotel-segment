@@ -3,22 +3,28 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowDown,
   ArrowRight,
-  BedDouble,
+  BellOff,
   Building2,
-  ChefHat,
-  ConciergeBell,
   Hash,
   MapPin,
-  MessageSquareText,
   QrCode,
+  ReceiptText,
   Smartphone,
   Sparkles,
+  UtensilsCrossed,
 } from 'lucide-react';
 
 /**
  * Public website at `/` for signed-out visitors — what a hotelier sees
  * before they have an account. Signed-in staff never land here; LandingPage
  * routes them straight to their app.
+ *
+ * Positioning: Cabadra is not a PMS. It sits alongside whatever PMS the
+ * hotel already runs and captures every charge except the room itself
+ * (room service, laundry, spa, transfers, experiences), handing over one
+ * total at checkout to post into that PMS. The built-in basic PMS is a
+ * footnote for hotels that have none, not the pitch. Name other PMS
+ * products only as "works alongside", never as an integration.
  *
  * Deliberately its own palette rather than the staff theme tokens
  * (bg-surface etc.): the staff theme follows the in-app dark-mode switch,
@@ -42,34 +48,36 @@ const NAV_LINKS = [
   { href: '#pricing', label: 'Pricing' },
 ];
 
-const HERO_CHIPS = ['Guest app, no download needed', 'One dashboard for every property', 'Staff clock in with a badge scan'];
+const HERO_CHIPS = ['Works with any PMS', 'Every extra charge captured', 'Guest app, no download needed'];
 
 const FEATURES = [
-  { icon: ConciergeBell, title: 'Front desk & Live Ops', body: 'Check-ins, bookings and every room’s status on one live board.' },
-  { icon: BedDouble, title: 'Housekeeping', body: 'Rooms flip to dirty, cleaning and ready on their own as tasks move.' },
-  { icon: ChefHat, title: 'Kitchen display', body: 'Room-service orders land on the kitchen screen and charge the folio.' },
-  { icon: QrCode, title: 'Department QR & badges', body: 'Each department gets a screen, staff scan their badge to start a shift.' },
-  { icon: Smartphone, title: 'Guest app', body: 'Guests scan the room QR to order, request and chat. Nothing to install.' },
-  { icon: Building2, title: 'Owner dashboard', body: 'Revenue, staff and settings for each of your properties, side by side.' },
+  { icon: Smartphone, title: 'Guest app', body: 'Guests scan the room QR to order food, book the spa or ask for towels. Nothing to install.' },
+  { icon: QrCode, title: 'Straight to the right department', body: 'Orders and requests land on the kitchen, housekeeping or spa screen. Staff pick them up with a badge scan.' },
+  { icon: BellOff, title: 'No calls, slips or WhatsApp', body: 'Nothing gets lost between the guest and your team, and nobody has to chase it.' },
+  { icon: ReceiptText, title: 'One checkout total', body: 'Room service, laundry, spa, transfers and experiences add up to one total. Post it into your PMS.' },
+  { icon: UtensilsCrossed, title: 'No more missed charges', body: 'Each order is charged when it’s placed, so nothing is forgotten at checkout.' },
+  { icon: Sparkles, title: 'New income from extras', body: 'Guests book experiences and extras from their phone, money you’re not making today.' },
 ];
 
 const STEPS = [
   { n: '01', title: 'Sign up', body: 'Create your account with Google or email and password.' },
   { n: '02', title: 'One-time setup', body: 'Pay the setup fee once and your owner dashboard opens.' },
-  { n: '03', title: 'Add your properties', body: 'Add rooms, menu and staff. Add more properties whenever you’re ready.' },
+  { n: '03', title: 'Add your property', body: 'Add your menu, services and departments, then put a QR in each room. Keep your PMS as it is.' },
 ];
 
 const FAQS = [
+  { q: 'Do I have to replace my PMS?', a: 'No. Cabadra works alongside eZee, Hotelogix or whatever you use today. At checkout you get one total of extras to post into your PMS. No integration needed.' },
+  { q: 'What if I don’t have a PMS?', a: 'A simple one is built in, with rooms, bookings and check-in. Use it for as long as it’s enough.' },
   { q: 'Do guests need to download an app?', a: 'No. They scan the QR in their room and it opens in the browser. They can add it to their home screen if they like.' },
-  { q: 'Can I run more than one property?', a: 'Yes. Add properties from your owner dashboard at any time. Each one keeps its own rooms, menu, staff and settings.' },
-  { q: 'Does every staff member need a login?', a: 'No. Reception signs in. Housekeeping, kitchen and other departments work from their department screen and a badge scan.' },
-  { q: 'Can I sign in with Google?', a: 'Yes. Use Google or an email and password, whichever you prefer.' },
+  { q: 'Does every staff member need a login?', a: 'No. Departments work from their own screen, and staff start a shift by scanning their badge.' },
+  { q: 'Can I run more than one property?', a: 'Yes. Add properties from your owner dashboard at any time. Each one keeps its own menu, services, staff and settings.' },
 ];
 
 export default function MarketingPage() {
   return (
     <div className="min-h-screen bg-[#eef0ec] text-[#111] font-sans antialiased">
       <Hero />
+      <WorksAlongside />
       <Features />
       <HowItWorks />
       <Experiences />
@@ -95,12 +103,12 @@ function Hero() {
 
           <div className="mt-14 sm:mt-20 pb-10 sm:pb-0 text-center">
             <h1 className="mx-auto max-w-4xl text-[40px] leading-[1.02] sm:text-6xl lg:text-[76px] font-semibold tracking-[-0.035em]">
-              Host Where Every Guest{' '}
+              Keep Your PMS.{' '}
               <br className="hidden sm:block" />
-              Feels <span className="text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.25)]">Looked After</span>
+              Capture <span className="text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.25)]">Every Extra</span>
             </h1>
-            <p className="mx-auto mt-5 max-w-xl text-[15px] sm:text-lg text-[#1b1b1b]/80">
-              Front desk, housekeeping, kitchen and a guest app, together in one place for independent hotels and homestays.
+            <p className="mx-auto mt-5 max-w-2xl text-[15px] sm:text-lg text-[#1b1b1b]/80">
+              Room service, laundry, spa, transfers and experiences, ordered from the guest app and added up for checkout. You post one total into your PMS.
             </p>
           </div>
 
@@ -189,27 +197,37 @@ function NotchedChip({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** A still of what a guest request looks like inside Cabadra — illustrates the product, not a live feed. */
+/** A still of a guest order going to the kitchen and onto the stay's total — illustrates the product, not a live feed. */
 function LiveTaskCard() {
   return (
     <div className="w-[300px] rounded-3xl border border-white/40 bg-white/25 backdrop-blur-xl p-4 text-white shadow-[0_8px_40px_rgba(0,0,0,0.12)]">
       <div className="flex items-center gap-3">
         <span className="size-10 shrink-0 rounded-full bg-white/90 text-[#111] flex items-center justify-center">
-          <MessageSquareText className="size-[18px]" />
+          <UtensilsCrossed className="size-[18px]" />
         </span>
         <div className="min-w-0">
           <p className="text-[13px] text-white/80">Room 204 · Guest app</p>
-          <p className="text-[15px] font-medium truncate">Extra towels, please</p>
+          <p className="text-[15px] font-medium truncate">Masala chai × 2</p>
         </div>
       </div>
       <div className="mt-3 flex items-center justify-between rounded-2xl bg-white/90 px-3.5 py-2.5 text-[#111]">
-        <span className="text-[13px]">Housekeeping</span>
-        <span className="inline-flex items-center gap-1.5 text-[13px] font-medium">
+        <span className="inline-flex items-center gap-1.5 text-[13px]">
           <span className="size-2 rounded-full bg-[#5fae3e]" />
-          Picked up
+          Sent to kitchen
         </span>
+        <span className="text-[13px] font-medium">₹180 on folio</span>
       </div>
     </div>
+  );
+}
+
+/** Sits right under the hero. Plain text on purpose: these are PMS products Cabadra works next to, not integrations or partners, so no logos. */
+function WorksAlongside() {
+  return (
+    <p className="mx-auto max-w-6xl px-5 sm:px-8 pt-10 sm:pt-14 text-center text-[15px] sm:text-lg text-[#111]/60">
+      Works alongside <span className="text-[#111] font-medium">eZee</span>,{' '}
+      <span className="text-[#111] font-medium">Hotelogix</span> or any other PMS. No integration needed.
+    </p>
   );
 }
 
@@ -308,8 +326,8 @@ function Features() {
     <section id="features" className="scroll-mt-6 mx-auto max-w-6xl px-5 sm:px-8 pt-24 sm:pt-32">
       <SectionHeading
         eyebrow="Features"
-        title="Everything your team touches, in one place"
-        body="Requests reach the right department the moment a guest taps, and every charge finds its way to the folio."
+        title="Less running around. More on every bill."
+        body="Guests order from their phone, the right department gets it straight away, and every charge adds up to one total for checkout."
       />
       <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {FEATURES.map(({ icon: Icon, title, body }) => (
@@ -322,6 +340,9 @@ function Features() {
           </div>
         ))}
       </div>
+      <p className="mt-6 text-[15px] text-[#111]/55">
+        <span className="font-medium text-[#111]">No PMS?</span> A simple one is built in, with rooms, bookings and check-in.
+      </p>
     </section>
   );
 }
@@ -358,7 +379,7 @@ function Experiences() {
               Guests ask what to do. Answer with a tap.
             </h2>
             <p className="mt-4 text-[15px] sm:text-lg text-white/75">
-              List treks, bonfires, transfers and anything else you offer. Guests book from their phone and your team gets the request straight away.
+              List treks, bonfires, transfers and anything else you offer. Guests book from their phone and your team gets the request straight away. That’s income you miss when nobody asks.
             </p>
           </div>
           <div className="lg:justify-self-end w-full max-w-sm rounded-3xl bg-white p-4 text-[#111]">
@@ -405,11 +426,12 @@ function Pricing() {
         </div>
         <ul className="rounded-[28px] bg-white p-7 sm:p-10 space-y-4 text-[15px]">
           {[
-            'Owner dashboard for all your properties',
-            'Front desk, Live Ops and housekeeping',
-            'Kitchen display and room-service folio',
-            'Guest app with chat, requests and experiences',
+            'Guest app for orders, requests and bookings',
             'Department screens and staff badges',
+            'One total of extras per stay, ready for your PMS',
+            'Experiences guests book from their phone',
+            'Owner dashboard for all your properties',
+            'A simple built-in PMS, if you don’t have one',
           ].map(item => (
             <li key={item} className="flex items-start gap-3">
               <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-[#111]" />
@@ -449,7 +471,7 @@ function Footer() {
       <div className="rounded-[32px] bg-white p-8 sm:p-12 flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div>
           <p className="text-[28px] sm:text-4xl font-semibold tracking-[-0.03em]">Ready when your guests are.</p>
-          <p className="mt-2 text-[15px] text-[#111]/60">Set up your hotel today and add more properties as you grow.</p>
+          <p className="mt-2 text-[15px] text-[#111]/60">Keep your PMS. Start capturing every extra.</p>
         </div>
         <div className="flex gap-2">
           <Link to="/login" className="h-12 px-6 inline-flex items-center rounded-full border border-black/15 text-[15px] font-medium hover:bg-black/5 transition-colors">
