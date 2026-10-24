@@ -1,8 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, MailCheck } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { rememberWebsiteSetupDraft } from '../lib/setupPayment';
+import { MIN_PASSWORD_LENGTH } from '../lib/accountPassword';
+
+/** Where the confirmation email's link lands: the owner page, which picks up onboarding. Must be on Supabase's redirect allowlist. */
+function confirmRedirectUrl() {
+  return `${window.location.origin}/owner`;
+}
 
 interface LoginPageProps {
   /** Just for copy — which staff page sent the user here. Omitted at /login and /signup, which don't ask a new user to pick a role at all; where a role is known, it's shown for a bookmarked direct link to /owner or /reception while signed out. */
@@ -31,6 +37,9 @@ export default function LoginPage({ roleLabel, initialMode = 'sign_in' }: LoginP
   const [status, setStatus] = useState<{ type: 'error' | 'info'; message: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  // Set after an email sign-up that needs its address confirmed first.
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState<string | null>(null);
+  const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent'>('idle');
   // Set when the visitor typed a property name into the website's setup bar.
   const [searchParams] = useSearchParams();
   const propertyName = searchParams.get('property');
@@ -74,27 +83,50 @@ export default function LoginPage({ roleLabel, initialMode = 'sign_in' }: LoginP
         // session and the page above re-renders past the login gate —
         // nothing else to do here.
       } else {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        setStatus({
-          type: 'info',
-          message: 'Account created. If your Supabase project requires email confirmation, check your inbox — otherwise just sign in below and you\'ll be taken straight into setting up your first hotel.',
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: confirmRedirectUrl() },
         });
+        if (error) throw error;
+        // "Confirm email" off in Supabase: this is already a signed-in
+        // session, and AuthPage sends them straight into onboarding.
+        if (data.session) return;
+        // Supabase doesn't say outright that an email is taken; an existing
+        // account comes back as a user with no identities.
+        if (data.user && (data.user.identities?.length ?? 0) === 0) {
+          setMode('sign_in');
+          setStatus({ type: 'info', message: 'You already have an account with this email. Sign in below, or continue with Google.' });
+          return;
+        }
+        // "Confirm email" on: the link in that email signs them in and
+        // lands on /owner, where onboarding continues. No second sign-in.
+        setAwaitingConfirmation(email);
       }
     } catch (err) {
       const raw = err instanceof Error ? err.message : 'Something went wrong.';
-      // Supabase's own message here is accurate but not actionable — the
-      // real fix is a dashboard setting, not something retryable from this
-      // form. Updating auth.users.email_confirmed_at via SQL doesn't
-      // reliably unblock an already-created account either, so the
-      // actionable path is: turn confirmation off, delete this account, and
-      // sign up again — not "check your email."
       const message = /email.*not.*confirmed/i.test(raw)
-        ? 'This account needs email confirmation, which this project has off. Ask whoever manages the Supabase project to: turn off "Confirm email" in Authentication > Sign In / Providers > Email if not already off, delete this user under Authentication > Users, then sign up again here.'
+        ? `Confirm your email first: open the link we sent to ${email}. Can’t find it? Check spam, or continue with Google.`
         : raw;
       setStatus({ type: 'error', message });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!awaitingConfirmation) return;
+    setResendState('sending');
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: awaitingConfirmation,
+      options: { emailRedirectTo: confirmRedirectUrl() },
+    });
+    if (error) {
+      setStatus({ type: 'error', message: error.message });
+      setResendState('idle');
+    } else {
+      setResendState('sent');
     }
   };
 
@@ -138,6 +170,35 @@ export default function LoginPage({ roleLabel, initialMode = 'sign_in' }: LoginP
 
         <div className="relative z-10 flex-1 flex items-center justify-center px-4 py-10">
           <div className="w-full max-w-[400px] rounded-[32px] bg-white p-6 sm:p-8 shadow-[0_10px_50px_rgba(0,0,0,0.15)]">
+            {awaitingConfirmation ? (
+              <div>
+                <span className="size-12 rounded-full bg-[#eef0ec] flex items-center justify-center">
+                  <MailCheck className="size-5" />
+                </span>
+                <h1 className="mt-5 text-2xl font-semibold tracking-[-0.02em]">Check your email</h1>
+                <p className="mt-2 text-sm text-[#111]/60 leading-relaxed">
+                  We sent a link to <span className="font-medium text-[#111]">{awaitingConfirmation}</span>. Open it and you’ll come
+                  straight back here, signed in, to set up your property.
+                </p>
+                {status && <p className="mt-3 text-[13px] text-red-600">{status.message}</p>}
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resendState !== 'idle'}
+                  className="mt-6 w-full h-12 rounded-full border border-black/15 text-[15px] font-medium hover:bg-black/[0.03] transition-colors disabled:opacity-60"
+                >
+                  {resendState === 'sending' ? 'Sending…' : resendState === 'sent' ? 'Sent again' : 'Resend the link'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setAwaitingConfirmation(null); setResendState('idle'); setStatus(null); }}
+                  className="mt-3 w-full text-center text-[13px] text-[#111]/55 hover:text-[#111]"
+                >
+                  Use a different email, or continue with Google
+                </button>
+              </div>
+            ) : (
+            <>
             {!roleLabel && (
               <div className="grid grid-cols-2 rounded-full bg-[#f2f2f0] p-1 mb-6 text-sm font-medium">
                 {(['sign_in', 'sign_up'] as const).map(m => (
@@ -194,7 +255,8 @@ export default function LoginPage({ roleLabel, initialMode = 'sign_in' }: LoginP
                 <input
                   type="password"
                   required
-                  minLength={6}
+                  minLength={mode === 'sign_up' ? MIN_PASSWORD_LENGTH : undefined}
+                  placeholder={mode === 'sign_up' ? `At least ${MIN_PASSWORD_LENGTH} characters` : undefined}
                   autoComplete={mode === 'sign_in' ? 'current-password' : 'new-password'}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
@@ -232,6 +294,8 @@ export default function LoginPage({ roleLabel, initialMode = 'sign_in' }: LoginP
                   Create an account
                 </Link>
               </p>
+            )}
+            </>
             )}
           </div>
         </div>

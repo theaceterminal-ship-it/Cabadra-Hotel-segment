@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ImageUploadField } from './ImageUploadField';
 import { COUNTRIES, currencyForCountry } from '../lib/currency';
 import { SETUP_FEE_INR, type PropertyDraft } from '../lib/setupPayment';
+import { HIMACHAL_PLACES, matchHimachalPlace, placeValue } from '../lib/himachalPlaces';
 
 const PMS_OPTIONS = ['eZee Absolute', 'Cloudbeds', 'Mews', 'IDS Next', 'Hotelogix', 'RMS Cloud', 'Oracle OPERA', 'Other', 'Not sure'];
 
@@ -33,9 +34,13 @@ const inputClass =
  * exists once that payment is confirmed (see lib/setupPayment.ts). The
  * property id is chosen server-side, so it isn't part of the input.
  */
+const OTHER_CITY = '__other';
+
 export function NewPropertyForm({ onCreate, onCancel, initialName = '', initialLocation = '', busyLabel }: NewPropertyFormProps) {
   const [name, setName] = useState(initialName);
-  const [location, setLocation] = useState(initialLocation);
+  // A listed Himachal place, OTHER_CITY, or '' (nothing picked yet).
+  const [cityChoice, setCityChoice] = useState(() => matchHimachalPlace(initialLocation) ?? (initialLocation.trim() ? OTHER_CITY : ''));
+  const [otherCity, setOtherCity] = useState(() => (matchHimachalPlace(initialLocation) ? '' : initialLocation));
   const [image, setImage] = useState('');
   const [country, setCountry] = useState('IN');
   const [usesPms, setUsesPms] = useState<'yes' | 'no' | ''>('');
@@ -45,16 +50,19 @@ export function NewPropertyForm({ onCreate, onCancel, initialName = '', initialL
   const [error, setError] = useState<string | null>(null);
 
   const resolvedPmsName = pmsChoice === 'Other' ? pmsOther.trim() : pmsChoice;
+  // The place list is Himachal-only, so it's offered for India; anywhere else is typed.
+  const usesPlaceList = country === 'IN';
+  const location = usesPlaceList && cityChoice !== OTHER_CITY ? cityChoice : otherCity.trim();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !usesPms) return;
+    if (!name.trim() || !usesPms || !location) return;
     setCreating(true);
     setError(null);
     try {
       await onCreate({
         name: name.trim(),
-        location: location.trim() || 'Location TBD',
+        location,
         image: image.trim() || undefined,
         country,
         currency: currencyForCountry(country),
@@ -89,14 +97,29 @@ export function NewPropertyForm({ onCreate, onCancel, initialName = '', initialL
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block">
           <span className="text-[13px] text-on-surface-variant block mb-1.5 pl-1">City</span>
-          <input
-            type="text"
-            required
-            placeholder="Kufri, Shimla"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className={inputClass}
-          />
+          {usesPlaceList ? (
+            <select required value={cityChoice} onChange={(e) => setCityChoice(e.target.value)} className={inputClass}>
+              <option value="" disabled>Choose a place</option>
+              {HIMACHAL_PLACES.map(group => (
+                <optgroup key={group.district} label={`${group.district} district`}>
+                  {group.places.map(place => {
+                    const value = placeValue(place, group.district);
+                    return <option key={value} value={value}>{place}</option>;
+                  })}
+                </optgroup>
+              ))}
+              <option value={OTHER_CITY}>Somewhere else…</option>
+            </select>
+          ) : (
+            <input
+              type="text"
+              required
+              placeholder="City"
+              value={otherCity}
+              onChange={(e) => setOtherCity(e.target.value)}
+              className={inputClass}
+            />
+          )}
         </label>
         <label className="block">
           <span className="text-[13px] text-on-surface-variant block mb-1.5 pl-1">Country</span>
@@ -107,6 +130,16 @@ export function NewPropertyForm({ onCreate, onCancel, initialName = '', initialL
           </select>
         </label>
       </div>
+      {usesPlaceList && cityChoice === OTHER_CITY && (
+        <input
+          type="text"
+          required
+          placeholder="Town and district, e.g. Theog, Shimla"
+          value={otherCity}
+          onChange={(e) => setOtherCity(e.target.value)}
+          className={`${inputClass} -mt-1`}
+        />
+      )}
       <p className="text-xs text-on-surface-variant pl-1 -mt-2">
         Guest prices for this property will be in {currencyForCountry(country)}. This can’t be changed later.
       </p>
@@ -172,7 +205,7 @@ export function NewPropertyForm({ onCreate, onCancel, initialName = '', initialL
           )}
           <button
             type="submit"
-            disabled={creating || !name.trim() || !usesPms}
+            disabled={creating || !name.trim() || !usesPms || !location}
             className={`${onCancel ? '' : 'w-full'} h-12 px-7 rounded-full bg-primary text-on-primary text-sm font-medium hover:bg-primary-hover transition-colors disabled:opacity-50`}
           >
             {creating ? (busyLabel ?? 'Opening payment…') : `Pay ₹${SETUP_FEE_INR.toLocaleString('en-IN')} and add property`}

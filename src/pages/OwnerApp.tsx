@@ -6,6 +6,8 @@ import { useAuth, signOut } from '../hooks/useAuth';
 import { fetchStaffProperties } from '../lib/staffApi';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { fetchMyOrganization, finishPendingSetupPayments, type Organization } from '../lib/setupPayment';
+import { fetchHasPassword } from '../lib/accountPassword';
+import { SetPasswordBanner } from '../components/SetPasswordBanner';
 import { OwnerOverview } from '../components/OwnerOverview';
 import { PropertiesPortfolio } from '../components/PropertiesPortfolio';
 import { SupabaseSetupNeeded } from '../components/SupabaseSetupNeeded';
@@ -37,6 +39,8 @@ export default function OwnerApp() {
   const [, setSelectedPropertyId] = useState<string>('');
   // undefined until loaded, null when this account hasn't filled it in yet.
   const [organization, setOrganization] = useState<Organization | null | undefined>(undefined);
+  // undefined until checked; false for a Google-only account with no password yet.
+  const [hasPassword, setHasPassword] = useState<boolean | undefined>(undefined);
   const checkedPendingPayments = useRef(false);
 
   const ownedPropertyIds = assignments.filter(a => a.role === 'owner').map(a => a.propertyId);
@@ -57,6 +61,13 @@ export default function OwnerApp() {
       .catch(err => {
         console.warn('Failed to load organization:', err);
         setOrganization(null);
+      });
+    fetchHasPassword()
+      .then(setHasPassword)
+      .catch(err => {
+        // Not knowing shouldn't block anyone: just don't ask for a password.
+        console.warn('Failed to check for a password:', err);
+        setHasPassword(true);
       });
 
     // A setup fee paid in a tab that closed before it was confirmed:
@@ -93,7 +104,7 @@ export default function OwnerApp() {
   };
 
   if (!isSupabaseConfigured) return <SupabaseSetupNeeded />;
-  if (loading || (session && organization === undefined)) return <CenteredMessage title="Loading…" body="" />;
+  if (loading || (session && (organization === undefined || hasPassword === undefined))) return <CenteredMessage title="Loading…" body="" />;
   if (!session) return <LoginPage roleLabel="Owner" />;
 
   if (ownedPropertyIds.length === 0) {
@@ -104,6 +115,8 @@ export default function OwnerApp() {
         onCreated={handlePropertyCreated}
         email={session.user.email}
         onSignOut={() => signOut()}
+        needsPassword={hasPassword === false}
+        onPasswordSet={() => setHasPassword(true)}
       />
     );
   }
@@ -155,6 +168,7 @@ export default function OwnerApp() {
       </header>
 
       <main className="pb-10">
+        {hasPassword === false && <SetPasswordBanner email={session.user.email} onDone={() => setHasPassword(true)} />}
         <Routes>
           <Route
             index

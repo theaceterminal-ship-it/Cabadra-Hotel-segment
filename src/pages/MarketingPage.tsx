@@ -19,6 +19,7 @@ import { SiteFooter, SiteNav, SiteShell } from '../components/site/SiteChrome';
 import { Reveal, RevealGroup, RevealItem, fadeUp, stagger } from '../components/site/motion';
 // Per property, once. Display only; the amount charged is set in the create-setup-order Edge Function.
 import { SETUP_FEE_INR } from '../lib/setupPayment';
+import { HIMACHAL_PLACE_VALUES } from '../lib/himachalPlaces';
 
 /**
  * Public website at `/` for signed-out visitors — what a hotelier sees
@@ -315,7 +316,11 @@ function SetupBar() {
         <input value={name} onChange={e => setName(e.target.value)} placeholder="Pine View Cottage" className={barInput} />
       </BarField>
       <BarField icon={MapPin} label="City" className="sm:flex-1">
-        <input value={city} onChange={e => setCity(e.target.value)} placeholder="Kufri, Shimla" className={barInput} />
+        <input value={city} onChange={e => setCity(e.target.value)} placeholder="Kufri, Shimla" list="himachal-places" className={barInput} />
+        {/* Suggestions only; any town can still be typed. The property form matches these back to its own list. */}
+        <datalist id="himachal-places">
+          {HIMACHAL_PLACE_VALUES.map(value => <option key={value} value={value} />)}
+        </datalist>
       </BarField>
       <BarField icon={Hash} label="Rooms" className="sm:flex-[0.8]">
         <input
