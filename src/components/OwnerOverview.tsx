@@ -147,7 +147,7 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-outline-variant">
         <div>
-          <h1 className="text-2xl md:text-3xl font-semibold text-on-surface">Owner Overview</h1>
+          <h1 className="text-[32px] sm:text-[40px] leading-tight font-semibold tracking-[-0.03em] text-on-surface">Overview</h1>
           <p className="text-sm text-on-surface-variant mt-1">Portfolio performance across all locations.</p>
         </div>
 
@@ -360,20 +360,20 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
                   <AreaChart data={revenueTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
                       <linearGradient id="goldGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#bd9b60" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="#bd9b60" stopOpacity={0.0} />
+                        <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.18} />
+                        <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0.0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f3f7" vertical={false} />
-                    <XAxis dataKey="day" stroke="#7f7668" fontSize={12} tickLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-outline-variant)" vertical={false} />
+                    <XAxis dataKey="day" stroke="var(--color-on-surface-variant)" fontSize={12} tickLine={false} />
                     <YAxis
-                      stroke="#7f7668"
+                      stroke="var(--color-on-surface-variant)"
                       fontSize={12}
                       tickLine={false}
                       tickFormatter={(val) => activeChartMetric === 'revenue' ? formatCurrency(val, primaryCurrency) : val}
                     />
                     <Tooltip
-                      contentStyle={{ backgroundColor: '#ffffff', borderColor: '#E9ECEF', borderRadius: '8px', fontSize: '12px' }}
+                      contentStyle={{ backgroundColor: 'var(--color-surface-container-lowest)', borderColor: 'var(--color-outline-variant)', borderRadius: '14px', color: 'var(--color-on-surface)', fontSize: '12px' }}
                       formatter={(value: number) => [
                         activeChartMetric === 'revenue' ? formatCurrency(Number(value), primaryCurrency) : `${value}`,
                         activeChartMetric === 'revenue' ? 'Revenue' : 'Orders'
@@ -382,7 +382,7 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
                     <Area
                       type="monotone"
                       dataKey={activeChartMetric}
-                      stroke="#765a25"
+                      stroke="var(--color-primary)"
                       strokeWidth={2.5}
                       fillOpacity={1}
                       fill="url(#goldGradient)"

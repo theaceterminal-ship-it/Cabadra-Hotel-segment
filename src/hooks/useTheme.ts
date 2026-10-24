@@ -39,3 +39,16 @@ export function useTheme(): [Theme, (t: Theme) => void] {
 
   return [theme, setTheme];
 }
+
+/**
+ * Switches the page to the public website's palette (`.theme-site` in
+ * index.css) for as long as the calling component is mounted. Used by the
+ * owner side only; on <html> rather than a wrapper div so the body
+ * background follows too.
+ */
+export function useSiteTheme() {
+  useEffect(() => {
+    document.documentElement.classList.add('theme-site');
+    return () => document.documentElement.classList.remove('theme-site');
+  }, []);
+}
