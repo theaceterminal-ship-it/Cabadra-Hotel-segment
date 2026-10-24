@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+# Signed-in apps and per-guest / per-task links aren't pages for search engines.
+Disallow: /owner
+Disallow: /reception
+Disallow: /guest
+Disallow: /task
+Disallow: /display
+Disallow: /access
+
+Sitemap: https://hotel.churmuri.com/sitemap.xml

@@ -180,6 +180,13 @@
   --color-room-maintenance-on: #f1effb;
 }
 
+/* Smooth in-page jumps on the public website's #section links only; the staff apps keep instant scrolling. */
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.site-shell) {
+    scroll-behavior: smooth;
+  }
+}
+
 /*
  * Website theme for the owner side (onboarding + owner dashboard): the
  * fog-and-ink palette of the public site (src/pages/MarketingPage.tsx)
