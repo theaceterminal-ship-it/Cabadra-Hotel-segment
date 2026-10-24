@@ -8,8 +8,9 @@
 //
 // Deploy: supabase functions deploy purge-id-document-files --no-verify-jwt
 // Secrets: CRON_SECRET (same value as the Vault secret
-//          id_document_purge_cron_secret), CLOUDINARY_API_KEY,
-//          CLOUDINARY_API_SECRET, optional CLOUDINARY_CLOUD_NAME.
+//          id_document_purge_cron_secret), CLOUDINARY_CLOUD_NAME (the cloud
+//          the site uploads to, i.e. VITE_CLOUDINARY_CLOUD_NAME),
+//          CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET.
 // Until the Cloudinary keys are set, files stay queued and are deleted on
 // the first run after they are.
 
@@ -74,9 +75,11 @@ Deno.serve(async (req) => {
 
   const apiKey = Deno.env.get('CLOUDINARY_API_KEY');
   const apiSecret = Deno.env.get('CLOUDINARY_API_SECRET');
-  const cloudName = Deno.env.get('CLOUDINARY_CLOUD_NAME') ?? 'dkgv4k0px';
-  if (!apiKey || !apiSecret) {
-    return json({ processed: 0, pending: rows.length, message: 'CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET not set; files stay queued.' });
+  // No default: guessing the wrong cloud would mark every real file
+  // "skipped_not_cloudinary" and never delete it.
+  const cloudName = Deno.env.get('CLOUDINARY_CLOUD_NAME');
+  if (!cloudName || !apiKey || !apiSecret) {
+    return json({ processed: 0, pending: rows.length, message: 'CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET not set; files stay queued.' });
   }
   const auth = `Basic ${btoa(`${apiKey}:${apiSecret}`)}`;
 

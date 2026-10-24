@@ -19,8 +19,8 @@
 --
 -- Needs, outside this file (see README "ID photo deletion"):
 --   - Vault secrets `project_url` and `id_document_purge_cron_secret`
---   - Edge Function secrets CRON_SECRET (same value), CLOUDINARY_API_KEY,
---     CLOUDINARY_API_SECRET, and the function deployed with --no-verify-jwt.
+--   - Edge Function secrets CRON_SECRET (same value), CLOUDINARY_CLOUD_NAME,
+--     CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, and the function deployed with --no-verify-jwt.
 -- Until the Cloudinary keys exist the queue simply waits; nothing is lost.
 -- Apply after 0001-0067.
 
