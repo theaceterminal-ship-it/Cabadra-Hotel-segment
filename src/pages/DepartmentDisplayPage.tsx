@@ -12,10 +12,9 @@ import {
 } from '../lib/displayApi';
 import { QrScannerModal } from '../components/QrScannerModal';
 import { DisplayTaskQueue } from '../components/DisplayTaskQueue';
+import { DEPARTMENT_LABELS } from '../lib/departments';
 
-const DEPT_LABELS: Record<DepartmentDisplay['department'], string> = {
-  housekeeping: 'Housekeeping', maintenance: 'Maintenance', amenities: 'Amenities', concierge: 'Concierge',
-};
+const DEPT_LABELS = DEPARTMENT_LABELS;
 
 const REFRESH_MS = 8000;
 

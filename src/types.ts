@@ -1,3 +1,4 @@
+import type { Department } from './lib/departments';
 export type AppView =
   | 'owner_overview'
   | 'properties'
@@ -127,7 +128,7 @@ export interface LiveOpsTask {
   dueTime: string;
   status: 'pending' | 'in_progress' | 'completed' | 'rejected';
   assignedTo?: string;
-  category: 'housekeeping' | 'maintenance' | 'amenities' | 'concierge';
+  category: Department;
   /** The capability token behind this task's QR — whoever scans it can start/complete this one task, no login. See service_task_resolve (0025_task_qr.sql). */
   taskToken: string;
   /** Why staff couldn't do this — required whenever status is 'rejected'. See staff_reject_task (0045). */
@@ -160,7 +161,7 @@ export interface UrgentRequest {
   isUrgent: boolean;
   status: 'open' | 'resolved';
   /** Which department it's routed to — matches LiveOpsTask.category, so a request and a dispatched task speak the same vocabulary. */
-  department: 'housekeeping' | 'maintenance' | 'amenities' | 'concierge';
+  department: Department;
 }
 
 export interface AppNotification {

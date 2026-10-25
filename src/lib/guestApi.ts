@@ -7,6 +7,7 @@
 
 import { supabase } from './supabaseClient';
 import type { MenuItem, FolioChatMessage } from '../types';
+import type { Department, ServiceForm } from './departments';
 
 export interface GuestExperience {
   id: string;
@@ -17,7 +18,7 @@ export interface GuestExperience {
   image: string;
 }
 
-export type Department = 'housekeeping' | 'maintenance' | 'amenities' | 'concierge';
+export type { Department } from './departments';
 
 export interface GuestServiceCategory {
   id: string;
@@ -26,6 +27,8 @@ export interface GuestServiceCategory {
   department: Department;
   iconKey: string;
   categoryType: 'general' | 'transportation';
+  /** The owner-built request form (0075). */
+  form?: ServiceForm;
 }
 
 export interface GuestTransportRoute {
@@ -143,6 +146,30 @@ export async function placeGuestOrder(token: string, items: GuestOrderItem[], no
     throw new Error(/failed to fetch|network/i.test(error.message) ? 'Couldn’t reach the hotel. Check your connection and try again.' : error.message);
   }
   return data as { order: { id: string; totalAmount: number; status: string }; charge: { id: string; amount: number } };
+}
+
+/**
+ * A request through a service's own form (0075). Only the picks go up; the
+ * server works out the title and price from the hotel's own choices or
+ * route. A price is charged to the room when staff mark the request done.
+ */
+export async function submitServiceRequest(
+  token: string,
+  serviceId: string,
+  input: { choices?: { id: string; quantity?: number }[]; routeId?: string; time?: string; note?: string },
+): Promise<{ id: string; price: number; title: string }> {
+  const { data, error } = await supabase.rpc('guest_submit_service_request', {
+    p_token: token,
+    p_service_id: serviceId,
+    p_choices: input.choices ?? [],
+    p_route_id: input.routeId ?? null,
+    p_time: input.time ?? null,
+    p_note: input.note ?? null,
+  });
+  if (error) {
+    throw new Error(/failed to fetch|network/i.test(error.message) ? 'Couldn’t reach the hotel. Check your connection and try again.' : error.message);
+  }
+  return data as { id: string; price: number; title: string };
 }
 
 export async function submitGuestRequest(

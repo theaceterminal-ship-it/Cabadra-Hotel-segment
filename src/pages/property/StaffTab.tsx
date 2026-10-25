@@ -6,6 +6,7 @@ import {
 } from '../../lib/staffApi';
 import { BadgeQrModal } from '../../components/BadgeQrModal';
 import { Chip, DeleteButton, ErrorNote, Field, Modal, Panel, SectionHeader, btnPrimary, btnSecondary, iconBtn, inputCls } from './ui';
+import { DEPARTMENT_LABELS } from '../../lib/departments';
 
 export function StaffTab({ propertyId, staff, pendingInvites, onChanged }: {
   propertyId: string; staff: StaffMember[]; pendingInvites: PendingInvite[]; onChanged: () => void;
@@ -241,9 +242,7 @@ function TeamPanel({ propertyId, staff, pendingInvites, onChanged }: {
   );
 }
 
-const DEPT_LABELS: Record<DirectoryContact['department'], string> = {
-  housekeeping: 'Housekeeping', maintenance: 'Maintenance', amenities: 'Amenities', concierge: 'Concierge',
-};
+const DEPT_LABELS = DEPARTMENT_LABELS;
 
 /** Names and phone numbers per department for Live Ops tasks; not logins. Each has a badge QR for starting shifts. */
 function ContactsPanel({ propertyId }: { propertyId: string }) {

@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { Megaphone, X } from 'lucide-react';
+import { DEPARTMENT_LABELS, DEPARTMENT_VALUES, type Department } from '../lib/departments';
 
-type Department = 'housekeeping' | 'maintenance' | 'amenities' | 'concierge';
 
-const DEPT_LABELS: Record<Department, string> = {
-  housekeeping: 'Housekeeping', maintenance: 'Maintenance', amenities: 'Amenities', concierge: 'Concierge',
-};
+const DEPT_LABELS = DEPARTMENT_LABELS;
 
 export interface NewRequestSubmission {
   roomNumber?: string;
@@ -122,7 +120,7 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
                 onChange={(e) => setDepartment(e.target.value as Department)}
                 className="w-full h-10 px-3 border border-outline-variant rounded-lg bg-surface-container-lowest focus:border-primary focus:outline-none"
               >
-                {(Object.keys(DEPT_LABELS) as Department[]).map(d => (
+                {DEPARTMENT_VALUES.map(d => (
                   <option key={d} value={d}>{DEPT_LABELS[d]}</option>
                 ))}
               </select>

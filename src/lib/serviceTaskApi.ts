@@ -7,6 +7,7 @@
  */
 
 import { supabase } from './supabaseClient';
+import type { Department } from './departments';
 
 export interface ServiceTask {
   id: string;
@@ -14,7 +15,7 @@ export interface ServiceTask {
   description: string;
   roomLabel: string;
   priority: 'high' | 'standard';
-  category: 'housekeeping' | 'maintenance' | 'amenities' | 'concierge';
+  category: Department;
   status: 'pending' | 'in_progress' | 'completed';
   assignedTo?: string;
   propertyName: string;

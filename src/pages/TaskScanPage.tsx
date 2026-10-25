@@ -2,13 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CheckCircle2, Clock, MapPin, User } from 'lucide-react';
 import { resolveServiceTask, startServiceTask, completeServiceTask, ServiceTask } from '../lib/serviceTaskApi';
+import { DEPARTMENT_LABELS } from '../lib/departments';
 
-const CATEGORY_LABELS: Record<ServiceTask['category'], string> = {
-  housekeeping: 'Housekeeping',
-  maintenance: 'Maintenance',
-  amenities: 'Amenities',
-  concierge: 'Concierge',
-};
+const CATEGORY_LABELS = DEPARTMENT_LABELS;
 
 /**
  * What a task's QR actually opens — no login, because whoever's fixing the

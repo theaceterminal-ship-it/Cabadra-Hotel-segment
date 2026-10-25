@@ -19,10 +19,9 @@ import {
   Trash2,
   User,
 } from 'lucide-react';
+import { DEPARTMENT_LABELS } from '../lib/departments';
 
-const DEPT_LABELS: Record<Shift['department'], string> = {
-  housekeeping: 'Housekeeping', maintenance: 'Maintenance', amenities: 'Amenities', concierge: 'Concierge',
-};
+const DEPT_LABELS = DEPARTMENT_LABELS;
 
 const STATUS_STYLE: Record<ShiftCoverage['status'], { label: string; icon: React.ElementType; className: string }> = {
   covered: { label: 'Covered', icon: CheckCircle2, className: 'bg-success/10 text-success border-success/30' },

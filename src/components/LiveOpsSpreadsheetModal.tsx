@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Papa from 'papaparse';
 import { LiveOpsTask } from '../types';
 import { Download, X, Search, Filter, FileSpreadsheet, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+import { DEPARTMENTS } from '../lib/departments';
 
 interface LiveOpsSpreadsheetModalProps {
   isOpen: boolean;
@@ -109,10 +110,7 @@ export function LiveOpsSpreadsheetModal({ isOpen, onClose, tasks, propertyName }
               className="h-9 px-3 text-xs border border-outline-variant rounded-xl bg-surface-container-low font-medium"
             >
               <option value="all">All Departments</option>
-              <option value="housekeeping">Housekeeping</option>
-              <option value="maintenance">Maintenance</option>
-              <option value="amenities">Amenities</option>
-              <option value="concierge">Concierge</option>
+              {DEPARTMENTS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
             </select>
 
             <select
