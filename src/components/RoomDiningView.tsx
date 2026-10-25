@@ -306,25 +306,26 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
 
   return (
     <div id="room-dining-canvas" className="flex-1 min-h-screen bg-surface flex flex-col">
-      <header className="sticky top-0 z-30 bg-surface/85 backdrop-blur-md border-b border-white/50">
-        <div className="max-w-5xl mx-auto px-4 pt-3 pb-2 flex items-center gap-3">
+      <div className="max-w-5xl mx-auto w-full px-4 pt-3">
+        <div className="flex items-center justify-between gap-3">
           <button
             id="btn-back-to-guest-home"
             onClick={() => onNavigate('guest_home')}
             aria-label="Back"
-            className="w-10 h-10 rounded-full bg-surface-container-lowest shadow-sm flex items-center justify-center text-on-surface shrink-0"
+            className="size-10 rounded-full bg-surface-container-lowest shadow-[0_4px_20px_rgba(0,0,0,0.06)] flex items-center justify-center text-on-surface shrink-0"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="size-5" />
           </button>
-          <div className="min-w-0 flex-1">
-            <h1 className="text-lg font-bold text-on-surface leading-tight truncate">In-room dining</h1>
-            <p className="text-xs text-on-surface-variant truncate flex items-center gap-1">
-              <BedDouble className="w-3.5 h-3.5 shrink-0" /> Delivered to Room {roomNumber}
-            </p>
-          </div>
-          <DynamicIslandStatusBar token={token} currency={currency} roomNumber={roomNumber} className="shrink-0" />
+          <DynamicIslandStatusBar token={token} currency={currency} roomNumber={roomNumber} className="min-w-0 flex justify-end" />
         </div>
+        <p className="mt-6 text-sm font-medium text-on-surface-variant flex items-center gap-1.5">
+          <BedDouble className="size-4 shrink-0" /> Delivered to Room {roomNumber}
+        </p>
+        <h1 className="mt-1 text-[34px] leading-[1.05] font-semibold tracking-[-0.035em] text-on-surface">In-room dining</h1>
+      </div>
 
+      {/* Only search and the categories stay pinned while the menu scrolls. */}
+      <header className="sticky top-0 z-30 bg-surface/90 backdrop-blur-xl pt-3">
         <div className="max-w-5xl mx-auto px-4 pb-2">
           <label className="flex items-center gap-2 h-11 px-4 rounded-full bg-surface-container-lowest shadow-sm">
             <Search className="w-4 h-4 text-on-surface-variant shrink-0" />
@@ -348,7 +349,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`relative px-4 h-9 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${active ? 'text-on-primary' : 'bg-surface-container-lowest text-on-surface-variant'}`}
+                className={`relative px-4 h-9 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors ${active ? 'text-on-primary' : 'bg-surface-container-lowest text-on-surface hover:bg-surface-container-low'}`}
               >
                 {active && <motion.span layoutId="dining-cat-pill" className="absolute inset-0 rounded-full bg-primary" transition={{ type: 'spring', damping: 30, stiffness: 400 }} />}
                 <span className="relative">{cat.label}</span>
@@ -365,13 +366,13 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
               initial={{ opacity: 0, y: -12, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -12 }}
-              className="bg-success text-on-success p-4 rounded-[22px] shadow-lg flex items-center gap-3"
+              className="bg-primary text-on-primary p-3 pr-4 rounded-[28px] shadow-lg flex items-center gap-3"
             >
-              <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.15, type: 'spring' }} className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.15, type: 'spring' }} className="size-10 rounded-full bg-room-ready text-room-ready-on flex items-center justify-center shrink-0">
                 <Check className="w-5 h-5" />
               </motion.span>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm">Order placed</p>
+                <p className="font-semibold text-sm">Order placed</p>
                 <p className="text-xs opacity-90">The kitchen has it. Tap the status pill at the top to follow it.</p>
               </div>
               <button onClick={() => setOrderSuccess(false)} aria-label="Dismiss" className="p-1 opacity-80 shrink-0"><X className="w-4 h-4" /></button>
@@ -383,7 +384,8 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
             engine (guest_get_recommendations in the migrations), not a hand-picked list. */}
         {recommendations.length > 0 && !query && selectedCategory === 'all' && (
           <section id="recommended-for-stay">
-            <h2 className="text-base font-bold text-on-surface mb-3 flex items-center gap-1.5"><Sparkles className="w-4 h-4" /> Picked for you</h2>
+            <p className="text-sm font-medium text-on-surface-variant flex items-center gap-1.5"><Sparkles className="w-4 h-4" /> Chosen for your stay</p>
+            <h2 className="mt-1 mb-4 text-[24px] font-semibold tracking-[-0.03em] text-on-surface">Picked for you</h2>
             <div className="flex gap-3 overflow-x-auto pb-1 -mx-4 px-4 scroll-px-4 scrollbar-none snap-x">
               {recommendations.map((rec, i) => {
                 if (!rec.menuItem) return null;
@@ -418,7 +420,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
 
         {sections.map(section => (
           <section key={section.title || 'results'}>
-            {section.title && <h2 className="text-base font-bold text-on-surface mb-3">{section.title}</h2>}
+            {section.title && <h2 className="text-[22px] font-semibold tracking-[-0.03em] text-on-surface mb-4">{section.title}</h2>}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-5">
               {section.items.map((item, i) => (
                 <motion.div
@@ -470,7 +472,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
               onClick={openCart}
               className="w-full h-14 pl-3 pr-5 rounded-full bg-primary text-on-primary shadow-xl flex items-center justify-between"
             >
-              <span className="flex items-center gap-2.5 font-bold text-sm">
+              <span className="flex items-center gap-2.5 font-semibold text-sm">
                 <motion.span
                   key={totalCartCount}
                   initial={{ scale: 1.35 }}
@@ -478,11 +480,11 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                   className="relative w-9 h-9 rounded-full bg-white/15 flex items-center justify-center"
                 >
                   <ShoppingBag className="w-4.5 h-4.5" />
-                  <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-warning text-white text-[11px] font-bold flex items-center justify-center">{totalCartCount}</span>
+                  <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-room-ready text-room-ready-on text-[11px] font-semibold flex items-center justify-center">{totalCartCount}</span>
                 </motion.span>
                 View cart
               </span>
-              <span className="flex items-center gap-1.5 font-bold text-sm">
+              <span className="flex items-center gap-1.5 font-semibold text-sm">
                 {formatCurrency(grandTotal, currency)} <ChevronUp className="w-4 h-4" />
               </span>
             </button>
@@ -510,7 +512,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                 <div className="w-10 h-1 rounded-full bg-outline-variant mx-auto mb-3" />
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-bold text-lg text-on-surface">Your order</h3>
+                    <h3 className="font-semibold text-[22px] tracking-[-0.03em] text-on-surface">Your order</h3>
                     <p className="text-xs text-on-surface-variant">{totalCartCount} {totalCartCount === 1 ? 'item' : 'items'} · to Room {roomNumber}</p>
                   </div>
                   <button onClick={() => setShowCartSheet(false)} aria-label="Close" className="w-9 h-9 rounded-full hover:bg-surface-container-low flex items-center justify-center text-on-surface-variant">
@@ -523,7 +525,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                 {cartItemsList.length === 0 ? (
                   <div className="py-14 flex flex-col items-center justify-center text-center text-on-surface-variant">
                     <ShoppingBag className="w-10 h-10 mb-2 opacity-50" />
-                    <p className="font-bold text-sm text-on-surface">Your cart is empty</p>
+                    <p className="font-semibold text-sm text-on-surface">Your cart is empty</p>
                     <p className="text-xs mt-1">Add a dish to order to your room.</p>
                   </div>
                 ) : (
@@ -544,7 +546,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                               <span className="min-w-0 flex-1">
                                 <span className="flex items-center gap-1.5">
                                   <VegMark veg={line.item.isVeg} />
-                                  <span className="font-bold text-sm text-on-surface truncate">{line.item.name}</span>
+                                  <span className="font-semibold text-sm text-on-surface truncate">{line.item.name}</span>
                                 </span>
                                 {(line.variation || line.addons.length > 0) && (
                                   <span className="block text-[11px] text-on-surface-variant truncate">
@@ -558,7 +560,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                               </span>
                             </button>
                             <div className="flex flex-col items-end gap-1.5 shrink-0">
-                              <span className="text-sm font-bold text-on-surface">{formatCurrency(unitPrice(line) * line.quantity, currency)}</span>
+                              <span className="text-sm font-semibold text-on-surface">{formatCurrency(unitPrice(line) * line.quantity, currency)}</span>
                               <Stepper value={line.quantity} onMinus={() => changeLineQty(line.key, -1)} onPlus={() => changeLineQty(line.key, 1)} />
                             </div>
                           </div>
@@ -571,7 +573,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                 {/* Goes well with — right where the guest is deciding what else to add. */}
                 {recommendedNotInCart.length > 0 && cartItemsList.length > 0 && (
                   <div>
-                    <p className="text-xs font-bold text-on-surface mb-2 flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" /> Goes well with your order</p>
+                    <p className="text-xs font-semibold text-on-surface mb-2 flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" /> Goes well with your order</p>
                     <div className="flex gap-2.5 overflow-x-auto pb-1 -mx-5 px-5 scrollbar-none">
                       {recommendedNotInCart.map(rec => {
                         const item = fullItem(rec.menuItem as unknown as MenuItem);
@@ -579,7 +581,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                           <div key={rec.menuItemId} className="shrink-0 w-56 flex items-center gap-2.5 p-2 rounded-2xl bg-surface-container-low">
                             <DishThumb item={item} className="w-12 h-12 rounded-xl" />
                             <span className="flex-1 min-w-0">
-                              <span className="block text-xs font-bold text-on-surface truncate">{item.name}</span>
+                              <span className="block text-xs font-semibold text-on-surface truncate">{item.name}</span>
                               <span className="block text-[11px] text-on-surface-variant">{formatCurrency(fromPrice(item), currency)}</span>
                             </span>
                             <button onClick={() => quickAdd(item, true, 'cart_sheet')} aria-label={`Add ${item.name}`} className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0">
@@ -594,7 +596,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
 
                 {cartItemsList.length > 0 && (
                   <label className="block">
-                    <span className="text-xs font-bold text-on-surface">Note for the kitchen <span className="font-normal text-on-surface-variant">(optional)</span></span>
+                    <span className="text-xs font-semibold text-on-surface">Note for the kitchen <span className="font-normal text-on-surface-variant">(optional)</span></span>
                     <textarea
                       rows={2}
                       value={dietaryNote}
@@ -611,7 +613,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                   <div className="flex justify-between items-baseline">
                     {/* The room comes from this stay's reservation server-side (guest_place_order), never from the page. */}
                     <span className="text-xs text-on-surface-variant">Charged to Room {roomNumber}</span>
-                    <span className="font-bold text-lg text-on-surface">{formatCurrency(grandTotal, currency)}</span>
+                    <span className="font-semibold text-lg text-on-surface">{formatCurrency(grandTotal, currency)}</span>
                   </div>
                   {orderError && <p className="text-xs text-error">{orderError}</p>}
                   <motion.button
@@ -619,7 +621,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                     whileTap={{ scale: 0.98 }}
                     onClick={handleCheckout}
                     disabled={placingOrder || checkingSuggestion}
-                    className="w-full h-13 py-3.5 bg-primary text-on-primary rounded-full font-bold text-sm flex items-center justify-center gap-2 shadow-md disabled:opacity-70"
+                    className="w-full h-13 py-3.5 bg-primary text-on-primary rounded-full font-semibold text-sm flex items-center justify-center gap-2 shadow-md disabled:opacity-70"
                   >
                     {placingOrder || checkingSuggestion ? (
                       <><span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" /> {placingOrder ? 'Placing your order…' : 'One moment…'}</>
@@ -693,7 +695,7 @@ function Stepper({ value, onMinus, onPlus }: { value: number; onMinus: () => voi
   return (
     <div className="flex items-center gap-1 rounded-full bg-surface-container-low p-0.5">
       <button onClick={onMinus} aria-label="One less" className="w-7 h-7 rounded-full bg-surface-container-lowest text-on-surface flex items-center justify-center"><Minus className="w-3.5 h-3.5" /></button>
-      <span className="w-5 text-center text-xs font-bold text-on-surface">{value}</span>
+      <span className="w-5 text-center text-xs font-semibold text-on-surface">{value}</span>
       <button onClick={onPlus} aria-label="One more" className="w-7 h-7 rounded-full bg-primary text-on-primary flex items-center justify-center"><Plus className="w-3.5 h-3.5" /></button>
     </div>
   );
@@ -730,19 +732,19 @@ function DishCard({ item, qty, currency, price, fromLabel, subline, onOpen, onAd
         onClick={onOpen}
         whileHover={{ y: -3 }}
         whileTap={{ scale: 0.98 }}
-        className="relative aspect-[4/3] rounded-[18px] overflow-hidden bg-surface-container-high shadow-sm hover:shadow-lg transition-shadow cursor-pointer"
+        className="relative aspect-[4/3] rounded-[24px] overflow-hidden bg-surface-container-high hover:shadow-[0_18px_50px_rgba(0,0,0,0.12)] transition-shadow duration-300 cursor-pointer"
       >
         {item.image && !broken
           ? <img src={item.image} alt={item.name} loading="lazy" onError={() => setBroken(true)} className="w-full h-full object-cover" />
           : <div className="w-full h-full flex items-center justify-center text-on-surface-variant"><Utensils className="w-8 h-8 opacity-40" /></div>}
         {qty > 0 && (
-          <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute top-2 left-2 min-w-6 h-6 px-2 rounded-full bg-primary text-on-primary text-[11px] font-bold flex items-center justify-center shadow">
+          <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute top-2 left-2 min-w-6 h-6 px-2 rounded-full bg-primary text-on-primary text-[11px] font-semibold flex items-center justify-center shadow">
             {qty} in cart
           </motion.span>
         )}
         <AnimatePresence>
           {pulses.map(id => (
-            <motion.span key={id} initial={{ opacity: 1, y: 0 }} animate={{ opacity: 0, y: -36 }} exit={{ opacity: 0 }} transition={{ duration: 0.7 }} className="absolute bottom-12 right-4 text-sm font-bold text-white drop-shadow pointer-events-none">
+            <motion.span key={id} initial={{ opacity: 1, y: 0 }} animate={{ opacity: 0, y: -36 }} exit={{ opacity: 0 }} transition={{ duration: 0.7 }} className="absolute bottom-12 right-4 text-sm font-semibold text-white drop-shadow pointer-events-none">
               +1
             </motion.span>
           ))}
@@ -759,10 +761,10 @@ function DishCard({ item, qty, currency, price, fromLabel, subline, onOpen, onAd
       <button onClick={onOpen} className="block w-full text-left pt-2 px-0.5">
         <span className="flex items-center gap-1.5">
           <VegMark veg={item.isVeg} />
-          <span className="font-bold text-sm text-on-surface truncate">{item.name}</span>
+          <span className="font-semibold text-sm text-on-surface truncate">{item.name}</span>
         </span>
         {subline && <span className="block text-[11.5px] text-on-surface-variant truncate mt-0.5">{subline}</span>}
-        <span className="block text-[15px] font-bold text-on-surface mt-1">
+        <span className="block text-[15px] font-semibold text-on-surface mt-1">
           {fromLabel && <span className="text-[11px] font-semibold text-on-surface-variant mr-1">from</span>}
           {formatCurrency(price, currency)}
         </span>
@@ -826,10 +828,10 @@ function DishSheet({ item, currency, initial, inCart, onClose, onSave, onRemove 
           <div>
             <div className="flex items-center gap-2">
               <VegMark veg={item.isVeg} />
-              <h3 className="font-bold text-xl text-on-surface leading-snug">{item.name}</h3>
+              <h3 className="font-semibold text-[24px] tracking-[-0.03em] text-on-surface leading-tight">{item.name}</h3>
             </div>
             <div className="flex items-center gap-3 mt-1 text-xs text-on-surface-variant">
-              <span className="font-bold text-base text-on-surface">{formatCurrency(variation ? variation.price : item.price, currency)}</span>
+              <span className="font-semibold text-base text-on-surface">{formatCurrency(variation ? variation.price : item.price, currency)}</span>
               {item.prepTime && <span className="inline-flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {item.prepTime}</span>}
               {inCart > 0 && !initial && <span className="inline-flex items-center gap-1 font-semibold"><Check className="w-3.5 h-3.5" /> {inCart} in cart</span>}
             </div>
@@ -838,7 +840,7 @@ function DishSheet({ item, currency, initial, inCart, onClose, onSave, onRemove 
 
           {variations.length > 0 && (
             <div>
-              <p className="text-sm font-bold text-on-surface mb-2">Size <span className="font-normal text-on-surface-variant">· choose one</span></p>
+              <p className="text-sm font-semibold text-on-surface mb-2">Size <span className="font-normal text-on-surface-variant">· choose one</span></p>
               <div className="space-y-2">
                 {variations.map(v => (
                   <label key={v.id} className={`flex items-center justify-between gap-3 p-3 rounded-2xl border cursor-pointer transition-colors ${variationId === v.id ? 'border-primary bg-highlight' : 'border-outline-variant'}`}>
@@ -855,7 +857,7 @@ function DishSheet({ item, currency, initial, inCart, onClose, onSave, onRemove 
 
           {addons.length > 0 && (
             <div>
-              <p className="text-sm font-bold text-on-surface mb-2">Add-ons <span className="font-normal text-on-surface-variant">· optional</span></p>
+              <p className="text-sm font-semibold text-on-surface mb-2">Add-ons <span className="font-normal text-on-surface-variant">· optional</span></p>
               <div className="space-y-2">
                 {addons.map(a => (
                   <label key={a.id} className={`flex items-center justify-between gap-3 p-3 rounded-2xl border cursor-pointer transition-colors ${addonIds.includes(a.id) ? 'border-primary bg-highlight' : 'border-outline-variant'}`}>
@@ -871,7 +873,7 @@ function DishSheet({ item, currency, initial, inCart, onClose, onSave, onRemove 
           )}
 
           <label className="block">
-            <span className="text-sm font-bold text-on-surface">Note for this dish <span className="font-normal text-on-surface-variant">(optional)</span></span>
+            <span className="text-sm font-semibold text-on-surface">Note for this dish <span className="font-normal text-on-surface-variant">(optional)</span></span>
             <input
               value={note}
               onChange={e => setNote(e.target.value)}
@@ -889,14 +891,14 @@ function DishSheet({ item, currency, initial, inCart, onClose, onSave, onRemove 
         <div className="p-5 border-t border-outline-variant flex items-center gap-3 shrink-0" style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
           <div className="flex items-center gap-1 rounded-full bg-surface-container-low p-1">
             <button onClick={() => setQuantity(q => Math.max(1, q - 1))} aria-label="One less" className="w-10 h-10 rounded-full bg-surface-container-lowest text-on-surface flex items-center justify-center"><Minus className="w-4 h-4" /></button>
-            <span className="font-bold text-sm text-on-surface w-6 text-center">{quantity}</span>
+            <span className="font-semibold text-sm text-on-surface w-6 text-center">{quantity}</span>
             <button onClick={() => setQuantity(q => Math.min(20, q + 1))} aria-label="One more" className="w-10 h-10 rounded-full bg-surface-container-lowest text-on-surface flex items-center justify-center"><Plus className="w-4 h-4" /></button>
           </div>
           <motion.button
             whileTap={{ scale: 0.98 }}
             onClick={() => onSave(variation, chosenAddons, quantity, note)}
             disabled={variations.length > 0 && !variation}
-            className="flex-1 h-12 bg-primary text-on-primary rounded-full font-bold text-sm disabled:opacity-60"
+            className="flex-1 h-12 bg-primary text-on-primary rounded-full font-semibold text-sm disabled:opacity-60"
           >
             {initial ? 'Update' : 'Add'} · {formatCurrency(unit * quantity, currency)}
           </motion.button>
@@ -967,11 +969,11 @@ function CompleteOrderModal({ suggestion, currency, placing, paused, isAdded, pr
       >
         <div className="relative bg-primary text-on-primary px-6 pt-7 pb-5 text-center">
           {!engaged && !placing && (
-            <div className="absolute top-0 inset-x-0 h-1 bg-white/25">
-              <div className="h-full bg-white transition-[width] duration-100 ease-linear" style={{ width: `${Math.max(0, (remaining / CHECKOUT_PROMPT_MS) * 100)}%` }} />
+            <div className="absolute top-0 inset-x-0 h-1 bg-on-primary/20">
+              <div className="h-full bg-room-ready transition-[width] duration-100 ease-linear" style={{ width: `${Math.max(0, (remaining / CHECKOUT_PROMPT_MS) * 100)}%` }} />
             </div>
           )}
-          <h3 id="complete-order-title" className="text-2xl font-bold leading-tight">{suggestion.pitch}</h3>
+          <h3 id="complete-order-title" className="text-[26px] font-semibold tracking-[-0.03em] leading-tight">{suggestion.pitch}</h3>
           <p className="text-[13px] font-semibold opacity-85 mt-1">{suggestion.reason}</p>
         </div>
 
@@ -991,16 +993,16 @@ function CompleteOrderModal({ suggestion, currency, placing, paused, isAdded, pr
                   <span className="min-w-0">
                     <span className="flex items-center gap-1.5">
                       <VegMark veg={item.isVeg} />
-                      <span className="font-bold text-sm text-on-surface truncate">{item.name}</span>
+                      <span className="font-semibold text-sm text-on-surface truncate">{item.name}</span>
                     </span>
-                    <span className="block font-bold text-sm text-on-surface mt-0.5">{formatCurrency(priceOf(item), currency)}</span>
+                    <span className="block font-semibold text-sm text-on-surface mt-0.5">{formatCurrency(priceOf(item), currency)}</span>
                   </span>
                 </button>
                 <motion.button
                   whileTap={{ scale: 0.92 }}
                   onClick={() => onAdd(item)}
                   disabled={added || placing}
-                  className={`shrink-0 h-10 px-5 rounded-full text-sm font-bold ${added ? 'bg-success/15 text-success' : 'bg-primary text-on-primary'}`}
+                  className={`shrink-0 h-10 px-5 rounded-full text-sm font-semibold ${added ? 'bg-success/15 text-success' : 'bg-primary text-on-primary'}`}
                 >
                   {added ? <span className="inline-flex items-center gap-1"><Check className="w-4 h-4" /> Added</span> : 'Add'}
                 </motion.button>
@@ -1011,7 +1013,7 @@ function CompleteOrderModal({ suggestion, currency, placing, paused, isAdded, pr
           <button
             onClick={onPlace}
             disabled={placing}
-            className="w-full mt-3 h-13 py-3.5 rounded-2xl bg-highlight text-on-highlight text-[15px] font-bold disabled:opacity-60"
+            className="w-full mt-3 h-13 py-3.5 rounded-2xl bg-highlight text-on-highlight text-[15px] font-semibold disabled:opacity-60"
           >
             {placing
               ? 'Placing your order…'

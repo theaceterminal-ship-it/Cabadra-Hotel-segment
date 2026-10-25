@@ -7,6 +7,8 @@ import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { GuestHome } from '../components/GuestHome';
 import { RoomDiningView } from '../components/RoomDiningView';
 import { GuestActivitiesView } from '../components/GuestActivitiesView';
+import { GuestWelcomeIntro, shouldPlayWelcome } from '../components/GuestWelcomeIntro';
+import { useSiteTheme } from '../hooks/useTheme';
 import { SupabaseSetupNeeded } from '../components/SupabaseSetupNeeded';
 import { DynamicIslandStatusBar } from '../components/DynamicIslandStatusBar';
 import { GuestFolioChat } from '../components/GuestFolioChat';
@@ -32,6 +34,12 @@ export default function GuestApp() {
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<Extract<AppView, 'guest_home' | 'room_dining' | 'guest_activities'>>('guest_home');
 
+  // The public website's palette and shapes (`.theme-site`), the same as
+  // the owner side; dark follows the phone's own setting below.
+  useSiteTheme();
+  // Decided once, when the stay first loads: the welcome plays on the first visit of a session only.
+  const [showWelcome, setShowWelcome] = useState<boolean | null>(null);
+
   useEffect(() => {
     const media = window.matchMedia('(prefers-color-scheme: dark)');
 
@@ -44,7 +52,7 @@ export default function GuestApp() {
         meta.name = 'theme-color';
         document.head.appendChild(meta);
       }
-      meta.content = isDark ? '#14101f' : '#9992c9';
+      meta.content = isDark ? '#0e100e' : '#eef0ec';
     };
 
     apply(media.matches);
@@ -79,6 +87,7 @@ export default function GuestApp() {
     fetchGuestContext(effectiveToken)
       .then(ctx => {
         setContext(ctx);
+        setShowWelcome(prev => prev ?? shouldPlayWelcome(effectiveToken));
         localStorage.setItem('cabadra_guest_token', effectiveToken);
       })
       .catch(err => {
@@ -128,7 +137,15 @@ export default function GuestApp() {
 
   return (
     <>
-      <GuestPwaInstallPrompt />
+      {showWelcome === true && (
+        <GuestWelcomeIntro
+          token={effectiveToken}
+          guestName={context.guest.name}
+          propertyName={context.property.name}
+          onDone={() => setShowWelcome(false)}
+        />
+      )}
+      {showWelcome === false && <GuestPwaInstallPrompt />}
       {view === 'guest_home' && (
         <GuestHome
           token={effectiveToken}

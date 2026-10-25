@@ -54,7 +54,7 @@ export function ExperienceBookingSheet({ experience, currency, onClose, onBook }
             <X className="w-5 h-5" />
           </button>
           <div className="absolute bottom-4 left-5 right-5 text-white">
-            <h3 className="text-2xl font-bold leading-tight">{experience.name}</h3>
+            <h3 className="text-2xl font-semibold leading-tight">{experience.name}</h3>
             <p className="text-sm text-white/85 mt-0.5">{formatCurrency(experience.price, currency)} {experience.unitLabel}</p>
           </div>
         </div>
@@ -69,7 +69,7 @@ export function ExperienceBookingSheet({ experience, currency, onClose, onBook }
             </div>
             <div className="flex items-center gap-2 rounded-full bg-surface-container-low p-1">
               <button type="button" onClick={() => setGuests(g => Math.max(1, g - 1))} aria-label="Fewer" className="w-9 h-9 rounded-full bg-surface-container-lowest flex items-center justify-center"><Minus className="w-4 h-4" /></button>
-              <span className="w-6 text-center font-bold">{guests}</span>
+              <span className="w-6 text-center font-semibold">{guests}</span>
               <button type="button" onClick={() => setGuests(g => Math.min(20, g + 1))} aria-label="More" className="w-9 h-9 rounded-full bg-surface-container-lowest flex items-center justify-center"><Plus className="w-4 h-4" /></button>
             </div>
           </div>
@@ -90,9 +90,9 @@ export function ExperienceBookingSheet({ experience, currency, onClose, onBook }
         <div className="p-5 border-t border-outline-variant shrink-0" style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
           <div className="flex items-center justify-between text-sm mb-3">
             <span className="text-on-surface-variant">Estimated total</span>
-            <span className="font-bold">{formatCurrency(experience.price * guests, currency)}</span>
+            <span className="font-semibold">{formatCurrency(experience.price * guests, currency)}</span>
           </div>
-          <button onClick={handleBook} disabled={sending} className="w-full h-12 rounded-full bg-primary text-on-primary text-sm font-bold disabled:opacity-60">
+          <button onClick={handleBook} disabled={sending} className="w-full h-12 rounded-full bg-primary text-on-primary text-sm font-semibold disabled:opacity-60">
             {sending ? 'Sending…' : 'Request to book'}
           </button>
           <p className="text-[11px] text-on-surface-variant text-center mt-2">The hotel confirms the time with you. You’re not charged now.</p>

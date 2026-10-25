@@ -32,13 +32,13 @@ export function GuestActivitiesView({ propertyName, experiences, currency, onNav
 
   return (
     <div className="w-full min-h-screen bg-surface pb-28">
-      <header className="sticky top-0 z-30 bg-surface/85 backdrop-blur-md border-b border-white/50">
+      <header className="sticky top-0 z-30 bg-surface/90 backdrop-blur-xl">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center gap-3">
           <button onClick={() => onNavigate('guest_home')} aria-label="Back" className="w-10 h-10 rounded-full bg-surface-container-lowest shadow-sm flex items-center justify-center text-on-surface">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="min-w-0">
-            <h1 className="text-lg font-bold text-on-surface leading-tight">Things to do</h1>
+            <h1 className="text-[22px] font-semibold tracking-[-0.03em] text-on-surface leading-tight">Things to do</h1>
             <p className="text-xs text-on-surface-variant truncate">Arranged by {propertyName}</p>
           </div>
         </div>
@@ -77,20 +77,20 @@ export function GuestActivitiesView({ propertyName, experiences, currency, onNav
                 transition={{ delay: Math.min(i, 8) * 0.05, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setBooking(exp)}
-                className="rounded-[26px] bg-surface-container-lowest overflow-hidden text-left shadow-sm hover:shadow-md transition-shadow"
+                className="rounded-[28px] bg-surface-container-lowest overflow-hidden text-left hover:shadow-[0_18px_50px_rgba(0,0,0,0.08)] transition-shadow duration-300"
               >
                 <div className="relative h-44 bg-surface-container-high">
                   <img src={exp.image || FALLBACK_EXPERIENCE_IMAGE} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                  <span className="absolute bottom-3 left-3 text-xs font-bold bg-white/90 text-black rounded-full px-3 py-1">
+                  <span className="absolute bottom-3 left-3 text-xs font-semibold bg-white/90 text-black rounded-full px-3 py-1">
                     {formatCurrency(exp.price, currency)} <span className="font-normal">{exp.unitLabel}</span>
                   </span>
                 </div>
                 <div className="p-4 flex items-start gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="text-base font-bold text-on-surface">{exp.name}</p>
+                    <p className="text-base font-semibold text-on-surface">{exp.name}</p>
                     {exp.description && <p className="text-xs text-on-surface-variant mt-1 line-clamp-2">{exp.description}</p>}
                   </div>
-                  <span className="h-9 px-4 rounded-full bg-primary text-on-primary text-xs font-bold flex items-center shrink-0">Book</span>
+                  <span className="h-9 px-4 rounded-full bg-primary text-on-primary text-xs font-semibold flex items-center shrink-0">Book</span>
                 </div>
               </motion.button>
             ))}

@@ -103,7 +103,7 @@ export function ServiceRequestSheet({ token, service, routes, currency, onClose,
       <div className="w-full sm:max-w-md max-h-[90svh] flex flex-col bg-surface-container-lowest rounded-t-3xl sm:rounded-2xl shadow-2xl border border-outline-variant animate-in slide-in-from-bottom duration-200">
         <div className="flex items-start justify-between gap-3 p-5 pb-3 border-b border-outline-variant">
           <div className="min-w-0">
-            <h3 className="text-lg font-bold text-on-surface leading-snug">{service.name}</h3>
+            <h3 className="text-lg font-semibold text-on-surface leading-snug">{service.name}</h3>
             <p className="text-xs text-on-surface-variant mt-0.5">{service.description || `Goes to ${departmentLabel(service.department)}`}</p>
           </div>
           <button onClick={onClose} aria-label="Close" className="p-1 rounded-full text-on-surface-variant hover:bg-surface-container-low shrink-0">
@@ -114,19 +114,19 @@ export function ServiceRequestSheet({ token, service, routes, currency, onClose,
         {sent ? (
           <div className="p-6 text-center space-y-3">
             <span className="mx-auto w-12 h-12 rounded-full bg-success text-on-success flex items-center justify-center"><Check className="w-6 h-6" /></span>
-            <p className="font-bold text-on-surface">Request sent</p>
+            <p className="font-semibold text-on-surface">Request sent</p>
             <p className="text-sm text-on-surface-variant">
               {departmentLabel(service.department)} has it.
               {sent.price > 0 && <> {formatCurrency(sent.price, currency)} will be added to your room bill once it’s done.</>}
             </p>
-            <button onClick={onClose} className="w-full h-11 rounded-xl bg-primary text-on-primary text-sm font-bold">Done</button>
+            <button onClick={onClose} className="w-full h-11 rounded-xl bg-primary text-on-primary text-sm font-semibold">Done</button>
           </div>
         ) : (
           <>
             <div className="flex-1 overflow-y-auto p-5 space-y-5">
               {isRoute ? (
                 <div>
-                  <p className="text-xs font-bold text-on-surface mb-2">Where to?</p>
+                  <p className="text-xs font-semibold text-on-surface mb-2">Where to?</p>
                   {routes.length > 5 && (
                     <div className="relative mb-2">
                       <MapPin className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
@@ -153,7 +153,7 @@ export function ServiceRequestSheet({ token, service, routes, currency, onClose,
                 </div>
               ) : choices.length > 0 ? (
                 <div>
-                  <p className="text-xs font-bold text-on-surface mb-2">
+                  <p className="text-xs font-semibold text-on-surface mb-2">
                     {form.multiple ? 'Choose what you need' : 'Choose one'}
                   </p>
                   <div className="space-y-2">
@@ -170,7 +170,7 @@ export function ServiceRequestSheet({ token, service, routes, currency, onClose,
                           {qty && form.quantity ? (
                             <div className="flex items-center gap-1 shrink-0">
                               <button type="button" onClick={() => setQty(ch.id, qty - 1)} aria-label="One less" className="w-7 h-7 rounded-lg bg-surface-container-lowest border border-outline-variant flex items-center justify-center"><Minus className="w-3.5 h-3.5" /></button>
-                              <span className="w-5 text-center text-sm font-bold">{qty}</span>
+                              <span className="w-5 text-center text-sm font-semibold">{qty}</span>
                               <button type="button" onClick={() => setQty(ch.id, qty + 1)} aria-label="One more" className="w-7 h-7 rounded-lg bg-surface-container-lowest border border-outline-variant flex items-center justify-center"><Plus className="w-3.5 h-3.5" /></button>
                             </div>
                           ) : null}
@@ -192,7 +192,7 @@ export function ServiceRequestSheet({ token, service, routes, currency, onClose,
 
               {form.askTime && (
                 <div>
-                  <p className="text-xs font-bold text-on-surface mb-2">When?</p>
+                  <p className="text-xs font-semibold text-on-surface mb-2">When?</p>
                   <div className="flex gap-2">
                     <div className="grid grid-cols-2 gap-1 rounded-xl bg-surface-container-low p-1 text-xs font-semibold shrink-0">
                       {(['Today', 'Tomorrow'] as const).map(d => (
@@ -206,7 +206,7 @@ export function ServiceRequestSheet({ token, service, routes, currency, onClose,
 
               {showNote && (
                 <div>
-                  <p className="text-xs font-bold text-on-surface mb-2">Anything else? <span className="font-normal text-on-surface-variant">(optional)</span></p>
+                  <p className="text-xs font-semibold text-on-surface mb-2">Anything else? <span className="font-normal text-on-surface-variant">(optional)</span></p>
                   <textarea rows={2} value={note} onChange={e => setNote(e.target.value)} placeholder="Add a note for the team" className="w-full p-3 text-sm border border-outline-variant rounded-xl focus:border-primary focus:outline-none resize-none" />
                 </div>
               )}
@@ -218,10 +218,10 @@ export function ServiceRequestSheet({ token, service, routes, currency, onClose,
               {total > 0 && (
                 <p className="text-xs text-on-surface-variant flex justify-between">
                   <span>Added to your room bill once done</span>
-                  <span className="font-bold text-on-surface">{formatCurrency(total, currency)}</span>
+                  <span className="font-semibold text-on-surface">{formatCurrency(total, currency)}</span>
                 </p>
               )}
-              <button onClick={handleSend} disabled={!ready || sending} className="w-full h-12 rounded-xl bg-primary text-on-primary text-sm font-bold hover:bg-primary-hover disabled:opacity-50">
+              <button onClick={handleSend} disabled={!ready || sending} className="w-full h-12 rounded-xl bg-primary text-on-primary text-sm font-semibold hover:bg-primary-hover disabled:opacity-50">
                 {sending ? 'Sending…' : `Send to ${departmentLabel(service.department)}`}
               </button>
             </div>
