@@ -91,6 +91,8 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({
   const hasStay = !!folio && /^[0-9a-f-]{36}$/i.test(folio.reservationId);
   const balance = folio?.totals?.balance ?? folio?.totalOutstanding ?? 0;
   const open = folio?.status === 'checked_in' || folio?.status === 'upcoming';
+  // Money can still move on a cancelled or no-show booking (a fee, a refund) until its bill is issued.
+  const canTakeMoney = !!folio && !folio.invoice && folio.status !== 'checked_out';
 
   const openBill = async () => {
     const id = result?.reservationId ?? folio?.reservationId;
@@ -151,12 +153,12 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({
                 <p className="text-xs text-on-surface-variant -mt-2">Room rent is billed in your own PMS; this bill has only what was ordered through Cabadra.</p>
               )}
 
-              <Lines charges={folio.charges} currency={currency} canVoid={!folio.invoice && open} onChanged={reload} onError={setError} />
-              {folio.payments.length > 0 && <Payments payments={folio.payments} currency={currency} canVoid={!folio.invoice && open} onChanged={reload} onError={setError} />}
+              <Lines charges={folio.charges} currency={currency} canVoid={canTakeMoney} onChanged={reload} onError={setError} />
+              {folio.payments.length > 0 && <Payments payments={folio.payments} currency={currency} canVoid={canTakeMoney} onChanged={reload} onError={setError} />}
 
               {error && <p className="text-sm text-error bg-error/10 rounded-2xl px-4 py-3">{error}</p>}
 
-              {open && panel === 'payment' && (
+              {canTakeMoney && panel === 'payment' && (
                 <PaymentForm reservationId={folio.reservationId} balance={balance} currency={currency} onDone={() => { setPanel('none'); reload(); }} onCancel={() => setPanel('none')} onError={setError} />
               )}
               {open && panel === 'charge' && (
@@ -187,7 +189,7 @@ export const RoomFolioModal: React.FC<RoomFolioModalProps> = ({
           <div className="px-6 py-4 border-t border-outline-variant flex flex-wrap gap-2 justify-end" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
             <button onClick={openBill} className={`${btnQuiet} mr-auto`}><Printer className="size-4" /> {folio.invoice ? 'Bill' : 'Bill so far'}</button>
             {open && <button onClick={() => setPanel('charge')} className={btnQuiet}><Plus className="size-4" /> Charge</button>}
-            {open && <button onClick={() => setPanel('payment')} className={btnQuiet}><Plus className="size-4" /> Payment</button>}
+            {canTakeMoney && <button onClick={() => setPanel('payment')} className={btnQuiet}><Plus className="size-4" /> {balance < -0.005 ? 'Refund' : 'Payment'}</button>}
             {open && upiId && balance > 0 && <button onClick={() => setShowUpiQr(true)} className={btnQuiet} aria-label="Show UPI QR"><QrCode className="size-4" /></button>}
             {folio.status === 'checked_in' && (
               <button onClick={() => setPanel('checkout')} className={btnPrimary}>Check out{balance > 0 ? ` · ${c(balance)} due` : ''}</button>

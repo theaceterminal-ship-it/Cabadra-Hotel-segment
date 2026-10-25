@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Search, Users, BedDouble, Calendar, ArrowLeft, X, CheckCircle2, QrCode, UserPlus } from 'lucide-react';
 import { Room } from '../types';
-import { checkInNewGuest, searchAvailableRooms, AvailableRoom } from '../lib/staffApi';
+import { checkInNewGuest, searchAvailableRooms, AvailableRoom, BOOKING_CHANNELS, BookingChannel } from '../lib/staffApi';
 import { formatCurrency } from '../lib/currency';
 import { ImageUploadField } from './ImageUploadField';
 import { RoomQrModal } from './RoomQrModal';
@@ -12,6 +12,9 @@ interface NewBookingModalProps {
   rooms: Room[];
   onClose: () => void;
   onBooked: () => void;
+  /** Opened from an empty calendar cell: that room and arrival date, straight to the guest's details. */
+  initialRoom?: Room;
+  initialCheckIn?: string;
 }
 
 type Step = 'search' | 'results' | 'details' | 'success';
@@ -19,14 +22,23 @@ type Step = 'search' | 'results' | 'details' | 'success';
 const inputCls = 'w-full h-10 px-3 text-sm border border-outline-variant rounded-lg focus:border-primary focus:outline-none';
 const labelCls = 'text-[11px] font-bold text-on-surface-variant block mb-1';
 
+/** YYYY-MM-DD in the desk's own timezone (toISOString would give UTC's date, yesterday before 5:30 am in India). */
+function localIso(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localIso(new Date());
+}
+
+function dayAfter(iso: string): string {
+  const d = new Date(`${iso}T12:00:00`);
+  d.setDate(d.getDate() + 1);
+  return localIso(d);
 }
 
 function tomorrowIso(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
+  return dayAfter(todayIso());
 }
 
 /**
@@ -40,13 +52,20 @@ function tomorrowIso(): string {
  * decides which based on the date. The simpler "I already know which room"
  * case still exists too, per-room, via CheckInModal on Rooms & Floors.
  */
-export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked }: NewBookingModalProps) {
-  const [step, setStep] = useState<Step>('search');
+export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked, initialRoom, initialCheckIn }: NewBookingModalProps) {
+  const [step, setStep] = useState<Step>(initialRoom ? 'details' : 'search');
   const [partySize, setPartySize] = useState('2');
   const [roomType, setRoomType] = useState('any');
-  const [checkIn, setCheckIn] = useState(todayIso());
-  const [checkOut, setCheckOut] = useState(tomorrowIso());
-  const [selectedRoom, setSelectedRoom] = useState<AvailableRoom | null>(null);
+  const [checkIn, setCheckIn] = useState(initialCheckIn ?? todayIso());
+  const [checkOut, setCheckOut] = useState(initialCheckIn ? dayAfter(initialCheckIn) : tomorrowIso());
+  const [selectedRoom, setSelectedRoom] = useState<AvailableRoom | null>(
+    initialRoom
+      ? { id: initialRoom.id, number: initialRoom.number, type: initialRoom.type, floor: initialRoom.floor, maxOccupancy: initialRoom.maxOccupancy, pricePerNight: initialRoom.pricePerNight, image: initialRoom.image }
+      : null
+  );
+  const [channel, setChannel] = useState<BookingChannel>((initialCheckIn ?? todayIso()) > todayIso() ? 'phone' : 'walk_in');
+  const [channelDetail, setChannelDetail] = useState('');
+  const [notes, setNotes] = useState('');
 
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -58,7 +77,7 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
   const [vip, setVip] = useState(false);
   const [idDocumentUrl, setIdDocumentUrl] = useState('');
   // The rate agreed for this stay; starts at the room's listed price and goes on the bill each night.
-  const [rate, setRate] = useState('');
+  const [rate, setRate] = useState(initialRoom ? String(initialRoom.pricePerNight ?? '') : '');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showQr, setShowQr] = useState(false);
@@ -114,6 +133,9 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
         checkOut: new Date(`${checkOut}T12:00:00`),
         partySize: parseInt(partySize, 10) || 1,
         ratePerNight: rate.trim() === '' ? undefined : Math.max(0, parseFloat(rate) || 0),
+        channel,
+        channelDetail: channelDetail.trim() || undefined,
+        notes: notes.trim() || undefined,
       });
       setStep('success');
       onBooked();
@@ -224,12 +246,29 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
 
         {step === 'details' && selectedRoom && (
           <form onSubmit={handleAssign} className="space-y-3">
-            <button type="button" onClick={() => setStep('results')} className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+            <button type="button" onClick={() => setStep(availableRooms.length ? 'results' : 'search')} className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
               <ArrowLeft className="w-3 h-3" /> Choose a different room
             </button>
             <div className="bg-surface-container-low p-2.5 rounded-lg border border-outline-variant text-xs text-on-surface-variant">
               Room {selectedRoom.number} · {selectedRoom.type} · {formatCurrency(selectedRoom.pricePerNight, currency)}/night · {checkIn} &rarr; {checkOut}
             </div>
+
+            {initialRoom && (
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className={labelCls}>Arrival</label>
+                  <input type="date" value={checkIn} onChange={e => { setCheckIn(e.target.value); if (checkOut <= e.target.value) setCheckOut(dayAfter(e.target.value)); }} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Departure</label>
+                  <input type="date" min={dayAfter(checkIn)} value={checkOut} onChange={e => setCheckOut(e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Guests</label>
+                  <input type="number" min={1} max={selectedRoom.maxOccupancy || 20} value={partySize} onChange={e => setPartySize(e.target.value)} className={inputCls} />
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3 items-end">
               <div>
@@ -255,6 +294,23 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
                 <label className={labelCls}>Email</label>
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="guest@email.com" className={inputCls} />
               </div>
+            </div>
+            <div>
+              <label className={labelCls}>Booked via</label>
+              <div className="flex flex-wrap gap-1.5">
+                {BOOKING_CHANNELS.map(c => (
+                  <button key={c.id} type="button" onClick={() => setChannel(c.id)} className={`h-8 px-3 rounded-full text-xs font-semibold transition-colors ${channel === c.id ? 'bg-primary text-on-primary' : 'bg-surface-container-low text-on-surface-variant hover:text-on-surface'}`}>
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+              {(channel === 'ota' || channel === 'agent' || channel === 'other') && (
+                <input value={channelDetail} onChange={e => setChannelDetail(e.target.value)} maxLength={60} placeholder={channel === 'ota' ? 'Booking.com, MakeMyTrip, Airbnb…' : channel === 'agent' ? 'Agent or company name' : 'Where from?'} className={`${inputCls} mt-2`} />
+              )}
+            </div>
+            <div>
+              <label className={labelCls}>Notes (optional)</label>
+              <textarea value={notes} onChange={e => setNotes(e.target.value)} maxLength={1000} rows={2} placeholder="Late arrival, extra bed, anniversary…" className={`${inputCls} h-auto py-2`} />
             </div>
             <ImageUploadField label="ID Document (optional)" value={idDocumentUrl} onChange={setIdDocumentUrl} />
             <label className="flex items-center gap-2 text-xs font-semibold text-on-surface">

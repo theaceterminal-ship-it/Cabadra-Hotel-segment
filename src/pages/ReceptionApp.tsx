@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { LayoutDashboard, BedDouble, ListChecks, UtensilsCrossed, Truck, CalendarClock, Sparkles, Users, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, BedDouble, ListChecks, UtensilsCrossed, Truck, CalendarClock, CalendarDays, Sparkles, Users, TrendingUp } from 'lucide-react';
 import { StaffPwaInstallPrompt } from '../components/StaffPwaInstallPrompt';
 import { ReservedExperiencesView } from '../components/ReservedExperiencesView';
 import { GuestCrmView } from '../components/GuestCrmView';
@@ -36,6 +36,7 @@ import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { Sidebar, SidebarNavItem } from '../components/Sidebar';
 import { ShiftCoverageView } from '../components/ShiftCoverageView';
 import { ReceptionDashboard } from '../components/ReceptionDashboard';
+import { BookingsView } from '../components/bookings/BookingsView';
 import { RoomsFloorsView } from '../components/RoomsFloorsView';
 import { LiveOpsView } from '../components/LiveOpsView';
 import { KitchenKDS } from '../components/KitchenKDS';
@@ -48,7 +49,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useNotifications } from '../hooks/useNotifications';
 import LoginPage from './LoginPage';
 
-type ReceptionTab = 'dashboard' | 'rooms_floors' | 'live_ops' | 'reserved_experiences' | 'guest_crm' | 'sales_reports' | 'kitchen_kds' | 'active_deliveries' | 'shift_coverage';
+type ReceptionTab = 'dashboard' | 'bookings' | 'rooms_floors' | 'live_ops' | 'reserved_experiences' | 'guest_crm' | 'sales_reports' | 'kitchen_kds' | 'active_deliveries' | 'shift_coverage';
 
 function supabaseOrderToKdsOrder(order: StaffOrder, previouslySeen?: KdsOrder): KdsOrder {
   const roomNumber = order.roomId.split('-').pop() ?? order.roomId;
@@ -350,6 +351,7 @@ export default function ReceptionApp() {
 
   const navItems: SidebarNavItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: openRequestsCount },
+    { id: 'bookings', label: 'Bookings', icon: CalendarDays },
     { id: 'rooms_floors', label: 'Rooms & Floors', icon: BedDouble },
     { id: 'live_ops', label: 'Live Ops & Tasks', icon: ListChecks, badge: openTasksCount },
     { id: 'reserved_experiences', label: 'Reserved Experiences', icon: Sparkles },
@@ -401,6 +403,16 @@ export default function ReceptionApp() {
               onRefreshRooms={() => propertyId && reloadRoomsAndArrivals(propertyId)}
               onOpenNewRequest={() => setIsRequestModalOpen(true)}
               onNavigate={(v: AppView) => setView(v as ReceptionTab)}
+            />
+          )}
+          {view === 'bookings' && propertyId && (
+            <BookingsView
+              propertyId={propertyId}
+              propertyName={propertyName}
+              currency={currency}
+              upiId={upiId}
+              rooms={rooms}
+              onRefreshRooms={() => reloadRoomsAndArrivals(propertyId)}
             />
           )}
           {view === 'rooms_floors' && (

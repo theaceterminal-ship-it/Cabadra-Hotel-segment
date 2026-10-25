@@ -4,6 +4,7 @@ export type AppView =
   | 'properties'
   | 'reception'
   | 'dashboard'
+  | 'bookings'
   | 'rooms_floors'
   | 'live_ops'
   | 'reserved_experiences'
