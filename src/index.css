@@ -327,3 +327,14 @@
   --color-room-maintenance: #5c615a;
   --color-room-maintenance-on: #f2f3f0;
 }
+
+/* The guest status pill's label: a short slide-in whenever the situation
+   changes (keyed on it). Plain CSS, not motion's AnimatePresence, so a
+   paused or backgrounded tab can never leave the old label stuck. */
+@keyframes status-pill-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.status-pill-in {
+  animation: status-pill-in 180ms ease-out;
+}

@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { fetchActiveOrder, fetchActiveGuestRequests, dismissGuestRequest, ActiveOrder, ActiveGuestRequest } from '../lib/guestApi';
+import {
+  fetchActiveOrder, fetchActiveGuestRequests, dismissGuestRequest, fetchGuestExperienceBookings,
+  ActiveOrder, ActiveGuestRequest,
+} from '../lib/guestApi';
+import type { GuestExperienceBooking } from '../types';
 import { computeOrderEta } from '../lib/eta';
 import { formatCurrency } from '../lib/currency';
-import { ChefHat, Check, X, AlertTriangle, Clock, Play, BellOff, ChevronRight } from 'lucide-react';
+import { ChefHat, Check, X, AlertTriangle, Clock, Play, BellOff, ChevronRight, Calendar } from 'lucide-react';
 
 interface DynamicIslandStatusBarProps {
   token: string;
@@ -23,24 +27,35 @@ const REQUEST_STATUS_LABEL: Record<NonNullable<ActiveGuestRequest['taskStatus']>
   rejected: "Couldn't be done",
 };
 
-function formatCountdown(ms: number): string {
-  const totalSeconds = Math.max(0, Math.round(ms / 1000));
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+/** A rejected order the guest has cleared stays cleared across reloads (the server keeps returning the last rejected order). */
+const CLEARED_ORDER_KEY = 'cabadra_cleared_order';
+
+function readClearedOrder(): string | null {
+  try { return localStorage.getItem(CLEARED_ORDER_KEY); } catch { return null; }
+}
+
+/** Minutes left, rounded up: what the pill shows, so it changes once a minute rather than every second. */
+function minutesLeft(ms: number): number {
+  return Math.max(1, Math.ceil(ms / 60_000));
 }
 
 /**
  * The guest's live status: one pill in the top bar that says the single
- * most useful thing right now (the food countdown, or how a request is
- * going), and a sheet with the whole picture when tapped. Polls the order
- * and requests every 8 seconds.
+ * most useful thing right now (the food, or how a request is going), and a
+ * sheet with the whole picture when tapped: the order, every request and
+ * the guest's bookings. Polls every 8 seconds.
+ *
+ * Nothing still in progress can be cleared from here. A request can only be
+ * cleared once its task is done or declined (guest_dismiss_request, 0077),
+ * and the food order only when the kitchen declined it: anything else stays
+ * tracked until it's finished.
  */
 export function DynamicIslandStatusBar({ token, currency, className }: DynamicIslandStatusBarProps) {
   const [order, setOrder] = useState<ActiveOrder | null>(null);
   const [requests, setRequests] = useState<ActiveGuestRequest[]>([]);
-  const [dismissedOrder, setDismissedOrder] = useState<string | null>(null);
-  const [dismissedRequests, setDismissedRequests] = useState<string[]>([]);
+  const [bookings, setBookings] = useState<GuestExperienceBooking[]>([]);
+  const [clearedOrder, setClearedOrder] = useState<string | null>(readClearedOrder);
+  const [clearedRequests, setClearedRequests] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
@@ -49,66 +64,75 @@ export function DynamicIslandStatusBar({ token, currency, className }: DynamicIs
     const poll = () => {
       fetchActiveOrder(token).then(o => { if (!cancelled) setOrder(o); }).catch(() => {});
       fetchActiveGuestRequests(token).then(r => { if (!cancelled) setRequests(r); }).catch(() => {});
+      fetchGuestExperienceBookings(token).then(b => { if (!cancelled) setBookings(b); }).catch(() => {});
     };
     poll();
     const interval = setInterval(poll, 8000);
     return () => { cancelled = true; clearInterval(interval); };
   }, [token]);
 
+  // The pill and the sheet both show whole minutes, so a coarse tick is enough.
   useEffect(() => {
-    const tick = setInterval(() => setNow(Date.now()), 1000);
+    const tick = setInterval(() => setNow(Date.now()), 15_000);
     return () => clearInterval(tick);
   }, []);
 
-  const handleDismissRequest = async (requestId: string) => {
-    setDismissedRequests(prev => [...prev, requestId]);
+  const clearRequest = async (requestId: string) => {
+    setClearedRequests(prev => [...prev, requestId]);
     await dismissGuestRequest(token, requestId);
   };
 
-  const activeOrder = order && order.id !== dismissedOrder ? order : null;
-  const activeRequests = requests.filter(r => !dismissedRequests.includes(r.id) && r.taskStatus !== 'completed');
-  const updates = (activeOrder ? 1 : 0) + activeRequests.length;
+  const clearOrder = (orderId: string) => {
+    setClearedOrder(orderId);
+    try { localStorage.setItem(CLEARED_ORDER_KEY, orderId); } catch { /* private mode: cleared for this visit only */ }
+  };
 
-  let countdown = '';
+  const activeOrder = order && !(order.status === 'rejected' && order.id === clearedOrder) ? order : null;
+  const visibleRequests = requests.filter(r => !clearedRequests.includes(r.id));
+  const inProgress = visibleRequests.filter(r => r.taskStatus !== 'completed' && r.taskStatus !== 'rejected');
+  const upcomingBookings = bookings.filter(b => b.status === 'pending' || b.status === 'requested' || b.status === 'confirmed');
+
+  let remainingMs = 0;
   let overdue = false;
   if (activeOrder && activeOrder.status !== 'rejected') {
     const eta = computeOrderEta(activeOrder.items, activeOrder.createdAt, activeOrder.status);
-    const remaining = new Date(activeOrder.createdAt).getTime() + eta.minutes * 60_000 - now;
-    overdue = remaining <= 0 && activeOrder.status !== 'ready';
-    countdown = activeOrder.status === 'ready' ? 'On its way' : overdue ? 'Almost there' : formatCountdown(remaining);
+    remainingMs = new Date(activeOrder.createdAt).getTime() + eta.minutes * 60_000 - now;
+    overdue = remainingMs <= 0 && activeOrder.status !== 'ready';
   }
+  const orderLine = !activeOrder ? ''
+    : activeOrder.status === 'rejected' ? 'Order not placed'
+    : activeOrder.status === 'ready' ? 'Food · on its way'
+    : overdue ? 'Food · almost there'
+    : `Food · ${minutesLeft(remainingMs)} min`;
 
-  const label = activeOrder
-    ? activeOrder.status === 'rejected' ? 'Order not placed' : `Food · ${countdown}`
-    : activeRequests.length
-      ? `${activeRequests.length > 1 ? `${activeRequests.length} requests` : 'Request'} · ${REQUEST_STATUS_LABEL[activeRequests[0].taskStatus || 'received']}`
-      : 'All quiet';
+  // `pillKey` changes only when the situation changes (a new stage, another
+  // request), never on a countdown tick, so the label only animates when
+  // there's actually news.
+  const [label, pillKey] = activeOrder
+    ? [orderLine, `order-${activeOrder.id}-${activeOrder.status}-${overdue}`]
+    : inProgress.length
+      ? [`${inProgress.length > 1 ? `${inProgress.length} requests` : 'Request'} · ${REQUEST_STATUS_LABEL[inProgress[0].taskStatus || 'received']}`, `req-${inProgress.length}-${inProgress[0].taskStatus}`]
+      : upcomingBookings.length
+        ? [`${upcomingBookings.length > 1 ? `${upcomingBookings.length} bookings` : 'Booking'} · ${upcomingBookings.some(b => b.status === 'confirmed') ? 'confirmed' : 'requested'}`, `book-${upcomingBookings.length}`]
+        : ['All quiet', 'quiet'];
+  const live = !!activeOrder || inProgress.length > 0;
+  const nothingAtAll = !activeOrder && visibleRequests.length === 0 && upcomingBookings.length === 0;
 
   return (
     <div className={className}>
       <motion.button
-        layout
         onClick={() => setOpen(true)}
         whileTap={{ scale: 0.96 }}
         className="h-10 pl-3 pr-2.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-md border border-white/60 shadow-sm text-on-surface flex items-center gap-2 max-w-[60vw]"
         aria-label="Live updates"
       >
         <span className="relative flex w-2.5 h-2.5 shrink-0">
-          {updates > 0 && <span className="absolute inset-0 rounded-full bg-success animate-ping opacity-60" />}
-          <span className={`relative w-2.5 h-2.5 rounded-full ${updates > 0 ? (activeOrder?.status === 'rejected' ? 'bg-error' : 'bg-success') : 'bg-outline'}`} />
+          {live && <span className="absolute inset-0 rounded-full bg-success animate-ping opacity-60" />}
+          <span className={`relative w-2.5 h-2.5 rounded-full ${activeOrder?.status === 'rejected' ? 'bg-error' : live ? 'bg-success' : upcomingBookings.length ? 'bg-primary' : 'bg-outline'}`} />
         </span>
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.span
-            key={label}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.18 }}
-            className="text-[13px] font-semibold truncate"
-          >
-            {label}
-          </motion.span>
-        </AnimatePresence>
+        <span key={pillKey} className="status-pill-in text-[13px] font-semibold truncate">
+          {label}
+        </span>
         <ChevronRight className="w-4 h-4 text-on-surface-variant shrink-0" />
       </motion.button>
 
@@ -131,14 +155,14 @@ export function DynamicIslandStatusBar({ token, currency, className }: DynamicIs
               <div className="flex items-center justify-between px-5 pt-5 pb-3">
                 <div>
                   <h3 className="text-lg font-bold">Live updates</h3>
-                  <p className="text-xs text-on-surface-variant">{updates ? `${updates} in progress` : 'Nothing in progress'}</p>
+                  <p className="text-xs text-on-surface-variant">{live ? 'Updates every few seconds' : nothingAtAll ? 'Nothing in progress' : 'Nothing on the way right now'}</p>
                 </div>
                 <button onClick={() => setOpen(false)} aria-label="Close" className="w-9 h-9 rounded-full hover:bg-surface-container-low flex items-center justify-center text-on-surface-variant">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="px-5 pb-6 space-y-4 overflow-y-auto" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
+              <div className="px-5 pb-6 space-y-5 overflow-y-auto" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
                 {activeOrder && (
                   <div className="rounded-3xl bg-surface-container-low p-4 space-y-3">
                     <div className="flex items-start gap-3">
@@ -149,10 +173,9 @@ export function DynamicIslandStatusBar({ token, currency, className }: DynamicIs
                           {activeOrder.status === 'rejected' ? <span className="text-error font-semibold">The kitchen couldn’t make it</span>
                             : activeOrder.status === 'ready' ? <span className="text-success font-semibold">On its way to your room</span>
                             : overdue ? 'Running a few minutes late'
-                            : <>Arriving in about <span className="font-mono font-bold text-on-surface">{countdown}</span></>}
+                            : <>Arriving in about <span className="font-bold text-on-surface">{minutesLeft(remainingMs)} min</span></>}
                         </p>
                       </div>
-                      <button onClick={() => setDismissedOrder(activeOrder.id)} aria-label="Hide" className="p-1 text-on-surface-variant"><X className="w-4 h-4" /></button>
                     </div>
 
                     {activeOrder.status !== 'rejected' ? (
@@ -186,43 +209,79 @@ export function DynamicIslandStatusBar({ token, currency, className }: DynamicIs
                         </div>
                       </>
                     ) : (
-                      <p className="text-xs text-error bg-error-container/60 rounded-2xl p-3">
-                        {activeOrder.rejectionNote || 'The kitchen was unable to make this order.'} You haven’t been charged.
-                      </p>
+                      <>
+                        <p className="text-xs text-error bg-error-container/60 rounded-2xl p-3">
+                          {activeOrder.rejectionNote || 'The kitchen was unable to make this order.'} You haven’t been charged.
+                        </p>
+                        <button onClick={() => clearOrder(activeOrder.id)} className="text-xs font-semibold text-on-surface-variant">Clear</button>
+                      </>
                     )}
                   </div>
                 )}
 
-                {activeRequests.length > 0 && (
-                  <div className="rounded-3xl bg-surface-container-low divide-y divide-outline-variant">
-                    {activeRequests.map(r => {
-                      const status = r.taskStatus ?? 'received';
-                      return (
-                        <div key={r.id} className="flex items-start gap-3 p-4">
-                          <span className="mt-0.5 shrink-0">
-                            {status === 'in_progress' ? <Play className="w-4 h-4 text-primary fill-current" />
-                              : status === 'rejected' ? <AlertTriangle className="w-4 h-4 text-error" />
-                              : status === 'completed' ? <Check className="w-4 h-4 text-success" />
-                              : <Clock className="w-4 h-4 text-on-surface-variant" />}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold truncate">{r.title}</p>
-                            <p className={`text-xs mt-0.5 ${status === 'rejected' ? 'text-error' : status === 'in_progress' ? 'text-primary font-semibold' : 'text-on-surface-variant'}`}>
-                              {status === 'rejected' ? `Couldn’t be done: ${r.rejectionNote || 'staff unavailable'}` : REQUEST_STATUS_LABEL[status]}
-                            </p>
+                {visibleRequests.length > 0 && (
+                  <section>
+                    <p className="text-xs font-bold text-on-surface-variant mb-2 px-1">Requests</p>
+                    <div className="rounded-3xl bg-surface-container-low divide-y divide-outline-variant">
+                      {visibleRequests.map(r => {
+                        const status = r.taskStatus ?? 'received';
+                        const finished = status === 'completed' || status === 'rejected';
+                        return (
+                          <div key={r.id} className="flex items-start gap-3 p-4">
+                            <span className="mt-0.5 shrink-0">
+                              {status === 'in_progress' ? <Play className="w-4 h-4 text-primary fill-current" />
+                                : status === 'rejected' ? <AlertTriangle className="w-4 h-4 text-error" />
+                                : status === 'completed' ? <Check className="w-4 h-4 text-success" />
+                                : <Clock className="w-4 h-4 text-on-surface-variant" />}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold truncate">{r.title}</p>
+                              <p className={`text-xs mt-0.5 ${status === 'rejected' ? 'text-error' : status === 'in_progress' ? 'text-primary font-semibold' : status === 'completed' ? 'text-success font-semibold' : 'text-on-surface-variant'}`}>
+                                {status === 'rejected' ? `Couldn’t be done: ${r.rejectionNote || 'staff unavailable'}` : REQUEST_STATUS_LABEL[status]}
+                              </p>
+                            </div>
+                            {finished && (
+                              <button onClick={() => clearRequest(r.id)} className="text-xs font-semibold text-on-surface-variant shrink-0 px-2 py-1 rounded-full hover:bg-surface-container">
+                                Clear
+                              </button>
+                            )}
                           </div>
-                          <button onClick={() => handleDismissRequest(r.id)} aria-label="Hide" className="p-1 text-on-surface-variant shrink-0"><X className="w-4 h-4" /></button>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  </section>
                 )}
 
-                {!activeOrder && activeRequests.length === 0 && (
+                {upcomingBookings.length > 0 && (
+                  <section>
+                    <p className="text-xs font-bold text-on-surface-variant mb-2 px-1">Your bookings</p>
+                    <div className="rounded-3xl bg-surface-container-low divide-y divide-outline-variant">
+                      {upcomingBookings.map(b => {
+                        const confirmed = b.status === 'confirmed';
+                        return (
+                          <div key={b.id} className="flex items-start gap-3 p-4">
+                            <span className="mt-0.5 shrink-0">
+                              {confirmed ? <Calendar className="w-4 h-4 text-success" /> : <Clock className="w-4 h-4 text-on-surface-variant" />}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold truncate">{b.experienceName}</p>
+                              <p className={`text-xs mt-0.5 ${confirmed ? 'text-success font-semibold' : 'text-on-surface-variant'}`}>
+                                {b.scheduledTime ? `Confirmed for ${b.scheduledTime}` : confirmed ? 'Confirmed' : `Waiting for the hotel to confirm${b.preferredTime ? ` · you asked for ${b.preferredTime}` : ''}`}
+                              </p>
+                            </div>
+                            <span className="text-xs font-semibold shrink-0">{formatCurrency(b.totalPrice, currency)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                )}
+
+                {nothingAtAll && (
                   <div className="py-10 text-center text-on-surface-variant">
                     <span className="w-12 h-12 rounded-full bg-surface-container-low flex items-center justify-center mx-auto"><BellOff className="w-5 h-5" /></span>
                     <p className="text-sm font-semibold text-on-surface mt-3">You’re all caught up</p>
-                    <p className="text-xs mt-1">Food orders and requests show up here while they’re on the way.</p>
+                    <p className="text-xs mt-1">Food orders, requests and bookings show up here.</p>
                   </div>
                 )}
               </div>
