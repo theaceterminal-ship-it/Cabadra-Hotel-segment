@@ -57,6 +57,8 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
   const [email, setEmail] = useState('');
   const [vip, setVip] = useState(false);
   const [idDocumentUrl, setIdDocumentUrl] = useState('');
+  // The rate agreed for this stay; starts at the room's listed price and goes on the bill each night.
+  const [rate, setRate] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showQr, setShowQr] = useState(false);
@@ -67,6 +69,7 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
   );
 
   const isFutureBooking = checkIn > todayIso();
+  const nights = Math.max(1, Math.round((Date.parse(checkOut) - Date.parse(checkIn)) / 86_400_000));
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +94,7 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
 
   const handlePickRoom = (room: AvailableRoom) => {
     setSelectedRoom(room);
+    setRate(String(room.pricePerNight ?? ''));
     setStep('details');
   };
 
@@ -109,6 +113,7 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
         checkIn: new Date(`${checkIn}T14:00:00`),
         checkOut: new Date(`${checkOut}T12:00:00`),
         partySize: parseInt(partySize, 10) || 1,
+        ratePerNight: rate.trim() === '' ? undefined : Math.max(0, parseFloat(rate) || 0),
       });
       setStep('success');
       onBooked();
@@ -224,6 +229,17 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
             </button>
             <div className="bg-surface-container-low p-2.5 rounded-lg border border-outline-variant text-xs text-on-surface-variant">
               Room {selectedRoom.number} · {selectedRoom.type} · {formatCurrency(selectedRoom.pricePerNight, currency)}/night · {checkIn} &rarr; {checkOut}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 items-end">
+              <div>
+                <label className={labelCls}>Rate per night ({currency})</label>
+                <input type="number" min="0" step="1" value={rate} onChange={e => setRate(e.target.value)} className={inputCls} />
+              </div>
+              <p className="text-xs text-on-surface-variant pb-2.5">
+                {nights} {nights === 1 ? 'night' : 'nights'} · {formatCurrency((parseFloat(rate) || 0) * nights, currency)} before tax
+                {parseFloat(rate) !== selectedRoom.pricePerNight && rate !== '' && <span className="block">Listed at {formatCurrency(selectedRoom.pricePerNight, currency)}</span>}
+              </p>
             </div>
 
             <div>

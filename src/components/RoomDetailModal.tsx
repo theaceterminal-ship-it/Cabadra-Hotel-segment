@@ -188,6 +188,8 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
           roomId={displayRoom.id}
           roomNumber={displayRoom.number}
           guestName={displayRoom.guestName}
+          guestPhone={displayRoom.guestPhone}
+          guestEmail={displayRoom.guestEmail}
           propertyName={propertyName}
           currency={currency}
           upiId={upiId}

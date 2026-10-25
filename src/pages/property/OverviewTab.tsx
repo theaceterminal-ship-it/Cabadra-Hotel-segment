@@ -4,6 +4,7 @@ import { Property, Room, UrgentRequest } from '../../types';
 import { fetchGuestRequests, resolveGuestRequest, StaffMember, TicketSizeAnalytics, updateProperty } from '../../lib/staffApi';
 import { formatCurrency } from '../../lib/currency';
 import { ErrorNote, Field, Modal, Panel, PhotoField, Switch, btnPrimary, btnSecondary, inputCls } from './ui';
+import { BillingPanel } from './BillingPanel';
 
 const ROOM_STATUSES: { key: Room['status']; label: string; dot: string }[] = [
   { key: 'ready', label: 'Ready', dot: 'bg-room-ready' },
@@ -81,6 +82,8 @@ export function OverviewTab({ property, rooms, staff, ticketAnalytics, onChanged
       )}
 
       <PropertySettings property={property} onChanged={onChanged} />
+
+      <BillingPanel propertyId={property.id} />
     </div>
   );
 }

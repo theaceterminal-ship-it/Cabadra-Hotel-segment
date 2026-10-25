@@ -20,6 +20,7 @@ import TermsPage from './pages/site/TermsPage';
 import RefundPage from './pages/site/RefundPage';
 import ContactPage from './pages/site/ContactPage';
 import NotFoundPage from './pages/site/NotFoundPage';
+import BillPage from './pages/BillPage';
 
 /**
  * Three separate pages, not one role-switcher: an owner and a receptionist
@@ -46,6 +47,7 @@ export default function App() {
       <Route path="/task/:token" element={<TaskScanPage />} />
       <Route path="/display/:token" element={<DepartmentDisplayPage />} />
       <Route path="/access/:token" element={<AccessLinkPage />} />
+      <Route path="/bill/:token" element={<BillPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
