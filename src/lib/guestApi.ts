@@ -106,21 +106,42 @@ export async function logOfferEvents(token: string, events: OfferEvent[]): Promi
   if (error) console.warn('Failed to log offer event:', error.message);
 }
 
+/**
+ * One line of a room-service order as the browser sends it: only what the
+ * guest chose. Prices and names are looked up server-side from the menu
+ * (guest_place_order, 0073), so nothing here can change what's charged.
+ */
 export interface GuestOrderItem {
+  menuItemId: string;
+  quantity: number;
+  /** Required when the dish has sizes. */
+  variationId?: string;
+  addonIds?: string[];
+  fromRecommendation?: boolean;
+  /** Per-item customization ("no onions", "extra spicy") — distinct from the order-level dietary note. */
+  note?: string;
+}
+
+/** A line of a placed order as stored server-side: name and price filled in from the menu, choices spelled out in the name. */
+export interface GuestOrderLine {
   menuItemId: string;
   name: string;
   price: number;
   quantity: number;
-  fromRecommendation?: boolean;
-  /** Per-item customization ("no onions", "extra spicy") — distinct from the order-level dietary note. */
   note?: string;
   /** Snapshotted from the menu item at order time, so the floating ETA card can compute a real estimate without a second round trip. */
   prepTime?: string;
+  fromRecommendation?: boolean;
+  variationId?: string;
+  addons?: { id: string; name: string; price: number }[];
 }
 
 export async function placeGuestOrder(token: string, items: GuestOrderItem[], notes?: string) {
   const { data, error } = await supabase.rpc('guest_place_order', { p_token: token, p_items: items, p_notes: notes ?? null });
-  if (error) throw new Error(`Failed to place order: ${error.message}`);
+  if (error) {
+    // The server's own reasons ("Choose a size for…") are written for guests; a dropped connection isn't.
+    throw new Error(/failed to fetch|network/i.test(error.message) ? 'Couldn’t reach the hotel. Check your connection and try again.' : error.message);
+  }
   return data as { order: { id: string; totalAmount: number; status: string }; charge: { id: string; amount: number } };
 }
 
@@ -191,7 +212,7 @@ export async function fetchGuestExperienceBookings(token: string): Promise<Guest
 export interface ActiveOrder {
   id: string;
   status: 'new' | 'preparing' | 'ready' | 'rejected';
-  items: GuestOrderItem[];
+  items: GuestOrderLine[];
   totalAmount: number;
   createdAt: string;
   /** Why the kitchen couldn't make it — set whenever status is 'rejected'; the charge is already off the folio by the time the guest sees this. */

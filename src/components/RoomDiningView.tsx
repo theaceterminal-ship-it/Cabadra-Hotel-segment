@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MenuItem, KdsOrder, AppView } from '../types';
+import { MenuItem, MenuOption, KdsOrder, AppView } from '../types';
 import { fetchGuestRecommendations, placeGuestOrder, logOfferEvents, GuestRecommendation } from '../lib/guestApi';
 import { formatCurrency } from '../lib/currency';
 import {
@@ -16,8 +16,16 @@ import {
   ChevronUp,
 } from 'lucide-react';
 
+/**
+ * One cart line: a dish plus the exact size and add-ons chosen, so "Pizza
+ * (Large) + Cheese" and "Pizza (Small)" are separate lines. `key` identifies
+ * that combination.
+ */
 interface CartEntry {
+  key: string;
   item: MenuItem;
+  variation?: MenuOption;
+  addons: MenuOption[];
   quantity: number;
   viaRecommendation?: boolean;
   /** Per-item customization ("no onions", "extra spicy") — separate from the order-wide dietary note. */
@@ -76,14 +84,18 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
     }
   }, [recommendations, token]);
 
+  // The hotel's own categories, in menu order — not a fixed list that only
+  // matched demo data.
   const categories = [
-    { id: 'all', label: 'All Dishes' },
-    { id: 'specials', label: "Chef's Specials" },
-    { id: 'mains', label: 'Mains & Grill' },
-    { id: 'starters', label: 'Starters' },
-    { id: 'desserts', label: 'Desserts' },
-    { id: 'beverages', label: 'Beverages & Wine' },
+    { id: 'all', label: 'All dishes' },
+    ...[...new Set(menuItems.map(m => m.category).filter(Boolean))].map(c => ({ id: c, label: c })),
   ];
+  // Dish being customized in the options sheet (size / add-ons), if any.
+  const [optionsFor, setOptionsFor] = useState<{ item: MenuItem; viaRecommendation: boolean; surface?: string } | null>(null);
+  const [orderError, setOrderError] = useState<string | null>(null);
+  const hasOptions = (item: MenuItem) => (item.variations?.length ?? 0) > 0 || (item.addons?.length ?? 0) > 0;
+  // Recommendation payloads carry a slimmer copy of the dish; options live on the full menu entry.
+  const fullItem = (item: MenuItem) => menuItems.find(m => m.id === item.id) ?? item;
 
   const filteredItems = menuItems.filter((item) => {
     const matchesCat = selectedCategory === 'all' || item.category === selectedCategory;
@@ -92,14 +104,22 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
     return matchesCat && matchesSearch;
   });
 
-  const addToCart = (item: MenuItem, viaRecommendation: boolean = false, surface?: string) => {
+  const lineKey = (item: MenuItem, variation?: MenuOption, addons: MenuOption[] = []) =>
+    [item.id, variation?.id ?? '', ...addons.map(a => a.id).sort()].join('|');
+
+  const addLine = (item: MenuItem, variation: MenuOption | undefined, addons: MenuOption[], quantity: number, viaRecommendation: boolean, surface?: string) => {
+    const key = lineKey(item, variation, addons);
+    const firstOfDish = !Object.values(cart).some(c => c.item.id === item.id);
     setCart((prev) => {
-      const existing = prev[item.id];
+      const existing = prev[key];
       return {
         ...prev,
-        [item.id]: {
+        [key]: {
+          key,
           item,
-          quantity: existing ? existing.quantity + 1 : 1,
+          variation,
+          addons,
+          quantity: (existing?.quantity ?? 0) + quantity,
           // First add wins — once a guest has taken the recommendation once,
           // a later +1 tap from the main grid still counts as the same pick.
           viaRecommendation: existing ? existing.viaRecommendation : viaRecommendation,
@@ -107,102 +127,113 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
         },
       };
     });
-    // Only the FIRST add counts as the recommendation's conversion — a
-    // repeat +1 tap from the main grid is normal ordering, not a second
-    // acceptance of the same offer.
-    if (viaRecommendation && !cart[item.id]) {
+    // Only the FIRST add of a dish counts as the recommendation's
+    // conversion — a repeat +1 is normal ordering, not a second acceptance.
+    if (viaRecommendation && firstOfDish) {
       logOfferEvents(token, [{ offerId: item.id, event: 'action', surface: surface ?? 'unknown' }]);
     }
   };
 
-  const removeFromCart = (itemId: string) => {
+  /** Dishes with sizes or add-ons open the options sheet; plain ones go straight in. */
+  const addToCart = (rawItem: MenuItem, viaRecommendation: boolean = false, surface?: string) => {
+    const item = fullItem(rawItem);
+    if (hasOptions(item)) {
+      setOptionsFor({ item, viaRecommendation, surface });
+      return;
+    }
+    addLine(item, undefined, [], 1, viaRecommendation, surface);
+  };
+
+  const changeLineQty = (key: string, delta: number) => {
     setCart((prev) => {
-      const existing = prev[itemId];
+      const existing = prev[key];
       if (!existing) return prev;
-      if (existing.quantity <= 1) {
+      const quantity = existing.quantity + delta;
+      if (quantity <= 0) {
         const copy = { ...prev };
-        delete copy[itemId];
+        delete copy[key];
         return copy;
       }
-      return {
-        ...prev,
-        [itemId]: {
-          ...existing,
-          quantity: existing.quantity - 1,
-        },
-      };
+      return { ...prev, [key]: { ...existing, quantity } };
     });
   };
 
-  const setItemNote = (itemId: string, note: string) => {
+  /** Minus on a plain dish's card. (Dishes with options are adjusted per line in the cart.) */
+  const removeFromCart = (itemId: string) => {
+    const line = Object.values(cart).find(c => c.item.id === itemId);
+    if (line) changeLineQty(line.key, -1);
+  };
+
+  const setItemNote = (key: string, note: string) => {
     setCart((prev) => {
-      const existing = prev[itemId];
+      const existing = prev[key];
       if (!existing) return prev;
-      return { ...prev, [itemId]: { ...existing, note } };
+      return { ...prev, [key]: { ...existing, note } };
     });
   };
+
+  const unitPrice = (c: Pick<CartEntry, 'item' | 'variation' | 'addons'>) =>
+    (c.variation ? c.variation.price : c.item.price) + c.addons.reduce((sum, a) => sum + a.price, 0);
+  const countForDish = (itemId: string) => Object.values(cart).filter(c => c.item.id === itemId).reduce((n, c) => n + c.quantity, 0);
+  /** Price shown on a dish card: from the cheapest size when it has sizes. */
+  const fromPrice = (item: MenuItem) => (item.variations?.length ? Math.min(...item.variations.map(v => v.price)) : item.price);
 
   const cartItemsList: CartEntry[] = Object.values(cart);
   const totalCartCount: number = cartItemsList.reduce((acc, curr) => acc + curr.quantity, 0);
-  const subtotal: number = cartItemsList.reduce((acc, curr) => acc + (curr.item.price * curr.quantity), 0);
-  const tax: number = subtotal * 0.08875;
-  const serviceCharge: number = subtotal * 0.18;
-  const grandTotal: number = subtotal + tax + serviceCharge;
-  const recommendedNotInCart = recommendations.filter(r => r.menuItem && !cart[r.menuItemId]);
+  // Exactly what guest_place_order charges to the room — no invented taxes
+  // or service charge on top.
+  const grandTotal: number = cartItemsList.reduce((acc, curr) => acc + unitPrice(curr) * curr.quantity, 0);
+  const recommendedNotInCart = recommendations.filter(r => r.menuItem && countForDish(r.menuItemId) === 0);
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cartItemsList.length === 0 || placingOrder) return;
     setPlacingOrder(true);
-
-    const orderNum = `#${Math.floor(1040 + Math.random() * 60)}`;
-    const newKdsOrder: KdsOrder = {
-      id: `kds-${Date.now()}`,
-      orderNumber: orderNum,
-      roomNumber: `Room ${roomNumber}`,
-      isVip: true,
-      isRush: false,
-      status: 'new',
-      timeElapsed: '00:01',
-      timerSeconds: 1,
-      notes: dietaryNote,
-      items: cartItemsList.map(c => ({
-        name: c.item.name,
-        quantity: c.quantity,
-        modifier: c.note || (c.item.category === 'specials' ? 'Chef Special Prep' : undefined),
-      })),
-    };
-
-    onPlaceOrder(newKdsOrder);
+    setOrderError(null);
 
     try {
-      // Posts through guest_place_order() (supabase/migrations/0001_init.sql),
-      // which derives the room/reservation from the token server-side — the
-      // guest can never point an order at a different room. This is what
-      // drives the folio charge, the owner's ticket-size analytics, and (via
-      // each item's snapshotted prepTime) the floating ETA bar's estimate.
-      await placeGuestOrder(
+      // guest_place_order (0073) derives the room from the token and prices
+      // every line from the menu server-side; only the choices go up.
+      const result = await placeGuestOrder(
         token,
         cartItemsList.map((c) => ({
           menuItemId: c.item.id,
-          name: c.item.name,
-          price: c.item.price,
           quantity: c.quantity,
-          fromRecommendation: cart[c.item.id]?.viaRecommendation ?? false,
+          variationId: c.variation?.id,
+          addonIds: c.addons.map(a => a.id),
+          fromRecommendation: c.viaRecommendation ?? false,
           note: c.note,
-          prepTime: c.item.prepTime,
         })),
         dietaryNote
       );
+
+      const newKdsOrder: KdsOrder = {
+        id: result.order.id,
+        orderNumber: `#${result.order.id.slice(0, 4).toUpperCase()}`,
+        roomNumber: `Room ${roomNumber}`,
+        isVip: true,
+        isRush: false,
+        status: 'new',
+        timeElapsed: '00:01',
+        timerSeconds: 1,
+        notes: dietaryNote,
+        items: cartItemsList.map(c => ({
+          name: [c.item.name, c.variation ? `(${c.variation.name})` : '', c.addons.length ? `+ ${c.addons.map(a => a.name).join(', ')}` : ''].filter(Boolean).join(' '),
+          quantity: c.quantity,
+          modifier: c.note || undefined,
+        })),
+      };
+      onPlaceOrder(newKdsOrder);
+
+      setCart({});
+      setDietaryNote('');
+      setShowCartSheet(false);
+      setOrderSuccess(true);
     } catch (err) {
-      console.warn('Failed to place order via Supabase:', err);
+      setOrderError(err instanceof Error ? err.message : 'Your order didn’t go through. Please try again.');
     } finally {
       setPlacingOrder(false);
     }
-
-    setCart({});
-    setShowCartSheet(false);
-    setOrderSuccess(true);
   };
 
   return (
@@ -292,7 +323,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                     <p className="font-bold text-xs text-on-surface leading-snug">{item.name}</p>
                     <p className="text-[11px] text-on-surface-variant italic mt-0.5 mb-2">Why: {rec.reason}</p>
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-xs text-primary">{formatCurrency(item.price, currency)}</span>
+                      <span className="font-bold text-xs text-primary">{formatCurrency(fromPrice(fullItem(item)), currency)}</span>
                       <button
                         onClick={() => addToCart(item, true, 'on_open')}
                         className="h-7 px-3 rounded-lg bg-primary text-on-primary text-[11px] font-bold hover:bg-primary-hover transition-colors cursor-pointer"
@@ -315,7 +346,8 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
         {/* Menu Items Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {filteredItems.map((item) => {
-            const countInCart = cart[item.id]?.quantity || 0;
+            const countInCart = countForDish(item.id);
+            const withOptions = hasOptions(item);
             return (
               <div
                 key={item.id}
@@ -349,7 +381,8 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                     <div className="flex justify-between items-start mb-1.5">
                       <h3 className="font-bold text-base text-on-surface leading-snug">{item.name}</h3>
                       <span className="font-bold text-base text-primary shrink-0 ml-2">
-                        {formatCurrency(item.price, currency)}
+                        {item.variations?.length ? <span className="text-xs font-semibold text-on-surface-variant mr-1">from</span> : null}
+                        {formatCurrency(fromPrice(item), currency)}
                       </span>
                     </div>
                     <p className="text-xs text-on-surface-variant leading-relaxed line-clamp-2 mb-4">
@@ -364,7 +397,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                       <span>{item.prepTime || '20-25 mins'}</span>
                     </span>
 
-                    {countInCart > 0 ? (
+                    {countInCart > 0 && !withOptions ? (
                       <div className="flex items-center gap-2 bg-surface-container-low border border-[#d1c5b5] p-1 rounded-lg">
                         <button
                           onClick={() => removeFromCart(item.id)}
@@ -386,7 +419,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                         className="h-9 px-4 rounded-lg bg-primary text-on-primary text-xs font-bold hover:bg-primary-hover transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
                       >
                         <Plus className="w-3.5 h-3.5" />
-                        <span>Add</span>
+                        <span>{countInCart > 0 ? `Add · ${countInCart} in cart` : withOptions ? 'Choose' : 'Add'}</span>
                       </button>
                     )}
                   </div>
@@ -452,31 +485,38 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {cartItemsList.map(({ item, quantity, note }) => (
+                  {cartItemsList.map((line) => (
                     <div
-                      key={item.id}
+                      key={line.key}
                       className="p-3 rounded-xl border border-outline-variant bg-surface-container-low space-y-2"
                     >
                       <div className="flex items-center justify-between">
                         <div className="min-w-0">
-                          <p className="font-bold text-xs text-on-surface truncate">{item.name}</p>
+                          <p className="font-bold text-xs text-on-surface truncate">
+                            {line.item.name}{line.variation ? ` (${line.variation.name})` : ''}
+                          </p>
+                          {line.addons.length > 0 && (
+                            <p className="text-[11px] text-on-surface-variant truncate">+ {line.addons.map(a => a.name).join(', ')}</p>
+                          )}
                           <p className="text-xs text-primary font-semibold mt-0.5">
-                            {formatCurrency(item.price, currency)} each
+                            {formatCurrency(unitPrice(line), currency)} each
                           </p>
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0 ml-2">
                           <button
-                            onClick={() => removeFromCart(item.id)}
+                            onClick={() => changeLineQty(line.key, -1)}
+                            aria-label="One less"
                             className="w-7 h-7 rounded bg-surface-container-lowest border border-outline-variant text-primary flex items-center justify-center font-bold"
                           >
                             -
                           </button>
                           <span className="font-bold text-xs text-on-surface w-4 text-center">
-                            {quantity}
+                            {line.quantity}
                           </span>
                           <button
-                            onClick={() => addToCart(item)}
+                            onClick={() => changeLineQty(line.key, 1)}
+                            aria-label="One more"
                             className="w-7 h-7 rounded bg-primary text-on-primary flex items-center justify-center font-bold"
                           >
                             +
@@ -487,8 +527,8 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                       {/* Customize each item — "no onions", "extra spicy", etc. */}
                       <input
                         type="text"
-                        value={note ?? ''}
-                        onChange={(e) => setItemNote(item.id, e.target.value)}
+                        value={line.note ?? ''}
+                        onChange={(e) => setItemNote(line.key, e.target.value)}
                         placeholder="Customize (e.g. no onions, extra spicy)"
                         className="w-full h-8 px-2.5 text-[11px] border border-outline-variant rounded-lg bg-surface-container-lowest focus:border-primary focus:outline-none"
                       />
@@ -515,7 +555,7 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
                           <span className="w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0">
                             <Plus className="w-3 h-3" />
                           </span>
-                          <span className="text-[11px] font-semibold text-on-surface whitespace-nowrap">{item.name} · {formatCurrency(item.price, currency)}</span>
+                          <span className="text-[11px] font-semibold text-on-surface whitespace-nowrap">{item.name} · {formatCurrency(fromPrice(fullItem(item)), currency)}</span>
                         </button>
                       );
                     })}
@@ -553,24 +593,11 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
             {/* Bill Summary & Place Order */}
             {cartItemsList.length > 0 && (
               <div className="p-5 border-t border-outline-variant bg-surface-container-low space-y-3 shrink-0" style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
-                <div className="space-y-1.5 text-xs text-on-surface-variant">
-                  <div className="flex justify-between">
-                    <span>Food &amp; Beverage:</span>
-                    <span className="font-semibold text-on-surface">{formatCurrency(subtotal, currency)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>State &amp; Local Tax (8.875%):</span>
-                    <span>{formatCurrency(tax, currency)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>In-Suite Service &amp; Gratuity (18%):</span>
-                    <span>{formatCurrency(serviceCharge, currency)}</span>
-                  </div>
-                  <div className="flex justify-between pt-2 border-t border-outline-variant font-bold text-sm text-on-surface">
-                    <span>Total (Charged to Room):</span>
-                    <span className="text-primary">{formatCurrency(grandTotal, currency)}</span>
-                  </div>
+                <div className="flex justify-between items-baseline">
+                  <span className="text-xs text-on-surface-variant">Charged to Room {roomNumber}</span>
+                  <span className="font-bold text-base text-on-surface">{formatCurrency(grandTotal, currency)}</span>
                 </div>
+                {orderError && <p className="text-xs text-error">{orderError}</p>}
 
                 <button
                   id="btn-place-dining-order"
@@ -586,6 +613,108 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
           </div>
         </div>
       )}
+
+      {optionsFor && (
+        <DishOptionsSheet
+          item={optionsFor.item}
+          currency={currency}
+          onClose={() => setOptionsFor(null)}
+          onAdd={(variation, addons, quantity) => {
+            addLine(optionsFor.item, variation, addons, quantity, optionsFor.viaRecommendation, optionsFor.surface);
+            setOptionsFor(null);
+          }}
+        />
+      )}
     </div>
   );
 };
+
+/** Size (pick one) and add-ons (pick any) for one dish, with a quantity and the line's real price. */
+function DishOptionsSheet({ item, currency, onClose, onAdd }: {
+  item: MenuItem;
+  currency: string;
+  onClose: () => void;
+  onAdd: (variation: MenuOption | undefined, addons: MenuOption[], quantity: number) => void;
+}) {
+  const variations = item.variations ?? [];
+  const addons = item.addons ?? [];
+  const [variationId, setVariationId] = useState<string>(variations[0]?.id ?? '');
+  const [addonIds, setAddonIds] = useState<string[]>([]);
+  const [quantity, setQuantity] = useState(1);
+
+  const variation = variations.find(v => v.id === variationId);
+  const chosenAddons = addons.filter(a => addonIds.includes(a.id));
+  const unit = (variation ? variation.price : item.price) + chosenAddons.reduce((sum, a) => sum + a.price, 0);
+  const toggleAddon = (id: string) => setAddonIds(ids => (ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]));
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-2xs flex items-end justify-center" onMouseDown={e => e.target === e.currentTarget && onClose()}>
+      <div className="w-full sm:max-w-md bg-surface-container-lowest rounded-t-3xl shadow-2xl flex flex-col max-h-[88vh] animate-in slide-in-from-bottom duration-250">
+        <div className="p-5 pb-3 border-b border-outline-variant flex items-start justify-between gap-3 shrink-0">
+          <div className="min-w-0">
+            <h3 className="font-bold text-lg text-on-surface leading-snug">{item.name}</h3>
+            {item.description && <p className="text-xs text-on-surface-variant mt-0.5 line-clamp-2">{item.description}</p>}
+          </div>
+          <button onClick={onClose} aria-label="Close" className="p-1 rounded-full hover:bg-surface-container-low text-on-surface-variant shrink-0">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          {variations.length > 0 && (
+            <div>
+              <p className="text-xs font-bold text-on-surface mb-2">Size <span className="font-normal text-on-surface-variant">· choose one</span></p>
+              <div className="space-y-2">
+                {variations.map(v => (
+                  <label key={v.id} className={`flex items-center justify-between gap-3 p-3 rounded-xl border cursor-pointer ${variationId === v.id ? 'border-primary bg-highlight' : 'border-outline-variant'}`}>
+                    <span className="flex items-center gap-2.5 text-sm text-on-surface">
+                      <input type="radio" name="dish-size" checked={variationId === v.id} onChange={() => setVariationId(v.id)} className="accent-primary" />
+                      {v.name}
+                    </span>
+                    <span className="text-sm font-semibold text-on-surface">{formatCurrency(v.price, currency)}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {addons.length > 0 && (
+            <div>
+              <p className="text-xs font-bold text-on-surface mb-2">Add-ons <span className="font-normal text-on-surface-variant">· optional</span></p>
+              <div className="space-y-2">
+                {addons.map(a => (
+                  <label key={a.id} className={`flex items-center justify-between gap-3 p-3 rounded-xl border cursor-pointer ${addonIds.includes(a.id) ? 'border-primary bg-highlight' : 'border-outline-variant'}`}>
+                    <span className="flex items-center gap-2.5 text-sm text-on-surface">
+                      <input type="checkbox" checked={addonIds.includes(a.id)} onChange={() => toggleAddon(a.id)} className="accent-primary" />
+                      {a.name}
+                    </span>
+                    <span className="text-sm text-on-surface-variant">+ {formatCurrency(a.price, currency)}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="p-5 border-t border-outline-variant flex items-center gap-3 shrink-0" style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
+          <div className="flex items-center gap-2 bg-surface-container-low border border-outline-variant p-1 rounded-xl">
+            <button onClick={() => setQuantity(q => Math.max(1, q - 1))} aria-label="One less" className="w-9 h-9 rounded-lg bg-surface-container-lowest text-primary flex items-center justify-center">
+              <Minus className="w-4 h-4" />
+            </button>
+            <span className="font-bold text-sm text-on-surface w-5 text-center">{quantity}</span>
+            <button onClick={() => setQuantity(q => Math.min(20, q + 1))} aria-label="One more" className="w-9 h-9 rounded-lg bg-surface-container-lowest text-primary flex items-center justify-center">
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+          <button
+            onClick={() => onAdd(variation, chosenAddons, quantity)}
+            disabled={variations.length > 0 && !variation}
+            className="flex-1 h-12 bg-primary text-on-primary rounded-xl font-bold text-sm hover:bg-primary-hover disabled:opacity-60"
+          >
+            Add · {formatCurrency(unit * quantity, currency)}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
