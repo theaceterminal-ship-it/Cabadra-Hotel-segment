@@ -136,14 +136,15 @@ export async function fetchPropertyCurrency(propertyId: string): Promise<string>
 }
 
 /** Name + currency + UPI id + PMS mode — what Reception's folio/bill-printing/booking-UI needs but has no other reason to load the full Property/stats bundle for. */
-export async function fetchPropertyMeta(propertyId: string): Promise<{ name: string; currency: string; upiId?: string; hasExternalPms: boolean }> {
-  const { data, error } = await supabase.from('properties').select('name, currency, upi_id, has_external_pms').eq('id', propertyId).single();
+export async function fetchPropertyMeta(propertyId: string): Promise<{ name: string; currency: string; upiId?: string; hasExternalPms: boolean; image?: string }> {
+  const { data, error } = await supabase.from('properties').select('name, currency, upi_id, has_external_pms, image').eq('id', propertyId).single();
   if (error) throw error;
   return {
     name: data?.name ?? '',
     currency: data?.currency ?? 'USD',
     upiId: data?.upi_id ?? undefined,
     hasExternalPms: data?.has_external_pms ?? false,
+    image: data?.image ?? undefined,
   };
 }
 
@@ -1066,6 +1067,8 @@ export interface DirectoryContact {
   name: string;
   phone: string;
   department: Department;
+  /** Optional, shown on their welcome card: "Supervisor". */
+  jobTitle?: string;
   /** This person's own standing QR for Shift Claims — scanning it on a department display claims/releases it for them. See department_display_scan_badge (0047). */
   badgeToken: string;
 }
@@ -1073,13 +1076,21 @@ export interface DirectoryContact {
 export async function fetchStaffDirectory(propertyId: string): Promise<DirectoryContact[]> {
   const { data, error } = await supabase.from('staff_directory').select('*').eq('property_id', propertyId).order('name');
   if (error) throw error;
-  return (data ?? []).map(d => ({ id: d.id, name: d.name, phone: d.phone, department: d.department, badgeToken: d.badge_token }));
+  return (data ?? []).map(d => ({ id: d.id, name: d.name, phone: d.phone, department: d.department, jobTitle: d.job_title ?? undefined, badgeToken: d.badge_token }));
 }
 
 export async function addDirectoryContact(propertyId: string, contact: Omit<DirectoryContact, 'id' | 'badgeToken'>): Promise<void> {
   const { error } = await supabase.from('staff_directory').insert({
     property_id: propertyId, name: contact.name, phone: contact.phone, department: contact.department,
+    job_title: contact.jobTitle?.trim() || null,
   });
+  if (error) throw error;
+}
+
+export async function updateDirectoryContact(contactId: string, contact: Omit<DirectoryContact, 'id' | 'badgeToken'>): Promise<void> {
+  const { error } = await supabase.from('staff_directory').update({
+    name: contact.name, phone: contact.phone, department: contact.department, job_title: contact.jobTitle?.trim() || null,
+  }).eq('id', contactId);
   if (error) throw error;
 }
 
@@ -1697,3 +1708,54 @@ export async function fetchKitchenLink(propertyId: string, reset = false): Promi
 }
 
 export const kitchenUrl = (token: string) => `${window.location.origin}/kitchen/${token}`;
+
+// ============================================================================
+// ATTENDANCE (owner) and the EXTRAS REPORT (0083)
+// ============================================================================
+
+export interface AttendanceDay {
+  date: string;
+  firstIn: string;
+  lastOut: string;
+  minutes: number;
+  late: boolean;
+  /** Never clocked out: counted as 12 hours at most. */
+  missedClockOut: boolean;
+  onNow: boolean;
+  shiftName?: string;
+}
+
+export interface AttendanceRow {
+  staffId: string;
+  name: string;
+  department: Department;
+  jobTitle?: string;
+  phone?: string;
+  days: AttendanceDay[];
+  daysPresent: number;
+  daysAbsent: number;
+  minutes: number;
+  lateDays: number;
+  missedClockOuts: number;
+  onShiftNow: boolean;
+}
+
+export async function fetchStaffAttendance(propertyId: string, from: string, to: string): Promise<AttendanceRow[]> {
+  const { data, error } = await supabase.rpc('owner_staff_attendance', { p_property_id: propertyId, p_from: from, p_to: to });
+  if (error) throw error;
+  return (data ?? []) as AttendanceRow[];
+}
+
+export interface ExtrasReport {
+  orders: { count: number; revenue: number; average: number; rejected: number; roomsOrdering: number };
+  topItems: { name: string; qty: number; revenue: number }[];
+  requests: { count: number; resolved: number; open: number; avgMinutesToResolve: number; paidRevenue: number; byDepartment: Record<string, number> };
+  experiences: { count: number; revenue: number; guests: number };
+  suggestions: { shown: number; taken: number };
+}
+
+export async function fetchExtrasReport(propertyId: string, from: string, to: string): Promise<ExtrasReport> {
+  const { data, error } = await supabase.rpc('staff_extras_report', { p_property_id: propertyId, p_from: from, p_to: to });
+  if (error) throw error;
+  return data as ExtrasReport;
+}
