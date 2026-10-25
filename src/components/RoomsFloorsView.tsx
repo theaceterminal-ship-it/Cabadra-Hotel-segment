@@ -308,7 +308,7 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
         />
       )}
 
-      {qrRoom && <RoomQrModal roomNumber={qrRoom.number} roomId={qrRoom.id} onClose={() => setQrRoom(null)} />}
+      {qrRoom && <RoomQrModal roomNumber={qrRoom.number} roomId={qrRoom.id} qrCode={qrRoom.qrCode} onClose={() => setQrRoom(null)} />}
 
       {!hasExternalPms && showNewBooking && (
         <NewBookingModal
