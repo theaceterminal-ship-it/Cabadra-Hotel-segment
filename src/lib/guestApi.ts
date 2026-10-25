@@ -162,6 +162,10 @@ export interface PartnerListing {
   openingHours?: string;
   offerText?: string;
   offerCode?: string;
+  /** Paid to be shown first (0084). */
+  featured?: boolean;
+  /** Has an email for booking requests to go to (0084). */
+  takesRequests?: boolean;
 }
 
 export type PartnerEventKind = 'impression' | 'tap' | 'call' | 'whatsapp' | 'directions' | 'code';
@@ -179,6 +183,44 @@ export function logPartnerEvents(token: string, events: { partnerId: string; eve
   if (events.length === 0) return;
   supabase.rpc('guest_log_partner_events', { p_token: token, p_events: events.slice(0, 20) })
     .then(({ error }) => { if (error) console.warn('Failed to log partner event:', error.message); });
+}
+
+export interface PartnerRequest {
+  id: string;
+  partnerId: string;
+  partnerName: string;
+  message: string;
+  preferredTime?: string;
+  status: 'new' | 'accepted' | 'declined' | 'done';
+  businessNote?: string;
+  createdAt: string;
+}
+
+/**
+ * guest_partner_request (0084): asks a listed business for something (a cab
+ * at 9, a table for four). The guest's name, phone and hotel go to that
+ * business only because they ticked to share them; the server refuses
+ * without it.
+ */
+export async function sendPartnerRequest(token: string, input: { partnerId: string; message: string; preferredTime?: string; partySize?: number; phone?: string; consent: boolean }) {
+  const { data, error } = await supabase.rpc('guest_partner_request', {
+    p_token: token,
+    p_partner_id: input.partnerId,
+    p_message: input.message,
+    p_preferred_time: input.preferredTime ?? null,
+    p_party_size: input.partySize ?? null,
+    p_phone: input.phone ?? null,
+    p_consent: input.consent,
+  });
+  if (error) throw new Error(/failed to fetch|network/i.test(error.message) ? 'Couldn’t send it. Check your connection and try again.' : error.message);
+  return data as { id: string; status: string };
+}
+
+/** This stay's requests to local businesses and what they answered. Empty on any error. */
+export async function fetchPartnerRequests(token: string): Promise<PartnerRequest[]> {
+  const { data, error } = await supabase.rpc('guest_partner_requests', { p_token: token });
+  if (error || !data) return [];
+  return data as PartnerRequest[];
 }
 
 /** guest_checkout_suggestion (0076). Null when the order has no real gap, or on any error: never worth blocking an order over. */

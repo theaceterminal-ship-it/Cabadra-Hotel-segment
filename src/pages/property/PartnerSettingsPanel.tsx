@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Store } from 'lucide-react';
-import { fetchPartnerSettings, savePartnerSettings, PartnerSettings } from '../../lib/staffApi';
+import { IndianRupee, Store } from 'lucide-react';
+import { fetchPartnerCommission, fetchPartnerSettings, savePartnerSettings, PartnerCommission, PartnerSettings } from '../../lib/staffApi';
 import { ErrorNote, Panel, Switch } from './ui';
 
 const CATEGORIES: { id: string; label: string }[] = [
@@ -18,16 +18,22 @@ const CATEGORIES: { id: string; label: string }[] = [
  * The owner's say over "Around {place}" in the guest app: local businesses
  * Cabadra lists near this property (0078). Off entirely, or by category.
  * Restaurants and cafés start blocked so guests aren't sent away from the
- * hotel's own dining. Saves on every change.
+ * hotel's own dining. Saves on every change. When Cabadra pays this hotel
+ * a commission on partners' fees (set in Pulse, 0084), what it has earned
+ * and been paid shows here too.
  */
 export function PartnerSettingsPanel({ propertyId }: { propertyId: string }) {
   const [settings, setSettings] = useState<PartnerSettings | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [commission, setCommission] = useState<PartnerCommission | null>(null);
 
   useEffect(() => {
     fetchPartnerSettings(propertyId).then(setSettings).catch(err => setError(err.message));
+    fetchPartnerCommission(propertyId).then(setCommission);
   }, [propertyId]);
+
+  const showCommission = commission && (commission.earned > 0 || (commission.enabled && (commission.pct ?? 0) > 0));
 
   const save = async (enabled: boolean, blocked: string[]) => {
     if (!settings) return;
@@ -93,6 +99,17 @@ export function PartnerSettingsPanel({ propertyId }: { propertyId: string }) {
                 {' '}Restaurants and cafés start off so guests aren’t sent away from your own dining.
               </p>
             </>
+          )}
+          {showCommission && (
+            <div className="mt-5 rounded-[20px] bg-surface-container-low p-4 flex flex-wrap items-center gap-x-8 gap-y-3">
+              <p className="text-sm font-medium text-on-surface inline-flex items-center gap-2 w-full sm:w-auto">
+                <IndianRupee className="size-4" /> Your commission{commission.pct ? ` · ${commission.pct}%` : ''}
+              </p>
+              <span><span className="block text-lg font-semibold text-on-surface">₹{Math.round(commission.earned).toLocaleString('en-IN')}</span><span className="block text-xs text-on-surface-variant">Earned</span></span>
+              <span><span className="block text-lg font-semibold text-on-surface">₹{Math.round(commission.paid).toLocaleString('en-IN')}</span><span className="block text-xs text-on-surface-variant">Paid to you</span></span>
+              <span><span className="block text-lg font-semibold text-on-surface">₹{Math.round(Math.max(0, commission.earned - commission.paid)).toLocaleString('en-IN')}</span><span className="block text-xs text-on-surface-variant">Due</span></span>
+              <p className="w-full text-xs text-on-surface-variant">A share of what local partners pay Cabadra to be listed at your property.</p>
+            </div>
           )}
           {error && <div className="mt-3"><ErrorNote>{error}</ErrorNote></div>}
         </div>
