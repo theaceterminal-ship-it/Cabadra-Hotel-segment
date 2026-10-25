@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Download, Printer } from 'lucide-react';
-import { BOOKING_CHANNELS, GUEST_ID_TYPES, PropertyReport, RegisterEntry, fetchGuestRegister, fetchReport } from '../lib/staffApi';
+import { BOOKING_CHANNELS, GUEST_ID_TYPES, ExtrasReport, PropertyReport, RegisterEntry, fetchExtrasReport, fetchGuestRegister, fetchReport } from '../lib/staffApi';
+import { DEPARTMENT_LABELS } from '../lib/departments';
 import { formatCurrency } from '../lib/currency';
 import { addDays, fmtDay, todayIso } from './bookings/bookingUtils';
 
@@ -45,12 +46,17 @@ function downloadCsv(name: string, rows: (string | number | undefined | null)[][
  * foreign guests flagged for Form C. Used at reception and on the owner's
  * property page alike.
  */
-export function ReportsView({ propertyId, propertyName, currency }: { propertyId: string; propertyName: string; currency: string }) {
+export function ReportsView({ propertyId, propertyName, currency, hasExternalPms = false }: {
+  propertyId: string; propertyName: string; currency: string;
+  /** The hotel runs another PMS (Cabadra is its guest app): extras only, no rooms metrics, no guest register (its PMS keeps that). */
+  hasExternalPms?: boolean;
+}) {
   const [tab, setTab] = useState<'overview' | 'register'>('overview');
   const [preset, setPreset] = useState<Preset>('week');
   const [custom, setCustom] = useState({ from: addDays(todayIso(), -29), to: todayIso() });
   const range = useMemo(() => rangeFor(preset, custom), [preset, custom]);
   const [report, setReport] = useState<PropertyReport | null>(null);
+  const [extras, setExtras] = useState<ExtrasReport | null>(null);
   const [register, setRegister] = useState<RegisterEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,7 +64,10 @@ export function ReportsView({ propertyId, propertyName, currency }: { propertyId
     setError(null);
     if (tab === 'overview') {
       setReport(null);
-      fetchReport(propertyId, range.from, range.to).then(setReport).catch(err => setError(err.message));
+      setExtras(null);
+      Promise.all([fetchReport(propertyId, range.from, range.to), fetchExtrasReport(propertyId, range.from, range.to)])
+        .then(([r, x]) => { setReport(r); setExtras(x); })
+        .catch(err => setError(err.message));
     } else {
       setRegister(null);
       fetchGuestRegister(propertyId, range.from, range.to).then(setRegister).catch(err => setError(err.message));
@@ -73,11 +82,11 @@ export function ReportsView({ propertyId, propertyName, currency }: { propertyId
         <div>
           <h1 className="text-[28px] leading-tight font-semibold tracking-[-0.03em] text-on-surface">Reports</h1>
         </div>
-        <div className="flex rounded-full bg-surface-container-low p-1 self-start">
+        {!hasExternalPms && <div className="flex rounded-full bg-surface-container-low p-1 self-start">
           {(['overview', 'register'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)} className={`h-8 px-4 rounded-full text-sm font-medium ${tab === t ? 'bg-primary text-on-primary' : 'text-on-surface'}`}>{t === 'overview' ? 'Overview' : 'Guest register'}</button>
           ))}
-        </div>
+        </div>}
       </div>
 
       {/* Filters: one row above everything they control. */}
@@ -97,13 +106,17 @@ export function ReportsView({ propertyId, propertyName, currency }: { propertyId
 
       {error && <p className="text-sm text-error bg-error/10 rounded-2xl px-4 py-3">{error}</p>}
       {tab === 'overview'
-        ? (report ? <Overview report={report} currency={currency} propertyName={propertyName} /> : !error && <p className="text-sm text-on-surface-variant">Loading…</p>)
+        ? (report && extras
+            ? (hasExternalPms
+                ? <ExtrasOverview report={report} extras={extras} currency={currency} />
+                : <Overview report={report} extras={extras} currency={currency} propertyName={propertyName} />)
+            : !error && <p className="text-sm text-on-surface-variant">Loading…</p>)
         : (register ? <Register entries={register} propertyName={propertyName} label={label} range={range} /> : !error && <p className="text-sm text-on-surface-variant">Loading…</p>)}
     </div>
   );
 }
 
-function Overview({ report: r, currency, propertyName }: { report: PropertyReport; currency: string; propertyName: string }) {
+function Overview({ report: r, extras, currency, propertyName }: { report: PropertyReport; extras: ExtrasReport; currency: string; propertyName: string }) {
   const c = (n: number) => formatCurrency(n, currency);
   const exportDaily = () => downloadCsv(`${propertyName} ${r.from} to ${r.to}.csv`, [
     ['Date', 'Rooms occupied', 'Rooms', 'Occupancy %', 'Room revenue'],
@@ -158,6 +171,19 @@ function Overview({ report: r, currency, propertyName }: { report: PropertyRepor
         </Card>
       </div>
 
+      <div>
+        <p className="text-sm font-medium text-on-surface-variant mb-2 px-1">Beyond rooms</p>
+        <ExtrasSections extras={extras} currency={currency} />
+      </div>
+
+      <DayCloses report={r} currency={currency} />
+    </div>
+  );
+}
+
+function DayCloses({ report: r, currency }: { report: PropertyReport; currency: string }) {
+  const c = (n: number) => formatCurrency(n, currency);
+  return (
       <Card title="Day closes">
         {r.dayCloses.length === 0 ? <p className="text-sm text-on-surface-variant">No days closed in this period.</p> : (
           <div className="divide-y divide-outline-variant -mx-1">
@@ -178,6 +204,69 @@ function Overview({ report: r, currency, propertyName }: { report: PropertyRepor
             })}
           </div>
         )}
+      </Card>
+  );
+}
+
+/** What a hotel that runs its own PMS gets from Cabadra: the guest app's business. */
+function ExtrasOverview({ report: r, extras: x, currency }: { report: PropertyReport; extras: ExtrasReport; currency: string }) {
+  const c = (n: number) => formatCurrency(n, currency);
+  const takeUp = x.suggestions.shown > 0 ? Math.round((100 * x.suggestions.taken) / x.suggestions.shown) : 0;
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
+        <Kpi label="Food orders" value={String(x.orders.count)} hint={`${x.orders.roomsOrdering} ${x.orders.roomsOrdering === 1 ? 'stay' : 'stays'} ordered`} />
+        <Kpi label="Average order" value={c(x.orders.average)} />
+        <Kpi label="Requests" value={String(x.requests.count)} hint={x.requests.resolved ? `resolved in ~${x.requests.avgMinutesToResolve} min` : 'none resolved yet'} />
+        <Kpi label="Suggestions taken" value={`${takeUp}%`} hint={`${x.suggestions.taken} of ${x.suggestions.shown} shown`} />
+        <Kpi label="Billed through Cabadra" value={c(r.revenueTotal)} hint={r.taxTotal > 0 ? `+ ${c(r.taxTotal)} GST` : 'before GST'} strong />
+      </div>
+      <ExtrasSections extras={x} currency={currency} />
+      <div className="grid md:grid-cols-2 gap-3">
+        <Card title="Billed by category (before GST)">
+          <Rows rows={Object.entries(r.revenueByCategory).sort((a, b) => b[1] - a[1]).map(([k, v]) => [CATEGORY_LABEL[k] ?? k, c(v)])} empty="Nothing billed." total={['Total', c(r.revenueTotal)]} />
+        </Card>
+        <Card title="Money in, by method (refunds netted)">
+          <Rows rows={(['cash', 'upi', 'card', 'bank', 'other'] as const).filter(m => r.payments[m] !== 0).map(m => [METHOD_LABEL[m], c(r.payments[m])])} empty="No payments." total={['Total', c(r.payments.total)]} />
+        </Card>
+      </div>
+      <DayCloses report={r} currency={currency} />
+    </div>
+  );
+}
+
+/** Food, requests and experiences: shared by both kinds of hotel. */
+function ExtrasSections({ extras: x, currency }: { extras: ExtrasReport; currency: string }) {
+  const c = (n: number) => formatCurrency(n, currency);
+  return (
+    <div className="grid md:grid-cols-3 gap-3">
+      <Card title="Most ordered">
+        {x.topItems.length === 0 ? <p className="text-sm text-on-surface-variant">No orders yet.</p> : (
+          <ol className="space-y-1.5 text-sm">
+            {x.topItems.map((t, i) => (
+              <li key={t.name} className="flex justify-between gap-3">
+                <span className="truncate"><span className="text-on-surface-variant mr-1.5">{i + 1}.</span>{t.name} <span className="text-on-surface-variant">× {t.qty}</span></span>
+                <span className="font-medium shrink-0">{c(t.revenue)}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+        <p className="text-xs text-on-surface-variant mt-3">{x.orders.count} orders · {c(x.orders.revenue)}{x.orders.rejected ? ` · ${x.orders.rejected} the kitchen couldn’t make` : ''}</p>
+      </Card>
+      <Card title="Guest requests">
+        <Rows
+          rows={[
+            ['Asked', String(x.requests.count)],
+            ['Resolved', String(x.requests.resolved)],
+            ['Still open', String(x.requests.open)],
+            ['Average time to resolve', x.requests.resolved ? `${x.requests.avgMinutesToResolve} min` : '—'],
+            ...Object.entries(x.requests.byDepartment).sort((a, b) => b[1] - a[1]).map(([d, n]) => [`  ${DEPARTMENT_LABELS[d as keyof typeof DEPARTMENT_LABELS] ?? d}`, String(n)] as [string, string]),
+          ]}
+          empty=""
+        />
+      </Card>
+      <Card title="Experiences booked">
+        <Rows rows={[['Bookings', String(x.experiences.count)], ['Guests', String(x.experiences.guests)], ['Value', c(x.experiences.revenue)]]} empty="" />
       </Card>
     </div>
   );

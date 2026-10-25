@@ -9,7 +9,7 @@ import {
 } from '../lib/staffApi';
 import { TaskQrModal } from './TaskQrModal';
 import { DisplayQrModal } from './DisplayQrModal';
-import { LiveOpsSpreadsheetModal } from './LiveOpsSpreadsheetModal';
+import Papa from 'papaparse';
 import {
   CheckCircle2,
   AlertTriangle,
@@ -17,17 +17,15 @@ import {
   Check,
   Plus,
   Brush,
-  CheckCheck,
   RefreshCw,
   FileSpreadsheet,
   Phone,
-  UserCircle2,
   QrCode,
   X,
-  Ban,
   Tablet,
   Power,
   Calendar,
+  Search,
 } from 'lucide-react';
 import { DEPARTMENT_LABELS, DEPARTMENT_VALUES, type Department } from '../lib/departments';
 import { formatCurrency } from '../lib/currency';
@@ -68,7 +66,8 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
 }) => {
   const [filterCategory, setFilterCategory] = useState<'all' | Department>('all');
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
-  const [showSpreadsheetModal, setShowSpreadsheetModal] = useState(false);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'open' | 'all' | 'completed' | 'rejected'>('open');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [qrTask, setQrTask] = useState<LiveOpsTask | null>(null);
   const [rejectingTask, setRejectingTask] = useState<LiveOpsTask | null>(null);
@@ -183,6 +182,33 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
     }
   };
 
+  // Open work first, newest first within each; search across room, task and person.
+  const q = search.trim().toLowerCase();
+  const visibleTasks = filteredTasks
+    .filter(t => statusFilter === 'all' ? true : statusFilter === 'open' ? t.status === 'pending' || t.status === 'in_progress' : t.status === statusFilter)
+    .filter(t => !q || [t.title, t.roomNumber, t.assignedTo, DEPT_LABELS[t.category]].some(v => v?.toLowerCase().includes(q)))
+    .sort((a, b) => {
+      const open = (t: LiveOpsTask) => (t.status === 'pending' || t.status === 'in_progress' ? 0 : 1);
+      return open(a) - open(b) || (b.createdAt ?? '').localeCompare(a.createdAt ?? '');
+    });
+
+  const exportCsv = () => {
+    const csv = Papa.unparse(visibleTasks.map(t => ({
+      Time: t.createdAt ? new Date(t.createdAt).toLocaleString('en-IN') : '',
+      Room: t.roomNumber,
+      Task: t.title,
+      Department: DEPT_LABELS[t.category],
+      Priority: t.priority,
+      'Assigned to': t.assignedTo ?? 'Unassigned',
+      Status: t.status,
+      'Rejection reason': t.rejectionNote ?? '',
+      Price: t.price ?? '',
+    })));
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    Object.assign(document.createElement('a'), { href: url, download: `live_ops_${todayStr}.csv` }).click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
@@ -277,9 +303,9 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
         </div>
       </section>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+      <div className="space-y-6">
         {/* Task List Section — main column */}
-        <div className="xl:col-span-8 space-y-4">
+        <div className="space-y-4">
           {/* Controls Bar: Date Filter + Department Category Filter */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface-container-lowest p-3 rounded-xl border border-outline-variant shadow-2xs">
             {/* Date Range Selector */}
@@ -357,168 +383,141 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
                 ))}
               </div>
 
-              <button
+<button
                 type="button"
-                onClick={() => setShowSpreadsheetModal(true)}
-                className="h-8 px-3 rounded-lg bg-surface-container-lowest border border-outline-variant text-primary text-xs font-semibold hover:bg-highlight flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                onClick={exportCsv}
+                disabled={visibleTasks.length === 0}
+                className="h-8 px-3 rounded-lg bg-surface-container-lowest border border-outline-variant text-on-surface text-xs font-semibold hover:bg-surface-container-low disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5" />
-                <span>Spreadsheet View</span>
+                <span>CSV</span>
               </button>
             </div>
           </div>
 
-          {/* Task Cards */}
-          <div className="space-y-3">
-            {filteredTasks.length === 0 ? (
-              <div className="p-8 text-center bg-surface-container-lowest rounded-xl border border-outline-variant text-on-surface-variant text-xs">
-                No tasks in this category.
-              </div>
-            ) : (
-              filteredTasks.map((task) => {
-                const isHigh = task.priority === 'high';
-                const isDone = task.status === 'completed';
-                const isRejected = task.status === 'rejected';
-                const inProgress = task.status === 'in_progress';
-                const candidates = directoryByDept(task.category);
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="relative flex-1 min-w-[200px] max-w-sm">
+              <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search room, task, person" className="w-full h-9 pl-9 pr-3 rounded-full border border-outline-variant bg-surface-container-lowest text-sm focus:outline-none focus:border-on-surface" />
+            </label>
+            <div className="flex rounded-full bg-surface-container-low p-1 text-xs">
+              {([['open', 'Open'], ['completed', 'Done'], ['rejected', 'Rejected'], ['all', 'All']] as const).map(([id, label]) => (
+                <button key={id} type="button" onClick={() => setStatusFilter(id)} className={`h-7 px-3 rounded-full font-medium ${statusFilter === id ? 'bg-primary text-on-primary' : 'text-on-surface-variant'}`}>{label}</button>
+              ))}
+            </div>
+            <span className="text-xs text-on-surface-variant">{visibleTasks.length} {visibleTasks.length === 1 ? 'row' : 'rows'}</span>
+          </div>
 
-                return (
-                  <article
-                    key={task.id}
-                    id={`task-card-${task.id}`}
-                    className={`bg-surface-container-lowest rounded-xl border ${
-                      isHigh && !isDone && !isRejected
-                        ? 'border-error-container shadow-[0_4px_12px_rgba(188,71,73,0.1)]'
-                        : 'border-outline-variant shadow-[0_4px_12px_rgba(0,0,0,0.03)]'
-                    } overflow-hidden relative transition-all ${isDone || isRejected ? 'opacity-60 bg-surface-container-low' : ''}`}
-                  >
-                    {isHigh && !isDone && !isRejected && (
-                      <div className="absolute top-0 left-0 w-1.5 h-full bg-error"></div>
-                    )}
-
-                    <div className="p-4 pl-5">
-                      <div className="flex justify-between items-start mb-1.5">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-base font-semibold text-on-surface">{task.roomNumber}</span>
-                          {isHigh ? (
-                            <span className="px-2 py-0.5 rounded bg-error-container text-on-error-container text-[10px] font-semibold flex items-center gap-1">
-                              <AlertTriangle className="w-3 h-3" /> High Priority
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant text-[10px] font-semibold">
-                              Standard
+          {/* The work log as a spreadsheet: every request and task on one
+              row each, with what the desk needs inline. Open ones can be
+              moved to another department, given to someone (or back to the
+              queue), started, finished or rejected; closed ones read as
+              history. */}
+          <div className="rounded-[20px] bg-surface-container-lowest border border-outline-variant overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[980px]">
+                <thead>
+                  <tr className="text-left text-xs text-on-surface-variant border-b border-outline-variant bg-surface-container-low/60">
+                    <th className="px-3 py-2.5 font-medium w-20">Time</th>
+                    <th className="px-3 py-2.5 font-medium w-24">Room</th>
+                    <th className="px-3 py-2.5 font-medium">Task</th>
+                    <th className="px-3 py-2.5 font-medium w-40">Department</th>
+                    <th className="px-3 py-2.5 font-medium w-56">Assigned to</th>
+                    <th className="px-3 py-2.5 font-medium w-28">Status</th>
+                    <th className="px-3 py-2.5 font-medium w-44 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-outline-variant">
+                  {visibleTasks.length === 0 ? (
+                    <tr><td colSpan={7} className="px-3 py-10 text-center text-on-surface-variant">Nothing here for these filters.</td></tr>
+                  ) : visibleTasks.map(task => {
+                    const isHigh = task.priority === 'high';
+                    const isDone = task.status === 'completed';
+                    const isRejected = task.status === 'rejected';
+                    const closed = isDone || isRejected;
+                    const candidates = directoryByDept(task.category);
+                    return (
+                      <tr key={task.id} id={`task-row-${task.id}`} className={`align-top transition-colors ${closed ? 'text-on-surface-variant' : 'hover:bg-surface-container-low/50'}`}>
+                        <td className="px-3 py-2.5 whitespace-nowrap">
+                          {task.createdAt ? new Date(task.createdAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) : '—'}
+                          {dateFilterMode !== 'today' && task.createdAt && <span className="block text-[11px] text-on-surface-variant">{new Date(task.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>}
+                        </td>
+                        <td className="px-3 py-2.5 whitespace-nowrap font-medium">{task.roomNumber}</td>
+                        <td className="px-3 py-2.5">
+                          <span className="flex items-center gap-1.5">
+                            {isHigh && !closed && <span className="size-2 rounded-full bg-error shrink-0" title="High priority" />}
+                            <span className={`font-medium ${closed ? '' : 'text-on-surface'}`}>{task.title}</span>
+                          </span>
+                          {task.description && task.description !== 'Dispatched from Live Operations control center.' && <span className="block text-xs text-on-surface-variant mt-0.5 line-clamp-2">{task.description}</span>}
+                          <span className="block text-[11px] text-on-surface-variant mt-0.5">Due {task.dueTime}{isHigh ? ' · high priority' : ''}</span>
+                          {!!task.price && <span className="inline-flex mt-1 rounded-full bg-highlight text-on-highlight text-[11px] font-medium px-2 py-0.5">{formatCurrency(task.price, currency)} billed when done</span>}
+                          {isRejected && task.rejectionNote && <span className="block text-xs text-error mt-1">Rejected: {task.rejectionNote}</span>}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          {closed ? DEPT_LABELS[task.category] : (
+                            <select
+                              value={task.category}
+                              onChange={(e) => onChangeDepartment(task.id, e.target.value as LiveOpsTask['category'])}
+                              aria-label="Move to another department"
+                              className="w-full h-8 px-2 rounded-lg border border-outline-variant bg-surface-container-lowest text-xs focus:border-primary focus:outline-none"
+                            >
+                              {(Object.keys(DEPT_LABELS) as LiveOpsTask['category'][]).map(d => <option key={d} value={d}>{DEPT_LABELS[d]}</option>)}
+                            </select>
+                          )}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          {closed ? (task.assignedTo || '—') : (
+                            <span className="flex items-center gap-1.5">
+                              <select
+                                value={task.assignedTo ?? ''}
+                                onChange={(e) => onAssignTask(task.id, e.target.value || null)}
+                                aria-label="Assign to"
+                                className={`flex-1 min-w-0 h-8 px-2 rounded-lg border bg-surface-container-lowest text-xs focus:border-primary focus:outline-none ${task.assignedTo ? 'border-outline-variant' : 'border-warning/60'}`}
+                              >
+                                <option value="">Unassigned · {DEPT_LABELS[task.category]} queue</option>
+                                {candidates.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                              </select>
+                              {task.assignedTo && (
+                                <button type="button" onClick={() => setQrTask(task)} title="Task QR for them to scan" aria-label="Task QR" className="size-8 shrink-0 rounded-lg border border-outline-variant hover:bg-surface-container-low flex items-center justify-center">
+                                  <QrCode className="size-3.5" />
+                                </button>
+                              )}
                             </span>
                           )}
-                          {/* Moves a misrouted request to a different department's
-                              queue — the thing "Assign to" (a person within a
-                              department) couldn't already do. */}
-                          <select
-                            value={task.category}
-                            onChange={(e) => onChangeDepartment(task.id, e.target.value as LiveOpsTask['category'])}
-                            title="Move to a different department"
-                            className="h-6 px-1.5 rounded bg-surface-container-low border border-outline-variant text-primary text-[10px] font-medium uppercase focus:outline-none focus:border-primary"
-                          >
-                            {(Object.keys(DEPT_LABELS) as LiveOpsTask['category'][]).map(d => (
-                              <option key={d} value={d}>{d}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <span className={`text-xs font-semibold shrink-0 ${isHigh ? 'text-error' : 'text-on-surface-variant'}`}>
-                          Due: {task.dueTime}
-                        </span>
-                      </div>
-
-                      <p className="text-sm font-medium text-on-surface mb-1">{task.title}</p>
-                      {!!task.price && (
-                        <p className="inline-flex items-center rounded-full bg-highlight text-on-highlight text-[11px] font-semibold px-2 py-0.5 mb-1.5">
-                          {formatCurrency(task.price, currency)} charged to the room when done
-                        </p>
-                      )}
-                      <p className="text-xs text-on-surface-variant mb-3">{task.description}</p>
-
-                      {/* Assign to — a real person from the department directory, not just a category queue */}
-                      <div className="flex items-center gap-2 mb-3">
-                        <UserCircle2 className="w-3.5 h-3.5 text-on-surface-variant shrink-0" />
-                        <select
-                          value={task.assignedTo ?? ''}
-                          onChange={(e) => onAssignTask(task.id, e.target.value || null)}
-                          className="flex-1 h-8 px-2 text-xs border border-outline-variant rounded-lg bg-surface-container-lowest focus:border-primary focus:outline-none"
-                        >
-                          <option value="">Unassigned — {DEPT_LABELS[task.category]} queue</option>
-                          {candidates.map(c => (
-                            <option key={c.id} value={c.name}>{c.name} · {c.phone}</option>
-                          ))}
-                        </select>
-                        {/* Once assigned, hand them a QR — they scan it to open a no-login page with just this task, tap Start/Done. No account needed. */}
-                        {task.assignedTo && !isDone && !isRejected && (
-                          <button
-                            type="button"
-                            onClick={() => setQrTask(task)}
-                            title="Generate task QR"
-                            className="shrink-0 w-8 h-8 rounded-lg border border-outline-variant text-primary hover:bg-surface-container-low flex items-center justify-center"
-                          >
-                            <QrCode className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-
-                      {isRejected && task.rejectionNote && (
-                        <div className="bg-error-container/30 text-on-error-container p-2.5 rounded-lg text-xs border border-error-container mb-3">
-                          <span className="font-semibold">Rejected: </span>
-                          {task.rejectionNote}
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between gap-2">
-                        {isDone ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-success bg-success/10 px-3 py-1.5 rounded-lg w-full justify-center">
-                            <CheckCheck className="w-4 h-4" /> Completed
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <span className={`inline-flex h-6 px-2.5 rounded-full text-xs font-medium items-center whitespace-nowrap ${
+                            isDone ? 'bg-success/15 text-success' : isRejected ? 'bg-error/10 text-error' : task.status === 'in_progress' ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface'
+                          }`}>
+                            {isDone ? 'Done' : isRejected ? 'Rejected' : task.status === 'in_progress' ? 'In progress' : 'Waiting'}
                           </span>
-                        ) : isRejected ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-error bg-error/10 px-3 py-1.5 rounded-lg w-full justify-center">
-                            <Ban className="w-4 h-4" /> Rejected
-                          </span>
-                        ) : inProgress ? (
-                          <button
-                            onClick={() => handleAction(task)}
-                            className="flex-1 h-11 bg-success text-on-success rounded-lg text-xs font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 cursor-pointer shadow-xs"
-                          >
-                            <Check className="w-4 h-4" /> Mark Complete
-                          </button>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => { setRejectingTask(task); setRejectNote(''); }}
-                              className="h-11 px-3 rounded-lg border border-error text-error hover:bg-error-container/30 transition-all flex items-center justify-center cursor-pointer shrink-0"
-                              title="Reject this task"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleAction(task)}
-                              className={`flex-1 h-11 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                                isHigh
-                                  ? 'bg-primary text-on-primary hover:bg-primary-hover shadow-xs'
-                                  : 'bg-transparent border border-primary text-primary hover:bg-surface-container-low'
-                              }`}
-                            >
-                              {isHigh ? <Play className="w-4 h-4 fill-white" /> : null}
-                              <span>{isHigh ? 'Start' : 'Accept'}</span>
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </article>
-                );
-              })
-            )}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          {!closed && (
+                            <span className="flex items-center justify-end gap-1.5">
+                              {task.status === 'pending' && (
+                                <button onClick={() => { setRejectingTask(task); setRejectNote(''); }} title="Reject" aria-label="Reject" className="size-8 rounded-lg border border-error/50 text-error hover:bg-error/10 flex items-center justify-center">
+                                  <X className="size-3.5" />
+                                </button>
+                              )}
+                              <button onClick={() => handleAction(task)} className={`h-8 px-3 rounded-lg text-xs font-medium inline-flex items-center gap-1.5 ${task.status === 'in_progress' ? 'bg-success text-on-success' : 'bg-primary text-on-primary'}`}>
+                                {task.status === 'in_progress' ? <><Check className="size-3.5" /> Done</> : <><Play className="size-3.5" /> Start</>}
+                              </button>
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
         {/* Department Contacts — right column, uses the space this page used to leave empty */}
-        <aside className="xl:col-span-4 space-y-3">
-          <h3 className="text-sm font-semibold text-on-surface px-1">Department Contacts</h3>
+        <aside className="grid md:grid-cols-2 xl:grid-cols-3 gap-3 items-start">
+          <h3 className="md:col-span-2 xl:col-span-3 text-sm font-semibold text-on-surface px-1">Department contacts and QR codes</h3>
           {(Object.keys(DEPT_LABELS) as DirectoryContact['department'][]).map(dept => {
             const contacts = directoryByDept(dept);
             const openCount = tasks.filter(t => t.category === dept && t.status !== 'completed').length;
@@ -560,7 +559,8 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
               <p className="text-[10px] text-on-surface-variant mt-0.5">Scan before a shift — opens that department's queue.</p>
             </div>
             <div className="divide-y divide-outline-variant">
-              {(Object.keys(DEPT_LABELS) as DepartmentDisplayAdmin['department'][]).map(dept => {
+              {/* The kitchen has its own screen and link (Kitchen tab), not a task queue QR. */}
+              {(Object.keys(DEPT_LABELS) as DepartmentDisplayAdmin['department'][]).filter(dept => dept !== 'kitchen').map(dept => {
                 const existing = displays.find(d => d.department === dept && d.active);
                 return (
                   <div key={dept} className="flex items-center justify-between px-4 py-2.5 text-xs">
@@ -720,13 +720,6 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
         </div>
       )}
 
-      {/* Live Ops Work History Excel-Style Spreadsheet Modal */}
-      <LiveOpsSpreadsheetModal
-        isOpen={showSpreadsheetModal}
-        onClose={() => setShowSpreadsheetModal(false)}
-        tasks={tasks}
-        propertyName={propertyId}
-      />
     </div>
   );
 };

@@ -24,11 +24,16 @@ export interface DisplayTask {
 
 export interface DepartmentDisplay {
   propertyName: string;
+  /** The hotel's cover photo, for the welcome card. */
+  propertyImage?: string;
   department: Department;
   label: string;
   tasks: DisplayTask[];
   /** Whoever currently has this display claimed (department_display_scan_badge) — undefined when no one's clocked in right now. */
   activeStaffName?: string;
+  /** Their job title from the Staff tab ("Supervisor"), if set (0083). */
+  activeStaffTitle?: string;
+  activeShiftName?: string;
   activeSince?: string;
 }
 
@@ -41,8 +46,12 @@ export async function resolveDisplay(token: string): Promise<DepartmentDisplay> 
 export interface BadgeScanResult {
   action: 'claimed' | 'released' | 'handover';
   staffName: string;
+  jobTitle?: string;
+  department?: Department;
   shiftName?: string;
   claimedAt?: string;
+  /** Set when this scan clocked them out. */
+  releasedAt?: string;
 }
 
 /** Whoever's badge was just scanned — claims the display, releases it if it's their own already-active claim, or hands it over from whoever else was on. */

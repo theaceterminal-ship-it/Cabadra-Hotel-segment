@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { LayoutDashboard, BedDouble, ListChecks, UtensilsCrossed, Truck, CalendarClock, CalendarDays, Sparkles, Users, TrendingUp, ClipboardCheck } from 'lucide-react';
 import { StaffPwaInstallPrompt } from '../components/StaffPwaInstallPrompt';
 import { ReservedExperiencesView } from '../components/ReservedExperiencesView';
@@ -37,6 +38,7 @@ import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { MobileNav, Sidebar, SidebarNavItem } from '../components/Sidebar';
 import { ShiftCoverageView } from '../components/ShiftCoverageView';
 import { ReceptionDashboard } from '../components/ReceptionDashboard';
+import { StaffWelcomeCard } from '../components/StaffWelcomeCard';
 import { BookingsView } from '../components/bookings/BookingsView';
 import { RoomsFloorsView } from '../components/RoomsFloorsView';
 import { LiveOpsView } from '../components/LiveOpsView';
@@ -101,6 +103,7 @@ export default function ReceptionApp() {
   const [propertyName, setPropertyName] = useState('');
   const [upiId, setUpiId] = useState<string | undefined>(undefined);
   const [hasExternalPms, setHasExternalPms] = useState(false);
+  const [propertyImage, setPropertyImage] = useState<string | undefined>();
   const [stats, setStats] = useState<PropertyStats | null>(null);
   const syncInFlight = useRef(false);
 
@@ -141,7 +144,7 @@ export default function ReceptionApp() {
     reloadRoomsAndArrivals(propertyId);
     reloadRequests(propertyId);
     reloadTasks(propertyId);
-    fetchPropertyMeta(propertyId).then(meta => { setCurrency(meta.currency); setPropertyName(meta.name); setUpiId(meta.upiId); setHasExternalPms(meta.hasExternalPms); }).catch(err => console.warn('Failed to load property currency:', err));
+    fetchPropertyMeta(propertyId).then(meta => { setCurrency(meta.currency); setPropertyName(meta.name); setUpiId(meta.upiId); setHasExternalPms(meta.hasExternalPms); setPropertyImage(meta.image); }).catch(err => console.warn('Failed to load property currency:', err));
     fetchStaffDirectory(propertyId).then(setDirectory).catch(err => console.warn('Failed to load staff directory:', err));
   }, [propertyId]);
 
@@ -357,7 +360,8 @@ export default function ReceptionApp() {
 
   const navItems: SidebarNavItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: openRequestsCount },
-    { id: 'bookings', label: 'Bookings', icon: CalendarDays },
+    // Bookings are the built-in PMS's; a hotel on its own PMS books there.
+    ...(hasExternalPms ? [] : [{ id: 'bookings', label: 'Bookings', icon: CalendarDays }]),
     { id: 'rooms_floors', label: 'Rooms', icon: BedDouble },
     { id: 'live_ops', label: 'Tasks', icon: ListChecks, badge: openTasksCount },
     { id: 'reserved_experiences', label: 'Experiences', icon: Sparkles },
@@ -388,7 +392,27 @@ export default function ReceptionApp() {
         <StaffPwaInstallPrompt />
 
         <div className="flex-1 overflow-y-auto pt-0 pb-24 md:pb-0">
+          {/* A short fade-and-rise between screens, so switching tabs feels like moving, not flickering. */}
+          <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={view}
+            className="h-full"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          >
           {view === 'dashboard' && (
+            <>
+            <div className="px-4 sm:px-6 pb-2">
+              <StaffWelcomeCard
+                name={(session?.user.user_metadata?.full_name || session?.user.user_metadata?.name) as string | undefined}
+                fallbackName="front desk team"
+                role={assignments.find(a => a.propertyId === propertyId)?.role === 'owner' ? 'Owner' : 'Front desk'}
+                propertyName={propertyName}
+                propertyImage={propertyImage}
+              />
+            </div>
             <ReceptionDashboard
               propertyId={propertyId}
               propertyName={propertyName}
@@ -413,8 +437,9 @@ export default function ReceptionApp() {
               onOpenNewRequest={() => setIsRequestModalOpen(true)}
               onNavigate={(v: AppView) => setView(v as ReceptionTab)}
             />
+            </>
           )}
-          {view === 'bookings' && propertyId && (
+          {view === 'bookings' && propertyId && !hasExternalPms && (
             <BookingsView
               propertyId={propertyId}
               propertyName={propertyName}
@@ -472,15 +497,17 @@ export default function ReceptionApp() {
             />
           )}
           {view === 'day_close' && propertyId && <DayCloseView propertyId={propertyId} propertyName={propertyName} currency={currency} />}
-          {view === 'sales_reports' && propertyId && <ReportsView propertyId={propertyId} propertyName={propertyName} currency={currency} />}
+          {view === 'sales_reports' && propertyId && <ReportsView propertyId={propertyId} propertyName={propertyName} currency={currency} hasExternalPms={hasExternalPms} />}
           {view === 'active_deliveries' && <ActiveDeliveries propertyId={propertyId} onNavigate={(v: AppView) => setView(v as ReceptionTab)} />}
           {view === 'shift_coverage' && <ShiftCoverageView propertyId={propertyId ?? ''} onNavigate={(v: AppView) => setView(v as ReceptionTab)} />}
+          </motion.div>
+          </AnimatePresence>
         </div>
       </div>
 
       <MobileNav
         navItems={navItems}
-        primaryIds={['dashboard', 'bookings', 'rooms_floors', 'kitchen_kds']}
+        primaryIds={hasExternalPms ? ['dashboard', 'rooms_floors', 'live_ops', 'kitchen_kds'] : ['dashboard', 'bookings', 'rooms_floors', 'kitchen_kds']}
         activeId={view}
         onNavigate={(id) => setView(id as ReceptionTab)}
         onSignOut={() => signOut()}

@@ -362,3 +362,10 @@
   body:has(.print-only-root) .print-only-root * { visibility: visible; }
   body:has(.print-only-root) .print-only-root { position: absolute; inset: 0; }
 }
+
+/* Scrolls, but without a visible scrollbar (side rails, tab strips, carousels).
+   Arrows (src/hooks/useScrollEdges.ts) show where there's more. */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}

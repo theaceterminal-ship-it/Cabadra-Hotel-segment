@@ -1,5 +1,7 @@
 import React from 'react';
-import { LogOut } from 'lucide-react';
+import { ChevronDown, ChevronUp, LogOut } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { useScrollEdges } from '../hooks/useScrollEdges';
 
 export interface SidebarNavItem {
   id: string;
@@ -17,51 +19,70 @@ interface SidebarProps {
 }
 
 /**
- * The icon-only rail: a narrow column of round icon buttons on the page's
- * own background, the active one filled ink like the website's pill
- * buttons, the Cabadra mark at the top and sign-out at the bottom. It has no
- * expanded state on purpose; each button names itself on hover.
+ * The side rail: each screen as an icon with its name under it, the active
+ * one filled ink like the website's pill buttons, the Cabadra mark at the
+ * top and sign-out at the bottom. When there are more screens than fit,
+ * the list scrolls without a scrollbar and an arrow at the top or bottom
+ * shows there's more (tap it, or just scroll).
  */
 export const Sidebar: React.FC<SidebarProps> = ({ navItems, activeId, onNavigate, onSignOut }) => {
+  const { ref, edges, scrollBy } = useScrollEdges<HTMLElement>('y');
+
   return (
-    <aside className="hidden md:flex shrink-0 h-screen sticky top-0 w-20 bg-surface flex-col items-center py-5 gap-6">
+    <aside className="hidden md:flex shrink-0 h-screen sticky top-0 w-[88px] bg-surface flex-col items-center py-4 gap-3">
       <div className="size-11 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0 text-lg font-semibold tracking-[-0.03em]" title="Cabadra">
         C
       </div>
 
-      <nav className="flex-1 flex flex-col items-center gap-1.5 overflow-y-auto">
-        {navItems.map(item => {
-          const Icon = item.icon;
-          const active = item.id === activeId;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onNavigate(item.id)}
-              title={item.label}
-              aria-label={item.label}
-              aria-current={active ? 'page' : undefined}
-              className={`relative size-11 shrink-0 rounded-full flex items-center justify-center transition-colors ${
-                active ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container-lowest hover:text-on-surface'
-              }`}
-            >
-              <Icon className="size-[18px]" />
-              {!!item.badge && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-room-ready text-room-ready-on font-semibold text-[10px] px-1">
-                  {item.badge > 9 ? '9+' : item.badge}
+      <div className="relative flex-1 min-h-0 w-full">
+        <nav ref={ref} className="h-full overflow-y-auto scrollbar-none flex flex-col items-center gap-1 py-1">
+          {navItems.map(item => {
+            const Icon = item.icon;
+            const active = item.id === activeId;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onNavigate(item.id)}
+                aria-current={active ? 'page' : undefined}
+                className="group w-full shrink-0 flex flex-col items-center gap-1 py-1.5"
+              >
+                <span className={`relative h-8 w-14 rounded-full flex items-center justify-center transition-colors duration-200 ${
+                  active ? 'text-on-primary' : 'text-on-surface-variant group-hover:bg-surface-container-lowest group-hover:text-on-surface'
+                }`}>
+                  {active && <motion.span layoutId="rail-active" className="absolute inset-0 rounded-full bg-primary" transition={{ type: 'spring', damping: 30, stiffness: 400 }} />}
+                  <Icon className="relative size-[18px]" />
+                  {!!item.badge && (
+                    <span className="absolute -top-1 right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-room-ready text-room-ready-on font-semibold text-[10px] px-1">
+                      {item.badge > 9 ? '9+' : item.badge}
+                    </span>
+                  )}
                 </span>
-              )}
-            </button>
-          );
-        })}
-      </nav>
+                <span className={`text-[11px] leading-tight text-center px-1 ${active ? 'font-semibold text-on-surface' : 'text-on-surface-variant group-hover:text-on-surface'}`}>{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+        {edges.before && (
+          <button onClick={() => scrollBy(-1)} aria-label="Show more above" className="absolute top-0 inset-x-0 h-9 flex items-start justify-center bg-gradient-to-b from-surface via-surface/90 to-transparent">
+            <ChevronUp className="size-4 text-on-surface-variant" />
+          </button>
+        )}
+        {edges.after && (
+          <button onClick={() => scrollBy(1)} aria-label="Show more below" className="absolute bottom-0 inset-x-0 h-9 flex items-end justify-center bg-gradient-to-t from-surface via-surface/90 to-transparent">
+            <ChevronDown className="size-4 text-on-surface-variant" />
+          </button>
+        )}
+      </div>
 
       <button
         onClick={onSignOut}
-        title="Sign out"
         aria-label="Sign out"
-        className="size-11 shrink-0 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-lowest hover:text-on-surface transition-colors"
+        className="group shrink-0 flex flex-col items-center gap-1"
       >
-        <LogOut className="size-[18px]" />
+        <span className="h-8 w-14 rounded-full flex items-center justify-center text-on-surface-variant group-hover:bg-surface-container-lowest group-hover:text-on-surface transition-colors">
+          <LogOut className="size-[18px]" />
+        </span>
+        <span className="text-[11px] text-on-surface-variant">Sign out</span>
       </button>
     </aside>
   );
@@ -86,8 +107,9 @@ export function MobileNav({ navItems, primaryIds, activeId, onNavigate, onSignOu
 
   const Tab = ({ item, onClick, active }: { item: Pick<SidebarNavItem, 'label' | 'icon' | 'badge'>; onClick: () => void; active: boolean }) => (
     <button onClick={onClick} aria-current={active ? 'page' : undefined} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 pt-2 pb-1">
-      <span className={`relative h-8 w-14 rounded-full flex items-center justify-center transition-colors ${active ? 'bg-primary text-on-primary' : 'text-on-surface-variant'}`}>
-        <item.icon className="size-[18px]" />
+      <span className={`relative h-8 w-14 rounded-full flex items-center justify-center transition-colors ${active ? 'text-on-primary' : 'text-on-surface-variant'}`}>
+        {active && <motion.span layoutId="tabbar-active" className="absolute inset-0 rounded-full bg-primary" transition={{ type: 'spring', damping: 30, stiffness: 400 }} />}
+        <item.icon className="relative size-[18px]" />
         {!!item.badge && (
           <span className="absolute -top-1 right-1.5 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-room-ready text-room-ready-on font-semibold text-[9px] px-1">{item.badge > 9 ? '9+' : item.badge}</span>
         )}
@@ -103,9 +125,18 @@ export function MobileNav({ navItems, primaryIds, activeId, onNavigate, onSignOu
         <Tab item={{ label: 'More', icon: MoreIcon, badge: moreBadge }} active={moreActive || open} onClick={() => setOpen(true)} />
       </nav>
 
+      <AnimatePresence>
       {open && (
-        <div className="md:hidden fixed inset-0 z-50 bg-black/40 flex items-end" onClick={() => setOpen(false)}>
-          <div className="w-full bg-surface-container-lowest text-on-surface rounded-t-[28px] p-4 pb-6 space-y-4" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }} onClick={e => e.stopPropagation()}>
+        <motion.div className="md:hidden fixed inset-0 z-50 bg-black/40 flex items-end" onClick={() => setOpen(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.div
+            className="w-full bg-surface-container-lowest text-on-surface rounded-t-[28px] p-4 pb-6 space-y-4"
+            style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
+            onClick={e => e.stopPropagation()}
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 320 }}
+          >
             <div className="w-10 h-1 rounded-full bg-outline-variant mx-auto" />
             {extra && <div className="flex justify-center">{extra}</div>}
             <div className="grid grid-cols-3 gap-2">
@@ -122,9 +153,10 @@ export function MobileNav({ navItems, primaryIds, activeId, onNavigate, onSignOu
               })}
             </div>
             <button onClick={onSignOut} className="w-full h-11 rounded-full bg-surface-container-low text-sm font-medium inline-flex items-center justify-center gap-2"><LogOut className="size-4" /> Sign out</button>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </>
   );
 }

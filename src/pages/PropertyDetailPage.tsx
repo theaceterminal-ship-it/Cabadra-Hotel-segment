@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Building2 } from 'lucide-react';
+import { ArrowLeft, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { useScrollEdges } from '../hooks/useScrollEdges';
 import { Property, Room, MenuItem } from '../types';
 import {
   fetchRoomsForProperty,
@@ -47,6 +49,7 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
 
   const tabParam = searchParams.get('tab') as TabId | null;
   const tab: TabId = tabParam && TAB_IDS.includes(tabParam) ? tabParam : 'overview';
+  const tabsScroll = useScrollEdges<HTMLElement>('x');
   const setTab = (next: TabId) =>
     setSearchParams(params => {
       if (next === 'overview') params.delete('tab');
@@ -146,27 +149,49 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
         </div>
       </div>
 
-      <nav className="mt-6 -mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto" aria-label="Property sections">
-        <div className="inline-flex gap-1 rounded-full bg-surface-container p-1">
-          {tabs.map(t => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              aria-current={tab === t.id ? 'page' : undefined}
-              className={`h-9 px-4 rounded-full text-sm font-medium whitespace-nowrap inline-flex items-center gap-1.5 transition-colors ${
-                tab === t.id ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:text-on-surface'
-              }`}
-            >
-              {t.label}
-              {t.count !== undefined && t.count > 0 && (
-                <span className={`text-xs ${tab === t.id ? 'text-on-primary/70' : 'text-on-surface-variant/70'}`}>{t.count}</span>
-              )}
-            </button>
-          ))}
-        </div>
-      </nav>
+      {/* Scrolls sideways on a narrow screen with no scrollbar; arrows show there's more. */}
+      <div className="relative mt-6 -mx-4 sm:mx-0">
+        <nav ref={tabsScroll.ref} className="overflow-x-auto scrollbar-none px-4 sm:px-0" aria-label="Property sections">
+          <div className="inline-flex gap-1 rounded-full bg-surface-container p-1">
+            {tabs.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                aria-current={tab === t.id ? 'page' : undefined}
+                className={`relative h-9 px-4 rounded-full text-sm font-medium whitespace-nowrap inline-flex items-center gap-1.5 transition-colors ${
+                  tab === t.id ? 'text-on-primary' : 'text-on-surface-variant hover:text-on-surface'
+                }`}
+              >
+                {tab === t.id && <motion.span layoutId="property-tab-pill" className="absolute inset-0 rounded-full bg-primary" transition={{ type: 'spring', damping: 30, stiffness: 380 }} />}
+                <span className="relative">{t.label}</span>
+                {t.count !== undefined && t.count > 0 && (
+                  <span className={`relative text-xs ${tab === t.id ? 'text-on-primary/70' : 'text-on-surface-variant/70'}`}>{t.count}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </nav>
+        {tabsScroll.edges.before && (
+          <button onClick={() => tabsScroll.scrollBy(-1)} aria-label="Scroll tabs left" className="absolute left-0 inset-y-0 w-10 flex items-center justify-start pl-1 bg-gradient-to-r from-surface via-surface/90 to-transparent">
+            <ChevronLeft className="size-4 text-on-surface-variant" />
+          </button>
+        )}
+        {tabsScroll.edges.after && (
+          <button onClick={() => tabsScroll.scrollBy(1)} aria-label="Scroll tabs right" className="absolute right-0 inset-y-0 w-10 flex items-center justify-end pr-1 bg-gradient-to-l from-surface via-surface/90 to-transparent">
+            <ChevronRight className="size-4 text-on-surface-variant" />
+          </button>
+        )}
+      </div>
 
-      <div className="mt-8">
+      <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={tab}
+        className="mt-8"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -6 }}
+        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+      >
         {loading ? (
           <p className="text-sm text-on-surface-variant text-center py-16">Loading…</p>
         ) : error ? (
@@ -182,7 +207,7 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
           />
         ) : tab === 'reports' ? (
           // Same reports the front desk sees, including every day close and its cash difference.
-          <div className="-mx-4 sm:-mx-6"><ReportsView propertyId={propertyId} propertyName={property?.name ?? ''} currency={currency} /></div>
+          <div className="-mx-4 sm:-mx-6"><ReportsView propertyId={propertyId} propertyName={property?.name ?? ''} currency={currency} hasExternalPms={property?.hasExternalPms ?? false} /></div>
         ) : tab === 'rooms' ? (
           <RoomsTab propertyId={propertyId} currency={currency} rooms={rooms} hasExternalPms={property?.hasExternalPms ?? false} onChanged={handleReload} />
         ) : tab === 'menu' ? (
@@ -194,7 +219,8 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
         ) : (
           <StaffTab propertyId={propertyId} staff={staff} pendingInvites={pendingInvites} onChanged={handleReload} />
         )}
-      </div>
+      </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Check, Copy, Link2, Plus, QrCode, RefreshCw, UserPlus } from 'lucide-react';
+import { Check, Copy, Link2, Pencil, Plus, QrCode, RefreshCw, UserPlus } from 'lucide-react';
+import { AttendancePanel } from './AttendancePanel';
 import {
-  addDirectoryContact, cancelPendingInvite, deleteDirectoryContact, DirectoryContact, fetchAccessLink, fetchStaffDirectory,
+  addDirectoryContact, cancelPendingInvite, deleteDirectoryContact, DirectoryContact, fetchAccessLink, fetchStaffDirectory, updateDirectoryContact,
   inviteStaff, PendingInvite, provisionAccessLink, revokeStaffAccess, sendStaffInviteEmail, StaffMember,
 } from '../../lib/staffApi';
 import { BadgeQrModal } from '../../components/BadgeQrModal';
@@ -16,6 +17,7 @@ export function StaffTab({ propertyId, staff, pendingInvites, onChanged }: {
       <AccessLinkPanel propertyId={propertyId} />
       <TeamPanel propertyId={propertyId} staff={staff} pendingInvites={pendingInvites} onChanged={onChanged} />
       <ContactsPanel propertyId={propertyId} />
+      <AttendancePanel propertyId={propertyId} />
     </div>
   );
 }
@@ -249,7 +251,9 @@ function ContactsPanel({ propertyId }: { propertyId: string }) {
   const [contacts, setContacts] = useState<DirectoryContact[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: '', phone: '', department: 'housekeeping' as DirectoryContact['department'] });
+  // The person being edited; null while adding a new one.
+  const [editing, setEditing] = useState<DirectoryContact | null>(null);
+  const [form, setForm] = useState({ name: '', phone: '', department: 'housekeeping' as DirectoryContact['department'], jobTitle: '' });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [badgeContact, setBadgeContact] = useState<DirectoryContact | null>(null);
@@ -263,8 +267,11 @@ function ContactsPanel({ propertyId }: { propertyId: string }) {
     setSubmitting(true);
     setError(null);
     try {
-      await addDirectoryContact(propertyId, { name: form.name.trim(), phone: form.phone.trim(), department: form.department });
-      setForm({ name: '', phone: '', department: form.department });
+      const contact = { name: form.name.trim(), phone: form.phone.trim(), department: form.department, jobTitle: form.jobTitle };
+      if (editing) await updateDirectoryContact(editing.id, contact);
+      else await addDirectoryContact(propertyId, contact);
+      setForm({ name: '', phone: '', department: form.department, jobTitle: '' });
+      setEditing(null);
       setAdding(false);
       reload();
     } catch (err) {
@@ -289,7 +296,7 @@ function ContactsPanel({ propertyId }: { propertyId: string }) {
       <SectionHeader
         title="Department staff"
         description="Who gets each department's tasks. They start a shift by scanning their badge, with no login."
-        actions={<button onClick={() => { setAdding(true); setError(null); }} className={btnSecondary}><Plus className="size-4" /> Add person</button>}
+        actions={<button onClick={() => { setEditing(null); setForm(f => ({ ...f, name: '', phone: '', jobTitle: '' })); setAdding(true); setError(null); }} className={btnSecondary}><Plus className="size-4" /> Add person</button>}
       />
       {!adding && error && <div className="mb-3"><ErrorNote>{error}</ErrorNote></div>}
       {loading ? null : contacts.length === 0 ? (
@@ -299,10 +306,18 @@ function ContactsPanel({ propertyId }: { propertyId: string }) {
           {contacts.map(c => (
             <div key={c.id} className="flex items-center gap-3 py-2.5">
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-on-surface truncate">{c.name}</p>
+                <p className="text-sm text-on-surface truncate">{c.name}{c.jobTitle && <span className="text-on-surface-variant"> · {c.jobTitle}</span>}</p>
                 <p className="text-xs text-on-surface-variant">{c.phone}</p>
               </div>
               <Chip>{DEPT_LABELS[c.department]}</Chip>
+              <button
+                onClick={() => { setEditing(c); setForm({ name: c.name, phone: c.phone, department: c.department, jobTitle: c.jobTitle ?? '' }); setError(null); setAdding(true); }}
+                className={iconBtn}
+                title="Edit"
+                aria-label={`Edit ${c.name}`}
+              >
+                <Pencil className="size-4" />
+              </button>
               <button onClick={() => setBadgeContact(c)} className={iconBtn} title="Badge QR" aria-label={`Badge QR for ${c.name}`}>
                 <QrCode className="size-4" />
               </button>
@@ -314,13 +329,13 @@ function ContactsPanel({ propertyId }: { propertyId: string }) {
 
       {adding && (
         <Modal
-          title="Add a person"
+          title={editing ? `Edit ${editing.name}` : 'Add a person'}
           onClose={() => setAdding(false)}
           onSubmit={handleAdd}
           footer={
             <>
               <button type="button" onClick={() => setAdding(false)} className={btnSecondary}>Cancel</button>
-              <button type="submit" disabled={submitting || !form.name.trim() || !form.phone.trim()} className={btnPrimary}>{submitting ? 'Adding…' : 'Add'}</button>
+              <button type="submit" disabled={submitting || !form.name.trim() || !form.phone.trim()} className={btnPrimary}>{submitting ? 'Saving…' : editing ? 'Save' : 'Add'}</button>
             </>
           }
         >
@@ -333,6 +348,9 @@ function ContactsPanel({ propertyId }: { propertyId: string }) {
               </select>
             </Field>
           </div>
+          <Field label="Job title (optional)" hint="Shown on their welcome card when they start a shift.">
+            <input value={form.jobTitle} onChange={e => setForm(f => ({ ...f, jobTitle: e.target.value }))} maxLength={60} placeholder="Supervisor" className={inputCls} />
+          </Field>
           <ErrorNote>{error}</ErrorNote>
         </Modal>
       )}

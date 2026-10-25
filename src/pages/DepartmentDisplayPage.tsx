@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Camera, User } from 'lucide-react';
+import { Camera, User, X } from 'lucide-react';
+import { StaffWelcomeCard } from '../components/StaffWelcomeCard';
 import {
   resolveDisplay,
   scanBadge,
@@ -47,6 +48,8 @@ export default function DepartmentDisplayPage() {
   const [scanFeedback, setScanFeedback] = useState<string | null>(null);
   const [showCameraScanner, setShowCameraScanner] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
+  // Just clocked out: thank them by name for a few seconds.
+  const [farewell, setFarewell] = useState<{ name: string; role?: string } | null>(null);
   const badgeInputRef = useRef<HTMLInputElement>(null);
   // Belt-and-suspenders against a double-submit of the identical badge —
   // the backend now also debounces this (0054), but a client-side guard
@@ -66,13 +69,28 @@ export default function DepartmentDisplayPage() {
     return () => clearInterval(interval);
   }, [load]);
 
-  // Keeps the scanner-ready input focused — a shared kiosk has no one to
-  // tap it back into focus between scans.
+  // Keeps the code field focused for a USB/Bluetooth barcode scanner on a
+  // shared kiosk, which has no one to tap it back into focus between scans.
+  // Only with a mouse/keyboard device: on a phone, re-focusing kept popping
+  // the keyboard back up, so the field couldn't be put away.
   useEffect(() => {
-    const refocus = () => badgeInputRef.current?.focus();
-    const id = setInterval(refocus, 2000);
+    if (!showManualEntry || !window.matchMedia('(pointer: fine)').matches) return;
+    const id = setInterval(() => badgeInputRef.current?.focus(), 2000);
     return () => clearInterval(id);
-  }, []);
+  }, [showManualEntry]);
+
+  // An empty code field closes itself after half a minute instead of sitting open.
+  useEffect(() => {
+    if (!showManualEntry || badgeValue) return;
+    const t = setTimeout(() => setShowManualEntry(false), 30_000);
+    return () => clearTimeout(t);
+  }, [showManualEntry, badgeValue]);
+
+  const closeManualEntry = () => {
+    setShowManualEntry(false);
+    setBadgeValue('');
+    badgeInputRef.current?.blur();
+  };
 
   // Not wired through <form onSubmit> — a form with a single text input and
   // no visible submit button relies on the browser's implicit-submission
@@ -98,21 +116,27 @@ export default function DepartmentDisplayPage() {
 
     try {
       const result = await scanBadge(token, value);
-      const verb = result.action === 'released' ? 'clocked out' : 'clocked in';
-      setScanFeedback(`${result.staffName} ${verb}${result.shiftName ? ` — ${result.shiftName}` : ''}`);
+      setShowManualEntry(false);
+      if (result.action === 'released') {
+        setFarewell({ name: result.staffName, role: result.jobTitle ?? undefined });
+        setTimeout(() => setFarewell(null), 8000);
+      } else {
+        setFarewell(null);
+      }
       // Reflect the change immediately instead of waiting for the next
       // 8s poll — the header used to look like nothing happened for a
       // few seconds right after a scan.
       setDisplay(d => d && {
         ...d,
         activeStaffName: result.action === 'released' ? undefined : result.staffName,
+        activeStaffTitle: result.action === 'released' ? undefined : result.jobTitle,
+        activeShiftName: result.action === 'released' ? undefined : result.shiftName,
         activeSince: result.action === 'released' ? undefined : (result.claimedAt ?? d.activeSince),
       });
     } catch (err) {
       setScanFeedback(err instanceof Error ? err.message : 'Badge not recognized.');
     } finally {
       setTimeout(() => setScanFeedback(null), 4000);
-      badgeInputRef.current?.focus();
     }
   };
 
@@ -180,21 +204,16 @@ export default function DepartmentDisplayPage() {
   return (
     <div className="min-h-screen w-full bg-surface flex flex-col items-center p-4 sm:p-6 pb-24">
       <div className="w-full max-w-2xl space-y-4">
-        <header className="bg-surface-container-lowest rounded-2xl border border-outline-variant p-4 sm:p-5 text-center">
-          <p className="text-xs font-medium text-primary">{display.propertyName}</p>
-          <h1 className="text-xl font-semibold text-on-surface mt-0.5">{DEPT_LABELS[display.department]} — {display.label}</h1>
-          {/* Who actually has this display claimed right now (0053) — the
-              screen used to say nothing about this at all, badge scan or
-              not. */}
-          {display.activeStaffName ? (
-            <p className="text-xs font-semibold text-success mt-1.5">
-              On shift: {display.activeStaffName}
-              {display.activeSince ? ` · since ${new Date(display.activeSince).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
-            </p>
-          ) : (
-            <p className="text-xs text-on-surface-variant mt-1.5">No one clocked in yet</p>
-          )}
-        </header>
+        <StaffWelcomeCard
+          name={farewell?.name ?? display.activeStaffName}
+          role={farewell ? farewell.role : [display.activeStaffTitle, DEPT_LABELS[display.department]].filter(Boolean).join(' · ')}
+          propertyName={display.propertyName}
+          propertyImage={display.propertyImage}
+          since={display.activeSince}
+          shiftName={display.activeShiftName}
+          state={farewell ? 'bye' : 'on'}
+        />
+        <p className="text-center text-xs text-on-surface-variant">{DEPT_LABELS[display.department]} · {display.label}</p>
 
         {scanFeedback && (
           <p className="text-center text-xs font-semibold text-primary">{scanFeedback}</p>
@@ -221,7 +240,10 @@ export default function DepartmentDisplayPage() {
               autoFocus
               value={badgeValue}
               onChange={e => setBadgeValue(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submitBadge(); } }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') { e.preventDefault(); submitBadge(); }
+                if (e.key === 'Escape') closeManualEntry();
+              }}
               placeholder="Badge code"
               className="flex-1 h-8 px-1 text-xs bg-transparent focus:outline-none"
             />
@@ -232,6 +254,7 @@ export default function DepartmentDisplayPage() {
             >
               Go
             </button>
+            <button onClick={closeManualEntry} aria-label="Close" className="size-8 rounded-full text-on-surface-variant hover:bg-surface-container-low flex items-center justify-center shrink-0"><X className="size-4" /></button>
           </div>
         )}
         <div className="flex items-center gap-2">
@@ -242,10 +265,10 @@ export default function DepartmentDisplayPage() {
             <Camera className="w-3.5 h-3.5" /> Scan Badge
           </button>
           <button
-            onClick={() => setShowManualEntry(v => !v)}
+            onClick={() => (showManualEntry ? closeManualEntry() : setShowManualEntry(true))}
             className="h-10 px-3 rounded-full bg-surface-container-lowest border border-outline-variant text-on-surface-variant text-xs font-semibold shadow-lg"
           >
-            Type code
+            {showManualEntry ? 'Close' : 'Type code'}
           </button>
         </div>
       </div>
