@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { LayoutDashboard, BedDouble, ListChecks, UtensilsCrossed, Truck, CalendarClock, CalendarDays, Sparkles, Users, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, BedDouble, ListChecks, UtensilsCrossed, Truck, CalendarClock, CalendarDays, Sparkles, Users, TrendingUp, ClipboardCheck } from 'lucide-react';
 import { StaffPwaInstallPrompt } from '../components/StaffPwaInstallPrompt';
 import { ReservedExperiencesView } from '../components/ReservedExperiencesView';
 import { GuestCrmView } from '../components/GuestCrmView';
-import { SalesReportView } from '../components/SalesReportView';
+import { ReportsView } from '../components/ReportsView';
+import { DayCloseView } from '../components/DayCloseView';
 import { AppView, KdsOrder, LiveOpsTask, Room, UpcomingArrival, UrgentRequest } from '../types';
 import { useAuth, signOut } from '../hooks/useAuth';
 import {
@@ -49,7 +50,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useNotifications } from '../hooks/useNotifications';
 import LoginPage from './LoginPage';
 
-type ReceptionTab = 'dashboard' | 'bookings' | 'rooms_floors' | 'live_ops' | 'reserved_experiences' | 'guest_crm' | 'sales_reports' | 'kitchen_kds' | 'active_deliveries' | 'shift_coverage';
+type ReceptionTab = 'dashboard' | 'bookings' | 'day_close' | 'rooms_floors' | 'live_ops' | 'reserved_experiences' | 'guest_crm' | 'sales_reports' | 'kitchen_kds' | 'active_deliveries' | 'shift_coverage';
 
 function supabaseOrderToKdsOrder(order: StaffOrder, previouslySeen?: KdsOrder): KdsOrder {
   const roomNumber = order.roomId.split('-').pop() ?? order.roomId;
@@ -356,7 +357,8 @@ export default function ReceptionApp() {
     { id: 'live_ops', label: 'Live Ops & Tasks', icon: ListChecks, badge: openTasksCount },
     { id: 'reserved_experiences', label: 'Reserved Experiences', icon: Sparkles },
     { id: 'guest_crm', label: 'Guest CRM', icon: Users },
-    { id: 'sales_reports', label: 'Sales Reports', icon: TrendingUp },
+    { id: 'day_close', label: 'Day close', icon: ClipboardCheck },
+    { id: 'sales_reports', label: 'Reports', icon: TrendingUp },
     { id: 'shift_coverage', label: 'Shift Coverage', icon: CalendarClock },
     { id: 'kitchen_kds', label: 'Kitchen KDS', icon: UtensilsCrossed, badge: activeOrdersCount },
     { id: 'active_deliveries', label: 'Active Deliveries', icon: Truck },
@@ -459,13 +461,8 @@ export default function ReceptionApp() {
               onRefreshRooms={() => propertyId && reloadRoomsAndArrivals(propertyId)}
             />
           )}
-          {view === 'sales_reports' && (
-            <SalesReportView
-              propertyId={propertyId ?? ''}
-              propertyName={propertyName}
-              currency={currency}
-            />
-          )}
+          {view === 'day_close' && propertyId && <DayCloseView propertyId={propertyId} propertyName={propertyName} currency={currency} />}
+          {view === 'sales_reports' && propertyId && <ReportsView propertyId={propertyId} propertyName={propertyName} currency={currency} />}
           {view === 'active_deliveries' && <ActiveDeliveries propertyId={propertyId} onNavigate={(v: AppView) => setView(v as ReceptionTab)} />}
           {view === 'shift_coverage' && <ShiftCoverageView propertyId={propertyId ?? ''} onNavigate={(v: AppView) => setView(v as ReceptionTab)} />}
         </div>

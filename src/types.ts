@@ -5,6 +5,7 @@ export type AppView =
   | 'reception'
   | 'dashboard'
   | 'bookings'
+  | 'day_close'
   | 'rooms_floors'
   | 'live_ops'
   | 'reserved_experiences'
@@ -306,17 +307,3 @@ export interface GuestCrmEntry {
   totalSpend: number;
 }
 
-export interface SalesReportData {
-  startDate: string;
-  endDate: string;
-  roomSales: number;
-  diningSales: number;
-  experienceSales: number;
-  otherSales: number;
-  totalSales: number;
-  cashSales: number;
-  cardSales: number;
-  upiSales: number;
-  checkinsCount: number;
-  completedOrdersCount: number;
-}

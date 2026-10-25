@@ -8,7 +8,7 @@
  */
 
 import { supabase } from './supabaseClient';
-import type { Property, Room, RoomStatus, UpcomingArrival, UrgentRequest, LiveOpsTask, MenuItem, AppNotification, Folio, Bill, PaymentMethod, FolioChatMessage, GuestCrmEntry, SalesReportData } from '../types';
+import type { Property, Room, RoomStatus, UpcomingArrival, UrgentRequest, LiveOpsTask, MenuItem, AppNotification, Folio, Bill, PaymentMethod, FolioChatMessage, GuestCrmEntry } from '../types';
 import { formatCurrency } from './currency';
 import type { Department, ServiceForm } from './departments';
 
@@ -623,7 +623,7 @@ export interface Booking {
   roomId: string;
   roomNumber: string;
   roomType: string;
-  guest: { id: string; name: string; phone?: string; email?: string; vip: boolean };
+  guest: { id: string; name: string; phone?: string; email?: string; vip: boolean; address?: string; nationality?: string; idType?: GuestIdType; idNumber?: string };
   checkIn: string;
   checkOut: string;
   /** India dates, YYYY-MM-DD: the first night and the departure day. */
@@ -676,6 +676,23 @@ export async function markNoShow(reservationId: string, fee = 0, reason?: string
   const { data, error } = await supabase.rpc('staff_mark_no_show', { p_reservation_id: reservationId, p_fee: fee, p_reason: reason || null });
   if (error) throw error;
   return data as Booking;
+}
+
+export type GuestIdType = 'aadhaar' | 'passport' | 'driving_licence' | 'voter_id' | 'pan' | 'other';
+
+export const GUEST_ID_TYPES: { id: GuestIdType; label: string }[] = [
+  { id: 'aadhaar', label: 'Aadhaar' },
+  { id: 'passport', label: 'Passport' },
+  { id: 'driving_licence', label: 'Driving licence' },
+  { id: 'voter_id', label: 'Voter ID' },
+  { id: 'pan', label: 'PAN' },
+  { id: 'other', label: 'Other' },
+];
+
+/** The guest-register details (0081): nationality, address and ID. Only keys passed change. */
+export async function updateGuestRegister(reservationId: string, details: { address?: string; nationality?: string; idType?: GuestIdType | ''; idNumber?: string }): Promise<void> {
+  const { error } = await supabase.rpc('staff_update_guest_register', { p_reservation_id: reservationId, p_details: details });
+  if (error) throw error;
 }
 
 /** Numbered bill for a cancelled or no-show booking once its balance is zero. */
@@ -1554,20 +1571,6 @@ export async function fetchGuestCrmDirectory(
   return (data ?? []) as GuestCrmEntry[];
 }
 
-export async function fetchSalesReport(
-  propertyId: string,
-  startDate?: string,
-  endDate?: string
-): Promise<SalesReportData> {
-  const { data, error } = await supabase.rpc('staff_fetch_sales_report', {
-    p_property_id: propertyId,
-    p_start_date: startDate || null,
-    p_end_date: endDate || null,
-  });
-  if (error) throw new Error(`Failed to load sales report: ${error.message}`);
-  return data as SalesReportData;
-}
-
 /** Local partner listings (0078): whether this property's guests see them, and which categories are blocked. */
 export interface PartnerSettings {
   enabled: boolean;
@@ -1585,4 +1588,97 @@ export async function fetchPartnerSettings(propertyId: string): Promise<PartnerS
 export async function savePartnerSettings(propertyId: string, enabled: boolean, blocked: string[]): Promise<void> {
   const { error } = await supabase.rpc('owner_set_partner_settings', { p_property_id: propertyId, p_enabled: enabled, p_blocked: blocked });
   if (error) throw new Error(error.message);
+}
+
+// ============================================================================
+// DAY CLOSE, REPORTS, GUEST REGISTER (0081)
+// ============================================================================
+
+export interface MethodTotals { cash: number; upi: number; card: number; bank: number; other: number; total: number }
+
+export interface DaySummary {
+  date: string;
+  collections: MethodTotals;
+  entries: {
+    id: string; at: string; kind: 'payment' | 'refund'; method: PaymentMethod; amount: number; reference?: string; note?: string;
+    voided: boolean; guest?: string; room?: string; ref?: string; reservationId: string; by?: string;
+  }[];
+  /** Charges posted for the day (with tax), by category. */
+  posted: Record<string, number>;
+  arrivals: number;
+  departures: number;
+  inHouse: number;
+  close: null | { closedAt: string; closedBy?: string; expected: MethodTotals; countedCash: number; cashDifference: number; note?: string };
+}
+
+export async function fetchDaySummary(propertyId: string, date: string): Promise<DaySummary> {
+  const { data, error } = await supabase.rpc('staff_day_summary', { p_property_id: propertyId, p_date: date });
+  if (error) throw error;
+  return data as DaySummary;
+}
+
+/** Closes the day for good: the counted cash against what the books expect. */
+export async function closeDay(propertyId: string, date: string, countedCash: number, note?: string): Promise<DaySummary> {
+  const { data, error } = await supabase.rpc('staff_close_day', { p_property_id: propertyId, p_date: date, p_counted_cash: countedCash, p_note: note || null });
+  if (error) throw error;
+  return data as DaySummary;
+}
+
+export interface PropertyReport {
+  from: string;
+  to: string;
+  days: number;
+  rooms: number;
+  roomNightsAvailable: number;
+  roomNightsSold: number;
+  occupancy: number;
+  roomRevenue: number;
+  adr: number;
+  revpar: number;
+  revenueByCategory: Record<string, number>;
+  revenueTotal: number;
+  taxTotal: number;
+  taxByRate: { rate: number; taxable: number; tax: number; cgst: number; sgst: number }[];
+  payments: MethodTotals & { refunds: number };
+  bookingsByChannel: Record<string, number>;
+  bookingsMade: number;
+  arrivals: number;
+  cancellations: number;
+  noShows: number;
+  averageStay: number;
+  daily: { date: string; occupied: number; roomRevenue: number; occupancy: number }[];
+  dayCloses: { date: string; expected: MethodTotals; countedCash: number; cashDifference: number; note?: string; closedAt: string; closedBy?: string }[];
+}
+
+export async function fetchReport(propertyId: string, from: string, to: string): Promise<PropertyReport> {
+  const { data, error } = await supabase.rpc('staff_report', { p_property_id: propertyId, p_from: from, p_to: to });
+  if (error) throw error;
+  return data as PropertyReport;
+}
+
+export interface RegisterEntry {
+  reservationId: string;
+  ref: string;
+  status: 'checked_in' | 'checked_out';
+  arrived: string;
+  left?: string;
+  expectedDeparture: string;
+  room?: string;
+  guests: number;
+  name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  nationality?: string;
+  idType?: GuestIdType;
+  idNumber?: string;
+  idPhotoOnFile: boolean;
+  /** Nationality set and not Indian: Form C is due within 24 hours of arrival. */
+  foreign: boolean;
+}
+
+export async function fetchGuestRegister(propertyId: string, from: string, to: string): Promise<RegisterEntry[]> {
+  const { data, error } = await supabase.rpc('staff_guest_register', { p_property_id: propertyId, p_from: from, p_to: to });
+  if (error) throw error;
+  return (data ?? []) as RegisterEntry[];
 }
