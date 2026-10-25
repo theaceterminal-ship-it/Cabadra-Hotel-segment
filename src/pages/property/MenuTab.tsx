@@ -5,7 +5,7 @@ import { MenuItem } from '../../types';
 import { addMenuItem, bulkAddMenuItems, deleteMenuItem, updateMenuItem } from '../../lib/staffApi';
 import { formatCurrency } from '../../lib/currency';
 import {
-  CsvImportModal, DeleteButton, EmptyState, ErrorNote, Field, Modal, PhotoField, SectionHeader, Switch,
+  CsvImportModal, DeleteButton, SearchFilterBar, EmptyState, ErrorNote, Field, Modal, PhotoField, SectionHeader, Switch,
   btnPrimary, btnSecondary, downloadCsv, iconBtn, inputCls, textareaCls,
 } from './ui';
 
@@ -41,17 +41,26 @@ export function MenuTab({ propertyId, currency, menu, onChanged }: { propertyId:
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
-  const [category, setCategory] = useState<string>('all');
+  const [category, setCategory] = useState<string>('');
+  const [diet, setDiet] = useState<'' | 'veg' | 'nonveg'>('');
+  const [query, setQuery] = useState('');
   const [showImport, setShowImport] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
 
   const categories = [...new Set(menu.map(categoryOf))].sort();
-  const visibleCategories = category === 'all' ? categories : categories.filter(c => c === category);
+  const q = query.trim().toLowerCase();
+  const visibleItems = menu.filter(m =>
+    (!q || m.name.toLowerCase().includes(q) || (m.description ?? '').toLowerCase().includes(q)) &&
+    (!category || categoryOf(m) === category) &&
+    (!diet || (diet === 'veg') === m.isVeg)
+  );
+  const visibleCategories = categories.filter(c => visibleItems.some(m => categoryOf(m) === c));
+  const filtering = q !== '' || category !== '' || diet !== '';
 
   const openNew = () => {
-    setForm({ ...emptyForm, category: category !== 'all' ? category : '' });
+    setForm({ ...emptyForm, category });
     setFormError(null);
     setEditing('new');
   };
@@ -169,20 +178,17 @@ export function MenuTab({ propertyId, currency, menu, onChanged }: { propertyId:
         />
       ) : (
         <>
-          {categories.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto pb-1 mb-5 -mx-1 px-1">
-              {['all', ...categories].map(c => (
-                <button
-                  key={c}
-                  onClick={() => setCategory(c)}
-                  className={`h-9 px-4 rounded-full text-sm whitespace-nowrap transition-colors ${
-                    category === c ? 'bg-primary text-on-primary' : 'bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:text-on-surface'
-                  }`}
-                >
-                  {c === 'all' ? 'All' : c}
-                </button>
-              ))}
-            </div>
+          <SearchFilterBar
+            query={query}
+            onQuery={setQuery}
+            placeholder="Search dishes"
+            groups={[
+              { id: 'category', label: 'Category', value: category, onChange: setCategory, options: categories.map(c => ({ value: c, label: c })) },
+              { id: 'diet', label: 'Diet', value: diet, onChange: v => setDiet(v as '' | 'veg' | 'nonveg'), options: [{ value: 'veg', label: 'Veg' }, { value: 'nonveg', label: 'Non-veg' }] },
+            ]}
+          />
+          {filtering && visibleItems.length === 0 && (
+            <p className="text-sm text-on-surface-variant text-center py-12">No dishes match. Try another search or clear the filters.</p>
           )}
 
           <div className="space-y-6">
@@ -190,7 +196,7 @@ export function MenuTab({ propertyId, currency, menu, onChanged }: { propertyId:
               <section key={cat}>
                 <p className="text-sm font-medium text-on-surface-variant mb-2">{cat}</p>
                 <div className="rounded-[20px] bg-surface-container-lowest border border-outline-variant divide-y divide-outline-variant overflow-hidden">
-                  {menu.filter(m => categoryOf(m) === cat).map(m => (
+                  {visibleItems.filter(m => categoryOf(m) === cat).map(m => (
                     <div key={m.id} onClick={() => openEdit(m)} className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-surface-container-low transition-colors">
                       <div className="size-12 shrink-0 rounded-xl overflow-hidden bg-surface-container flex items-center justify-center text-on-surface-variant">
                         {m.image ? <img src={m.image} alt="" className="size-full object-cover" /> : <Utensils className="size-5 opacity-50" />}

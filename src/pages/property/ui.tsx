@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ImagePlus, Link2, Trash2, X } from 'lucide-react';
+import { ImagePlus, Link2, Search, SlidersHorizontal, Trash2, X } from 'lucide-react';
 import { uploadImageToCloudinary, isCloudinaryConfigured } from '../../lib/cloudinary';
 
 /**
@@ -341,4 +341,174 @@ export function downloadCsv(filename: string, csv: string) {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+/**
+ * A dropdown of choices that never turns into a bare text box: the list is
+ * the built-in options plus whatever this property already uses (so an
+ * existing room's own type is always in it), with "Add a new…" at the end
+ * for typing one in.
+ */
+export function ChoiceField({
+  options,
+  value,
+  onChange,
+  placeholder = 'Choose',
+  newLabel = 'Add a new one…',
+  optional = false,
+}: {
+  options: string[];
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  newLabel?: string;
+  /** Lets the owner pick "Not set" to clear it. */
+  optional?: boolean;
+}) {
+  const all = [...new Set([...options, ...(value.trim() ? [value.trim()] : [])].map(o => o.trim()).filter(Boolean))];
+  const [typing, setTyping] = useState(false);
+
+  if (typing) {
+    return (
+      <div className="flex gap-2">
+        <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className={inputCls} autoFocus />
+        <button
+          type="button"
+          onClick={() => { setTyping(false); if (!value.trim() && !optional) onChange(all[0] ?? ''); }}
+          className={`${btnSecondary} shrink-0`}
+        >
+          List
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <select
+      value={value.trim()}
+      onChange={e => {
+        if (e.target.value === '__new__') {
+          setTyping(true);
+          onChange('');
+        } else onChange(e.target.value);
+      }}
+      className={inputCls}
+    >
+      <option value="" disabled={!optional}>{optional ? 'Not set' : placeholder}</option>
+      {all.map(o => <option key={o} value={o}>{o}</option>)}
+      <option value="__new__">{newLabel}</option>
+    </select>
+  );
+}
+
+export interface FilterGroup {
+  id: string;
+  label: string;
+  options: { value: string; label: string }[];
+  value: string;
+  onChange: (v: string) => void;
+}
+
+/**
+ * Search box plus a Filter button. The button shows how many filters are
+ * on; its panel lists one row of choices per group, and active filters
+ * also appear as removable chips under the bar.
+ */
+export function SearchFilterBar({
+  query,
+  onQuery,
+  placeholder,
+  groups,
+}: {
+  query: string;
+  onQuery: (v: string) => void;
+  placeholder: string;
+  groups: FilterGroup[];
+}) {
+  const [open, setOpen] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const active = groups.filter(g => g.value !== '');
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [open]);
+
+  return (
+    <div className="mb-5">
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="size-4 text-on-surface-variant absolute left-4 top-1/2 -translate-y-1/2" />
+          <input
+            type="search"
+            value={query}
+            onChange={e => onQuery(e.target.value)}
+            placeholder={placeholder}
+            className="w-full h-11 pl-11 pr-4 rounded-full border border-outline-variant bg-surface-container-lowest text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:border-on-surface focus:outline-none transition-colors"
+          />
+        </div>
+        <div className="relative" ref={panelRef}>
+          <button
+            type="button"
+            onClick={() => setOpen(o => !o)}
+            aria-expanded={open}
+            className={`h-11 px-4 rounded-full border text-sm font-medium inline-flex items-center gap-2 transition-colors ${
+              active.length ? 'bg-primary text-on-primary border-primary' : 'bg-surface-container-lowest border-outline-variant text-on-surface hover:bg-surface-container-low'
+            }`}
+          >
+            <SlidersHorizontal className="size-4" />
+            <span className="hidden sm:inline">Filter</span>
+            {active.length > 0 && <span className="text-xs">{active.length}</span>}
+          </button>
+          {open && (
+            <div className="absolute right-0 top-full mt-2 z-40 w-[min(320px,calc(100vw-2rem))] rounded-[20px] bg-surface-container-lowest border border-outline-variant shadow-xl p-4 space-y-4">
+              {groups.map(g => (
+                <div key={g.id}>
+                  <p className="text-xs text-on-surface-variant mb-2">{g.label}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[{ value: '', label: 'Any' }, ...g.options].map(o => (
+                      <button
+                        key={o.value || 'any'}
+                        type="button"
+                        onClick={() => g.onChange(o.value)}
+                        className={`h-8 px-3 rounded-full text-[13px] transition-colors ${
+                          g.value === o.value ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
+                        }`}
+                      >
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {active.length > 0 && (
+                <button type="button" onClick={() => active.forEach(g => g.onChange(''))} className="text-sm text-on-surface-variant underline underline-offset-2">
+                  Clear filters
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+      {active.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-3">
+          {active.map(g => (
+            <button
+              key={g.id}
+              type="button"
+              onClick={() => g.onChange('')}
+              className="h-8 pl-3 pr-2 rounded-full bg-surface-container text-[13px] text-on-surface inline-flex items-center gap-1.5 hover:bg-surface-container-high"
+            >
+              {g.label}: {g.options.find(o => o.value === g.value)?.label ?? g.value}
+              <X className="size-3.5" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }

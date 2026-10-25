@@ -4,9 +4,8 @@ import { Bed, BedDouble, Pencil, Plus, Upload, Users } from 'lucide-react';
 import { Room } from '../../types';
 import { addRoom, bulkAddRooms, deleteRoom, updateRoom } from '../../lib/staffApi';
 import { formatCurrency } from '../../lib/currency';
-import { PresetSelect } from '../../components/PresetSelect';
 import {
-  CsvImportModal, DeleteButton, EmptyState, ErrorNote, Field, Modal, PhotoField, SectionHeader,
+  ChoiceField, CsvImportModal, DeleteButton, SearchFilterBar, EmptyState, ErrorNote, Field, Modal, PhotoField, SectionHeader,
   btnPrimary, btnSecondary, downloadCsv, iconBtn, inputCls,
 } from './ui';
 
@@ -45,7 +44,24 @@ export function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChange
   const [importResult, setImportResult] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
 
-  const floors = [...new Set(rooms.map(r => r.floor))].sort((a, b) => a - b);
+  const [query, setQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [bedsFilter, setBedsFilter] = useState('');
+  const [floorFilter, setFloorFilter] = useState('');
+
+  const allFloors = [...new Set(rooms.map(r => r.floor))].sort((a, b) => a - b);
+  const usedTypes = [...new Set(rooms.map(r => r.type).filter(Boolean))].sort();
+  const usedBeds = [...new Set(rooms.map(r => r.bedsDescription ?? '').filter(Boolean))].sort();
+
+  const q = query.trim().toLowerCase();
+  const visibleRooms = rooms.filter(r =>
+    (!q || r.number.toLowerCase().includes(q)) &&
+    (!typeFilter || r.type === typeFilter) &&
+    (!bedsFilter || r.bedsDescription === bedsFilter) &&
+    (!floorFilter || String(r.floor) === floorFilter)
+  );
+  const floors = [...new Set(visibleRooms.map(r => r.floor))].sort((a, b) => a - b);
+  const filtering = q !== '' || typeFilter !== '' || bedsFilter !== '' || floorFilter !== '';
 
   const openNew = () => {
     setForm(emptyForm);
@@ -151,7 +167,7 @@ export function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChange
     <div>
       <SectionHeader
         title="Rooms"
-        description={rooms.length ? `${rooms.length} room${rooms.length === 1 ? '' : 's'} on ${floors.length} floor${floors.length === 1 ? '' : 's'}.` : 'Each room gets its own QR code for the guest app.'}
+        description={rooms.length ? `${rooms.length} room${rooms.length === 1 ? '' : 's'} on ${allFloors.length} floor${allFloors.length === 1 ? '' : 's'}.` : 'Each room gets its own QR code for the guest app.'}
         actions={rooms.length > 0 && (
           <>
             <button onClick={() => { setShowImport(true); setImportResult(null); setImportError(null); }} className={btnSecondary}>
@@ -177,9 +193,23 @@ export function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChange
           }
         />
       ) : (
+        <>
+        <SearchFilterBar
+          query={query}
+          onQuery={setQuery}
+          placeholder="Search by room number"
+          groups={[
+            { id: 'type', label: 'Type', value: typeFilter, onChange: setTypeFilter, options: usedTypes.map(t => ({ value: t, label: t })) },
+            { id: 'beds', label: 'Beds', value: bedsFilter, onChange: setBedsFilter, options: usedBeds.map(b => ({ value: b, label: b })) },
+            { id: 'floor', label: 'Floor', value: floorFilter, onChange: setFloorFilter, options: allFloors.map(f => ({ value: String(f), label: `Floor ${f}` })) },
+          ].filter(g => g.options.length > 0)}
+        />
+        {filtering && visibleRooms.length === 0 ? (
+          <p className="text-sm text-on-surface-variant text-center py-12">No rooms match. Try another number or clear the filters.</p>
+        ) : (
         <div className="space-y-8">
           {floors.map(floor => {
-            const floorRooms = rooms.filter(r => r.floor === floor);
+            const floorRooms = visibleRooms.filter(r => r.floor === floor);
             return (
               <section key={floor}>
                 <p className="text-sm font-medium text-on-surface-variant mb-3">
@@ -218,6 +248,8 @@ export function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChange
             );
           })}
         </div>
+        )}
+        </>
       )}
 
       {editing && (
@@ -239,14 +271,14 @@ export function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChange
             <Field label="Floor"><input type="number" value={form.floor} onChange={e => set('floor')(e.target.value)} className={inputCls} /></Field>
           </div>
           <Field label="Room type">
-            <PresetSelect presets={ROOM_TYPE_PRESETS} value={form.type} onChange={set('type')} className={inputCls} placeholder="Standard Room" />
+            <ChoiceField options={[...ROOM_TYPE_PRESETS, ...usedTypes]} value={form.type} onChange={set('type')} placeholder="Choose a room type" newLabel="Add a new type…" />
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Sleeps"><input type="number" min={1} value={form.occupancy} onChange={e => set('occupancy')(e.target.value)} className={inputCls} /></Field>
             <Field label={`Price per night (${currency})`}><input type="number" value={form.price} onChange={e => set('price')(e.target.value)} placeholder="2500" className={inputCls} /></Field>
           </div>
           <Field label="Beds (optional)">
-            <PresetSelect presets={BED_CONFIG_PRESETS} value={form.bedsDescription} onChange={set('bedsDescription')} className={inputCls} placeholder="Choose or type" />
+            <ChoiceField options={[...BED_CONFIG_PRESETS, ...usedBeds]} value={form.bedsDescription} onChange={set('bedsDescription')} placeholder="Choose beds" newLabel="Something else…" optional />
           </Field>
           <Field label="Bathroom (optional)">
             <input value={form.bathroomDetails} onChange={e => set('bathroomDetails')(e.target.value)} placeholder="Attached bath with geyser" className={inputCls} />
