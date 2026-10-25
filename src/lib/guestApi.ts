@@ -139,6 +139,22 @@ export interface GuestOrderLine {
   addons?: { id: string; name: string; price: number }[];
 }
 
+/** What the "Complete your order" box offers: the kind of dish the cart lacks, why, and the best-accepted dishes of that kind. */
+export interface CheckoutSuggestion {
+  gap: string;
+  reason: string;
+  pitch: string;
+  items: MenuItem[];
+}
+
+/** guest_checkout_suggestion (0076). Null when the order has no real gap, or on any error: never worth blocking an order over. */
+export async function fetchCheckoutSuggestion(token: string, cartItemIds: string[]): Promise<CheckoutSuggestion | null> {
+  const { data, error } = await supabase.rpc('guest_checkout_suggestion', { p_token: token, p_cart_item_ids: cartItemIds });
+  if (error || !data) return null;
+  const s = data as CheckoutSuggestion;
+  return s.items?.length ? s : null;
+}
+
 export async function placeGuestOrder(token: string, items: GuestOrderItem[], notes?: string) {
   const { data, error } = await supabase.rpc('guest_place_order', { p_token: token, p_items: items, p_notes: notes ?? null });
   if (error) {

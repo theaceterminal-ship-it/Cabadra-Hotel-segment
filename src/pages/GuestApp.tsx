@@ -6,6 +6,7 @@ import { fetchGuestContext, GuestContext, bookGuestExperience } from '../lib/gue
 import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { GuestHome } from '../components/GuestHome';
 import { RoomDiningView } from '../components/RoomDiningView';
+import { GuestActivitiesView } from '../components/GuestActivitiesView';
 import { SupabaseSetupNeeded } from '../components/SupabaseSetupNeeded';
 import { DynamicIslandStatusBar } from '../components/DynamicIslandStatusBar';
 import { GuestFolioChat } from '../components/GuestFolioChat';
@@ -29,7 +30,7 @@ export default function GuestApp() {
   const [context, setContext] = useState<GuestContext | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useState<Extract<AppView, 'guest_home' | 'room_dining'>>('guest_home');
+  const [view, setView] = useState<Extract<AppView, 'guest_home' | 'room_dining' | 'guest_activities'>>('guest_home');
 
   useEffect(() => {
     const media = window.matchMedia('(prefers-color-scheme: dark)');
@@ -116,8 +117,14 @@ export default function GuestApp() {
   }
 
   const handleNavigate = (target: AppView) => {
-    if (target === 'guest_home' || target === 'room_dining') setView(target);
+    if (target === 'guest_home' || target === 'room_dining' || target === 'guest_activities') {
+      setView(target);
+      window.scrollTo({ top: 0 });
+    }
   };
+
+  const handleBookExperience = (name: string, price: number, guestCount?: number, preferredTime?: string, notes?: string, unitLabel?: string) =>
+    bookGuestExperience(effectiveToken, name, price, guestCount, preferredTime, notes, unitLabel).then(() => {});
 
   return (
     <>
@@ -135,9 +142,16 @@ export default function GuestApp() {
           serviceCategories={context.serviceCategories}
           transportRoutes={context.transportRoutes}
           onNavigate={handleNavigate}
-          onBookExperience={(name, price, guestCount, preferredTime, notes, unitLabel) =>
-            bookGuestExperience(effectiveToken, name, price, guestCount, preferredTime, notes, unitLabel).then(() => {})
-          }
+          onBookExperience={handleBookExperience}
+        />
+      )}
+      {view === 'guest_activities' && (
+        <GuestActivitiesView
+          propertyName={context.property.name}
+          experiences={context.experiences}
+          currency={context.property.currency}
+          onNavigate={handleNavigate}
+          onBookExperience={handleBookExperience}
         />
       )}
       {view === 'room_dining' && (

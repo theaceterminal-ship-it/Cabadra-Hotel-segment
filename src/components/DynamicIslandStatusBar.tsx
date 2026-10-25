@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { fetchActiveOrder, fetchActiveGuestRequests, dismissGuestRequest, ActiveOrder, ActiveGuestRequest } from '../lib/guestApi';
 import { computeOrderEta } from '../lib/eta';
 import { formatCurrency } from '../lib/currency';
-import { ChefHat, Check, X, AlertTriangle, Sparkles, Clock, Play, ChevronDown, BellOff } from 'lucide-react';
+import { ChefHat, Check, X, AlertTriangle, Clock, Play, BellOff, ChevronRight } from 'lucide-react';
 
 interface DynamicIslandStatusBarProps {
   token: string;
@@ -12,6 +13,7 @@ interface DynamicIslandStatusBarProps {
 }
 
 const STATUS_STEPS: ActiveOrder['status'][] = ['new', 'preparing', 'ready'];
+const STEP_LABELS = ['Received', 'Preparing', 'On its way'];
 
 const REQUEST_STATUS_LABEL: Record<NonNullable<ActiveGuestRequest['taskStatus']> | 'received', string> = {
   received: 'Received',
@@ -29,16 +31,17 @@ function formatCountdown(ms: number): string {
 }
 
 /**
- * Dynamic Island Status Bar:
- * Merges Room Dining orders and Service Requests into a single, compact,
- * pill-shaped top bar.
+ * The guest's live status: one pill in the top bar that says the single
+ * most useful thing right now (the food countdown, or how a request is
+ * going), and a sheet with the whole picture when tapped. Polls the order
+ * and requests every 8 seconds.
  */
-export function DynamicIslandStatusBar({ token, currency, roomNumber, className }: DynamicIslandStatusBarProps) {
+export function DynamicIslandStatusBar({ token, currency, className }: DynamicIslandStatusBarProps) {
   const [order, setOrder] = useState<ActiveOrder | null>(null);
   const [requests, setRequests] = useState<ActiveGuestRequest[]>([]);
   const [dismissedOrder, setDismissedOrder] = useState<string | null>(null);
   const [dismissedRequests, setDismissedRequests] = useState<string[]>([]);
-  const [expanded, setExpanded] = useState(false);
+  const [open, setOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -64,226 +67,169 @@ export function DynamicIslandStatusBar({ token, currency, roomNumber, className 
 
   const activeOrder = order && order.id !== dismissedOrder ? order : null;
   const activeRequests = requests.filter(r => !dismissedRequests.includes(r.id) && r.taskStatus !== 'completed');
-  const hasActiveOrder = Boolean(activeOrder);
-  const hasActiveRequests = activeRequests.length > 0;
-  const totalUpdatesCount = (hasActiveOrder ? 1 : 0) + activeRequests.length;
+  const updates = (activeOrder ? 1 : 0) + activeRequests.length;
 
-  // Compute countdown for active order
-  let orderCountdownText = '';
-  let isOverdue = false;
+  let countdown = '';
+  let overdue = false;
   if (activeOrder && activeOrder.status !== 'rejected') {
     const eta = computeOrderEta(activeOrder.items, activeOrder.createdAt, activeOrder.status);
-    const etaTimestamp = new Date(activeOrder.createdAt).getTime() + eta.minutes * 60_000;
-    const remainingMs = etaTimestamp - now;
-    isOverdue = remainingMs <= 0 && activeOrder.status !== 'ready';
-    orderCountdownText = activeOrder.status === 'ready' ? 'Ready now!' : isOverdue ? 'Late' : formatCountdown(remainingMs);
+    const remaining = new Date(activeOrder.createdAt).getTime() + eta.minutes * 60_000 - now;
+    overdue = remaining <= 0 && activeOrder.status !== 'ready';
+    countdown = activeOrder.status === 'ready' ? 'On its way' : overdue ? 'Almost there' : formatCountdown(remaining);
   }
 
+  const label = activeOrder
+    ? activeOrder.status === 'rejected' ? 'Order not placed' : `Food · ${countdown}`
+    : activeRequests.length
+      ? `${activeRequests.length > 1 ? `${activeRequests.length} requests` : 'Request'} · ${REQUEST_STATUS_LABEL[activeRequests[0].taskStatus || 'received']}`
+      : 'All quiet';
+
   return (
-    <div className={className || "fixed top-3 right-4 sm:right-6 z-50 pointer-events-auto flex flex-col items-end max-w-[94vw]"}>
-      {/* Compact Dynamic Island Capsule (Half Size) */}
-      <button
-        onClick={() => setExpanded(e => !e)}
-        className={`group relative h-8 sm:h-9 px-2.5 sm:px-3 rounded-full bg-black/90 text-white backdrop-blur-md border border-white/20 shadow-xl transition-all duration-300 ease-out flex items-center gap-1.5 sm:gap-2 cursor-pointer hover:bg-black active:scale-95 ${
-          expanded ? 'ring-2 ring-white/30' : ''
-        }`}
+    <div className={className}>
+      <motion.button
+        layout
+        onClick={() => setOpen(true)}
+        whileTap={{ scale: 0.96 }}
+        className="h-10 pl-3 pr-2.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-md border border-white/60 shadow-sm text-on-surface flex items-center gap-2 max-w-[60vw]"
+        aria-label="Live updates"
       >
-        {/* Status Dot / Icon */}
-        <div className="flex items-center gap-1 shrink-0">
-          {hasActiveOrder ? (
-            <div className="w-4 h-4 rounded-full bg-indigo-500 text-white flex items-center justify-center shrink-0 shadow-2xs">
-              <ChefHat className="w-2.5 h-2.5" />
-            </div>
-          ) : hasActiveRequests ? (
-            <div className="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-2xs">
-              <Sparkles className="w-2.5 h-2.5" />
-            </div>
-          ) : (
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-          )}
-        </div>
+        <span className="relative flex w-2.5 h-2.5 shrink-0">
+          {updates > 0 && <span className="absolute inset-0 rounded-full bg-success animate-ping opacity-60" />}
+          <span className={`relative w-2.5 h-2.5 rounded-full ${updates > 0 ? (activeOrder?.status === 'rejected' ? 'bg-error' : 'bg-success') : 'bg-outline'}`} />
+        </span>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.span
+            key={label}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.18 }}
+            className="text-[13px] font-semibold truncate"
+          >
+            {label}
+          </motion.span>
+        </AnimatePresence>
+        <ChevronRight className="w-4 h-4 text-on-surface-variant shrink-0" />
+      </motion.button>
 
-        {/* Dynamic Compact Label (Max width ~110px) */}
-        <div className="text-[11px] font-bold text-white/90 truncate max-w-[85px] sm:max-w-[120px]">
-          {hasActiveOrder && hasActiveRequests ? (
-            <span>{totalUpdatesCount} Updates</span>
-          ) : hasActiveOrder && activeOrder ? (
-            <span>Dining · <strong className="text-indigo-300">{orderCountdownText}</strong></span>
-          ) : hasActiveRequests ? (
-            <span>{activeRequests.length} Ask{activeRequests.length > 1 ? 's' : ''} · {REQUEST_STATUS_LABEL[activeRequests[0].taskStatus || 'received']}</span>
-          ) : (
-            <span className="text-white/80">No Active Requests</span>
-          )}
-        </div>
-
-        {/* Action / Count Pill */}
-        <div className="flex items-center gap-1 shrink-0 text-white/60 group-hover:text-white transition-colors">
-          {totalUpdatesCount > 0 && (
-            <span className="bg-white/20 text-white text-[9px] font-extrabold px-1.5 py-0.2 rounded-full">
-              {totalUpdatesCount}
-            </span>
-          )}
-          <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
-        </div>
-      </button>
-
-      {/* Expanded Status Card */}
-      {expanded && (
-        <div className="mt-2.5 w-[92vw] max-w-md bg-surface-container-lowest text-on-surface rounded-3xl shadow-2xl border border-outline-variant overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-          {/* Header */}
-          <div className="px-5 py-3 border-b border-outline-variant bg-surface-container-low flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-primary" />
-              <h3 className="font-bold text-sm text-on-surface">Stay Live Updates</h3>
-            </div>
-            <button
-              onClick={() => setExpanded(false)}
-              className="p-1 text-on-surface-variant hover:text-on-surface rounded-full hover:bg-surface-container-high transition-colors"
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-[2px] flex items-end sm:items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onMouseDown={e => e.target === e.currentTarget && setOpen(false)}
+          >
+            <motion.div
+              className="w-full sm:max-w-md max-h-[85svh] flex flex-col bg-surface-container-lowest text-on-surface rounded-t-[28px] sm:rounded-[28px] shadow-2xl"
+              initial={{ y: 60, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 60, opacity: 0 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 320 }}
             >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
-            {/* Active In-Room Dining Order */}
-            {activeOrder && (
-              <div className="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0">
-                      <ChefHat className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-on-surface">In-Room Dining Order #{activeOrder.id.slice(0, 4)}</p>
-                      <p className="text-[11px] text-on-surface-variant">
-                        {activeOrder.status === 'ready' ? (
-                          <span className="text-success font-semibold">Ready now!</span>
-                        ) : activeOrder.status === 'rejected' ? (
-                          <span className="text-error font-semibold">Cancelled</span>
-                        ) : isOverdue ? (
-                          <span className="text-error font-semibold">Running slightly late</span>
-                        ) : (
-                          <span>ETA: <strong className="text-primary font-mono">{orderCountdownText}</strong></span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setDismissedOrder(activeOrder.id)}
-                    className="p-1 text-gray-400 hover:text-gray-600 rounded-lg text-xs"
-                    title="Dismiss order banner"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
+              <div className="flex items-center justify-between px-5 pt-5 pb-3">
+                <div>
+                  <h3 className="text-lg font-bold">Live updates</h3>
+                  <p className="text-xs text-on-surface-variant">{updates ? `${updates} in progress` : 'Nothing in progress'}</p>
                 </div>
+                <button onClick={() => setOpen(false)} aria-label="Close" className="w-9 h-9 rounded-full hover:bg-surface-container-low flex items-center justify-center text-on-surface-variant">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-                {activeOrder.status !== 'rejected' && (
-                  <>
-                    {/* Progress Bar */}
-                    <div className="flex items-center gap-1.5 pt-1">
-                      {STATUS_STEPS.map((step) => {
-                        const stepIdx = STATUS_STEPS.indexOf(step);
-                        const currentIdx = STATUS_STEPS.indexOf(activeOrder.status);
-                        return (
-                          <div
-                            key={step}
-                            className={`h-1.5 flex-1 rounded-full ${stepIdx <= currentIdx ? 'bg-primary' : 'bg-outline-variant'}`}
-                          />
-                        );
-                      })}
-                    </div>
-                    <div className="flex justify-between text-[9px] font-bold uppercase tracking-wider text-on-surface-variant">
-                      <span>Received</span>
-                      <span>Preparing</span>
-                      <span>Ready</span>
-                    </div>
-
-                    {/* Order Items Summary */}
-                    <div className="pt-2 border-t border-outline-variant/60 space-y-1 text-xs">
-                      {activeOrder.items.map((item, i) => (
-                        <div key={i} className="flex justify-between text-on-surface-variant">
-                          <span>{item.quantity}&times; {item.name}</span>
-                          <span className="font-semibold text-on-surface">{formatCurrency(item.price * item.quantity, currency)}</span>
-                        </div>
-                      ))}
-                      <div className="flex justify-between font-bold pt-1 text-xs text-on-surface">
-                        <span>Total</span>
-                        <span className="text-primary">{formatCurrency(activeOrder.totalAmount, currency)}</span>
+              <div className="px-5 pb-6 space-y-4 overflow-y-auto" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
+                {activeOrder && (
+                  <div className="rounded-3xl bg-surface-container-low p-4 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <span className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0"><ChefHat className="w-5 h-5" /></span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold">Your food order</p>
+                        <p className="text-xs text-on-surface-variant">
+                          {activeOrder.status === 'rejected' ? <span className="text-error font-semibold">The kitchen couldn’t make it</span>
+                            : activeOrder.status === 'ready' ? <span className="text-success font-semibold">On its way to your room</span>
+                            : overdue ? 'Running a few minutes late'
+                            : <>Arriving in about <span className="font-mono font-bold text-on-surface">{countdown}</span></>}
+                        </p>
                       </div>
+                      <button onClick={() => setDismissedOrder(activeOrder.id)} aria-label="Hide" className="p-1 text-on-surface-variant"><X className="w-4 h-4" /></button>
                     </div>
-                  </>
-                )}
 
-                {activeOrder.status === 'rejected' && (
-                  <div className="p-2.5 bg-error/10 border border-error/20 rounded-xl text-xs text-error">
-                    <p className="font-bold">Order couldn't be prepared</p>
-                    <p className="text-[11px] mt-0.5">{activeOrder.rejectionNote || 'The kitchen was unable to fulfill this order.'}</p>
-                    <p className="text-[10px] opacity-80 mt-1">You have not been charged.</p>
+                    {activeOrder.status !== 'rejected' ? (
+                      <>
+                        <div className="flex gap-1.5">
+                          {STATUS_STEPS.map((step, i) => (
+                            <div key={step} className="h-1.5 flex-1 rounded-full bg-outline-variant overflow-hidden">
+                              <motion.div
+                                className="h-full bg-primary"
+                                initial={{ width: 0 }}
+                                animate={{ width: i <= STATUS_STEPS.indexOf(activeOrder.status) ? '100%' : '0%' }}
+                                transition={{ duration: 0.6, delay: i * 0.15 }}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex justify-between text-[10px] font-semibold text-on-surface-variant">
+                          {STEP_LABELS.map(l => <span key={l}>{l}</span>)}
+                        </div>
+                        <div className="pt-2 border-t border-outline-variant space-y-1 text-xs">
+                          {activeOrder.items.map((item, i) => (
+                            <div key={i} className="flex justify-between gap-2 text-on-surface-variant">
+                              <span className="truncate">{item.quantity} × {item.name}</span>
+                              <span className="font-semibold text-on-surface shrink-0">{formatCurrency(item.price * item.quantity, currency)}</span>
+                            </div>
+                          ))}
+                          <div className="flex justify-between font-bold pt-1 text-on-surface">
+                            <span>Charged to your room</span>
+                            <span>{formatCurrency(activeOrder.totalAmount, currency)}</span>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-xs text-error bg-error-container/60 rounded-2xl p-3">
+                        {activeOrder.rejectionNote || 'The kitchen was unable to make this order.'} You haven’t been charged.
+                      </p>
+                    )}
                   </div>
                 )}
-              </div>
-            )}
 
-            {/* Active Service Requests */}
-            {activeRequests.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-xs font-bold text-on-surface uppercase tracking-wider">Service Requests</p>
-                <div className="divide-y divide-outline-variant border border-outline-variant rounded-2xl bg-surface-container-low overflow-hidden px-3.5">
-                  {activeRequests.map(r => {
-                    const statusKey = r.taskStatus ?? 'received';
-                    const isDone = statusKey === 'completed';
-                    const isRejected = statusKey === 'rejected';
-                    const isInProgress = statusKey === 'in_progress';
-
-                    return (
-                      <div key={r.id} className="py-2.5 flex items-start justify-between gap-2">
-                        <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                          <div className="mt-0.5 shrink-0">
-                            {isInProgress ? (
-                              <Play className="w-4 h-4 text-primary fill-current" />
-                            ) : isRejected ? (
-                              <AlertTriangle className="w-4 h-4 text-error" />
-                            ) : isDone ? (
-                              <Check className="w-4 h-4 text-success" />
-                            ) : (
-                              <Clock className="w-4 h-4 text-on-surface-variant" />
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-bold text-on-surface truncate">{r.title}</p>
-                            <p className={`text-[10px] mt-0.5 font-medium ${isRejected ? 'text-error' : isInProgress ? 'text-primary font-bold' : 'text-on-surface-variant'}`}>
-                              {isRejected ? `Couldn't be done: ${r.rejectionNote || 'Staff unavailable'}` : REQUEST_STATUS_LABEL[statusKey]}
+                {activeRequests.length > 0 && (
+                  <div className="rounded-3xl bg-surface-container-low divide-y divide-outline-variant">
+                    {activeRequests.map(r => {
+                      const status = r.taskStatus ?? 'received';
+                      return (
+                        <div key={r.id} className="flex items-start gap-3 p-4">
+                          <span className="mt-0.5 shrink-0">
+                            {status === 'in_progress' ? <Play className="w-4 h-4 text-primary fill-current" />
+                              : status === 'rejected' ? <AlertTriangle className="w-4 h-4 text-error" />
+                              : status === 'completed' ? <Check className="w-4 h-4 text-success" />
+                              : <Clock className="w-4 h-4 text-on-surface-variant" />}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold truncate">{r.title}</p>
+                            <p className={`text-xs mt-0.5 ${status === 'rejected' ? 'text-error' : status === 'in_progress' ? 'text-primary font-semibold' : 'text-on-surface-variant'}`}>
+                              {status === 'rejected' ? `Couldn’t be done: ${r.rejectionNote || 'staff unavailable'}` : REQUEST_STATUS_LABEL[status]}
                             </p>
                           </div>
+                          <button onClick={() => handleDismissRequest(r.id)} aria-label="Hide" className="p-1 text-on-surface-variant shrink-0"><X className="w-4 h-4" /></button>
                         </div>
+                      );
+                    })}
+                  </div>
+                )}
 
-                        <button
-                          onClick={() => handleDismissRequest(r.id)}
-                          className="p-1 text-gray-400 hover:text-gray-600 rounded-lg shrink-0 mt-0.5"
-                          title="Dismiss request"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
+                {!activeOrder && activeRequests.length === 0 && (
+                  <div className="py-10 text-center text-on-surface-variant">
+                    <span className="w-12 h-12 rounded-full bg-surface-container-low flex items-center justify-center mx-auto"><BellOff className="w-5 h-5" /></span>
+                    <p className="text-sm font-semibold text-on-surface mt-3">You’re all caught up</p>
+                    <p className="text-xs mt-1">Food orders and requests show up here while they’re on the way.</p>
+                  </div>
+                )}
               </div>
-            )}
-
-            {/* Empty State */}
-            {!hasActiveOrder && activeRequests.length === 0 && (
-              <div className="py-8 text-center text-on-surface-variant space-y-2">
-                <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center mx-auto text-on-surface-variant">
-                  <BellOff className="w-5 h-5" />
-                </div>
-                <p className="text-xs font-bold text-on-surface">No active requests or orders</p>
-                <p className="text-[11px]">Everything is up to date! Feel free to request amenities or room dining anytime.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

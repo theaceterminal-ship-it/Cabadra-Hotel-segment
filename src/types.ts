@@ -13,6 +13,7 @@ export type AppView =
   | 'active_deliveries'
   | 'guest_home'
   | 'room_dining'
+  | 'guest_activities'
   | 'shift_coverage';
 
 export type RoomStatus = 'ready' | 'occupied' | 'cleaning' | 'dirty' | 'occupied_vip' | 'maintenance';

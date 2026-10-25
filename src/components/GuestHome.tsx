@@ -1,538 +1,390 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { AppView, GuestExperienceBooking } from '../types';
 import { GuestExperience, GuestServiceCategory, GuestTransportRoute, fetchGuestExperienceBookings } from '../lib/guestApi';
 import { formatCurrency } from '../lib/currency';
+import type { Department } from '../lib/departments';
 import { DynamicIslandStatusBar } from './DynamicIslandStatusBar';
 import { ServiceRequestSheet } from './ServiceRequestSheet';
+import { ExperienceBookingSheet } from './ExperienceBookingSheet';
 import {
-  Utensils,
-  Sparkles,
-  Car,
-  BedDouble,
-  Bed,
-  Wine,
-  Clock,
-  MapPin,
-  Check,
-  Calendar,
-  X,
-  Compass,
-  Heart,
-  Wrench,
-  MessageCircle,
+  ArrowRight, BedDouble, Calendar, Car, ChefHat, Check, ChevronRight, Clock, Compass, ConciergeBell,
+  Flower2, Shirt, Sparkles, UtensilsCrossed, Wrench,
 } from 'lucide-react';
 
 interface GuestHomeProps {
   token: string;
   propertyName: string;
-  /** The property's own uploaded photo (Owner > Overview > Property Photo). Falls back to a generic hotel image when the owner hasn't set one yet. */
+  /** The property's own photo (Owner > Overview > Cover photo); a generic hotel image until one is set. */
   propertyImage?: string;
   roomNumber: string;
   guestName: string;
   isVip: boolean;
   currency: string;
-  /** Owner-managed via the Experiences tab — empty until they add one, no more hardcoded demo cards. */
+  /** Owner-managed (Experiences tab). Shown in the welcome card's carousel and "What else to do here". */
   experiences: GuestExperience[];
-  /** Owner-managed via the Services tab (0018_service_categories.sql) — replaces the old fixed Housekeeping/Amenities/Spa/Transfers grid, since not every property offers the same things. */
+  /** Owner-managed (Services tab), each with its own request form (0075). */
   serviceCategories: GuestServiceCategory[];
-  /** The route catalog behind any 'transportation'-type service category — a guest picks from these instead of typing a destination out by hand. */
+  /** Routes behind the transport services' route picker. */
   transportRoutes: GuestTransportRoute[];
   onNavigate: (view: AppView) => void;
-  /** Real submission (guest_book_experience) for the curated-experience "Reserve Now" buttons. */
+  /** guest_book_experience — the hotel confirms; nothing is charged here. */
   onBookExperience: (name: string, price: number, guestCount?: number, preferredTime?: string, notes?: string, unitLabel?: string) => Promise<void>;
 }
 
-const SERVICE_ICONS: Record<string, typeof Sparkles> = {
-  bed: BedDouble, sparkles: Sparkles, heart: Heart, car: Car, wrench: Wrench, message: MessageCircle,
+const FALLBACK_HOTEL_IMAGE = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80';
+const FALLBACK_DINING_IMAGE = 'https://images.unsplash.com/photo-1544148103-0773bf10d330?auto=format&fit=crop&w=1200&q=80';
+const FALLBACK_EXPERIENCE_IMAGE = 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80';
+
+const TEAM_ICONS: Record<Department, typeof Sparkles> = {
+  front_desk: ConciergeBell, housekeeping: BedDouble, maintenance: Wrench, concierge: Compass,
+  laundry: Shirt, spa: Flower2, transport: Car, kitchen: ChefHat,
 };
-function serviceIconFor(key: string) {
-  return SERVICE_ICONS[key] ?? Compass;
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 18 },
+  show: (i = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.45, delay: 0.06 * i, ease: [0.22, 1, 0.36, 1] as const } }),
+};
+
+function greeting(hour: number) {
+  if (hour < 5) return 'Good evening';
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
 }
 
+/**
+ * The guest's home screen. The hotel's name lives in the welcome card (not
+ * squeezed into a corner); the top bar carries the room and the live status
+ * pill. Things to do sit inside the welcome card as an auto-sliding
+ * carousel, where every guest sees them, and again lower down with a link to
+ * the full list (GuestActivitiesView).
+ */
 export const GuestHome: React.FC<GuestHomeProps> = ({
-  token,
-  propertyName,
-  propertyImage,
-  roomNumber,
-  guestName,
-  isVip,
-  currency,
-  experiences,
-  serviceCategories,
-  transportRoutes,
-  onNavigate,
-  onBookExperience,
+  token, propertyName, propertyImage, roomNumber, guestName, isVip, currency,
+  experiences, serviceCategories, transportRoutes, onNavigate, onBookExperience,
 }) => {
-  const [activeModal, setActiveModal] = useState<GuestServiceCategory | null>(null);
-  const [bookedExperience, setBookedExperience] = useState<string | null>(null);
-  const [selectedExperience, setSelectedExperience] = useState<GuestExperience | null>(null);
-  const [guestCount, setGuestCount] = useState<number>(1);
-  const [preferredTime, setPreferredTime] = useState<string>('');
-  const [bookingNotes, setBookingNotes] = useState<string>('');
-  const [submittingExperience, setSubmittingExperience] = useState(false);
-  const [reservedBookings, setReservedBookings] = useState<GuestExperienceBooking[]>([]);
-  const [now, setNow] = useState(() => new Date());
+  const [activeService, setActiveService] = useState<GuestServiceCategory | null>(null);
+  const [booking, setBooking] = useState<GuestExperience | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [reserved, setReserved] = useState<GuestExperienceBooking[]>([]);
+  const firstName = guestName.trim().split(/\s+/)[0] || guestName;
 
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
-    const loadReserved = () => {
-      fetchGuestExperienceBookings(token)
-        .then(data => { if (!cancelled) setReservedBookings(data); })
-        .catch(() => {});
-    };
-    loadReserved();
-    const interval = setInterval(loadReserved, 8000);
+    const load = () => fetchGuestExperienceBookings(token).then(d => { if (!cancelled) setReserved(d); }).catch(() => {});
+    load();
+    const interval = setInterval(load, 8000);
     return () => { cancelled = true; clearInterval(interval); };
   }, [token]);
 
-  // A live clock in the hero — small touch, but it's the first thing a
-  // guest sees, and "what time is it right now, at this hotel" is a real
-  // question when you've just landed somewhere with jet lag.
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
-
-  const handleBookExperience = async (title: string, price: number) => {
-    try {
-      await onBookExperience(title, price);
-      setBookedExperience(title);
-      setTimeout(() => setBookedExperience(null), 4000);
-    } catch (err) {
-      console.warn('Failed to book experience:', err);
-    }
+  const showToast = (text: string) => {
+    setToast(text);
+    setTimeout(() => setToast(null), 4000);
   };
 
-  const nameParts = propertyName.trim().split(/\s+/);
-  const firstWord = nameParts[0] || propertyName;
-  const restOfName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
-
   return (
-    <div id="guest-home-canvas" className="w-full min-h-screen bg-surface pb-24">
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 pt-4 sm:pt-6 space-y-5">
-        {/* Top Header Bar: Hotel Name on Left (Break after first word), Dynamic Island Status Bar on Right */}
-        <header className="flex flex-nowrap items-center justify-between gap-2 sm:gap-4 w-full px-1 py-1">
-          <div className="min-w-0 flex-1 shrink">
-            <h1 className="text-white tracking-tight drop-shadow-sm">
-              <span className="block text-xl sm:text-2xl font-black leading-tight truncate">{firstWord}</span>
-              {restOfName && (
-                <span className="block text-xs sm:text-sm font-bold text-white/90 leading-tight truncate mt-0.5">
-                  {restOfName}
-                </span>
-              )}
-            </h1>
+    <div id="guest-home-canvas" className="w-full min-h-screen bg-surface pb-28">
+      <header className="sticky top-0 z-30 px-4 pt-3 pb-3 bg-gradient-to-b from-surface via-surface/90 to-surface/0">
+        <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
+          <div className="h-10 pl-2 pr-3.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-md border border-white/60 shadow-sm flex items-center gap-2 text-on-surface shrink-0">
+            <span className="w-7 h-7 rounded-full bg-primary text-on-primary flex items-center justify-center"><BedDouble className="w-4 h-4" /></span>
+            <span className="text-[13px] font-semibold">Room {roomNumber}</span>
+            {isVip && <span className="text-[10px] font-bold text-room-vip">VIP</span>}
           </div>
+          <DynamicIslandStatusBar token={token} currency={currency} roomNumber={roomNumber} className="min-w-0 flex justify-end" />
+        </div>
+      </header>
 
-          <div className="shrink-0 flex items-center justify-end">
-            <DynamicIslandStatusBar token={token} currency={currency} roomNumber={roomNumber} className="relative z-30 flex flex-col items-end shrink-0" />
-          </div>
-        </header>
+      <main className="max-w-3xl mx-auto px-4 space-y-8">
+        <WelcomeCard
+          propertyName={propertyName}
+          propertyImage={propertyImage}
+          firstName={firstName}
+          experiences={experiences}
+          currency={currency}
+          onPick={setBooking}
+          onSeeAll={() => onNavigate('guest_activities')}
+        />
 
-        {/* Booking Notification Toast */}
-        {bookedExperience && (
-          <div className="bg-success text-on-success p-4 rounded-xl shadow-lg flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
-            <Check className="w-5 h-5 shrink-0" />
-            <p className="text-xs font-semibold">
-              Reservation requested for <strong>{bookedExperience}</strong>! Our concierge is confirming details.
-            </p>
-          </div>
-        )}
-
-        {/* Hero Card Box */}
-        <section
-          id="guest-hero-banner"
-          className="relative rounded-[32px] overflow-hidden h-72 sm:h-80 md:h-[360px] shadow-xl group border border-outline-variant/40 bg-surface-container-high opacity-100"
-        >
-          {propertyImage ? (
-            <img
-              src={propertyImage}
-              alt={propertyName}
-              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-100"
-            />
-          ) : (
-            <div
-              className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-700 opacity-100"
-              style={{
-                backgroundImage: `url('https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80')`,
-              }}
-            />
+        <AnimatePresence>
+          {toast && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="rounded-2xl bg-success text-on-success px-4 py-3 flex items-center gap-3 shadow-lg"
+            >
+              <Check className="w-5 h-5 shrink-0" />
+              <p className="text-sm font-semibold">{toast}</p>
+            </motion.div>
           )}
+        </AnimatePresence>
 
-          {/* Gradient Overlay for Text Contrast */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-100" />
+        <section id="at-your-service-section">
+          <motion.h2 variants={fadeUp} initial="hidden" whileInView="show" viewport={{ once: true }} className="text-xl font-bold text-on-surface mb-3 px-1">
+            At your service
+          </motion.h2>
 
-          {/* Welcome Text Box Content (Bottom Left) */}
-          <div className="absolute bottom-6 left-6 sm:bottom-8 sm:left-8 right-6 text-white max-w-lg">
-            <p className="text-xs sm:text-sm font-extrabold tracking-widest uppercase text-white/90">
-              WELCOME,
-            </p>
-            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-none mt-1 drop-shadow-md">
-              {guestName}{isVip ? ' ✦' : ''}
-            </h2>
-
-            {/* Gold/Amber Accent Bar */}
-            <div className="w-10 h-1 bg-amber-400 rounded-full my-3 shadow-xs" />
-
-            <p className="text-sm sm:text-base font-semibold text-white drop-shadow-sm">
-              Your stay, our priority.
-            </p>
-
-            {/* Room Pill */}
-            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-black/70 backdrop-blur-md border border-white/30 text-white shadow-lg mt-4 opacity-100">
-              <Bed className="w-4 h-4 text-white shrink-0" />
-              <span className="text-xs sm:text-sm font-bold tracking-wide">
-                Room {roomNumber}{isVip ? ' • VIP' : ''}
+          <motion.button
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => onNavigate('room_dining')}
+            id="service-card-dining"
+            className="relative w-full h-48 rounded-[28px] overflow-hidden text-left shadow-md group"
+          >
+            <img src={FALLBACK_DINING_IMAGE} alt="" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+            <div className="absolute inset-x-5 bottom-5 flex items-end justify-between gap-3 text-white">
+              <div>
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-white/20 backdrop-blur rounded-full px-2.5 py-1">
+                  <UtensilsCrossed className="w-3.5 h-3.5" /> In-room dining
+                </span>
+                <p className="text-2xl font-bold mt-2 leading-tight">Hungry? We’ll bring it up.</p>
+              </div>
+              <span className="w-11 h-11 rounded-full bg-white text-black flex items-center justify-center shrink-0 transition-transform group-hover:translate-x-0.5">
+                <ArrowRight className="w-5 h-5" />
               </span>
             </div>
-          </div>
+          </motion.button>
+
+          {(serviceCategories ?? []).length > 0 && (
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              {serviceCategories.map((cat, i) => {
+                const Icon = TEAM_ICONS[cat.department] ?? Sparkles;
+                return (
+                  <motion.button
+                    key={cat.id}
+                    id={`service-card-${cat.id}`}
+                    custom={i}
+                    variants={fadeUp}
+                    initial="hidden"
+                    whileInView="show"
+                    viewport={{ once: true }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => setActiveService(cat)}
+                    className="rounded-[24px] bg-surface-container-lowest p-4 text-left shadow-sm hover:shadow-md transition-shadow flex flex-col items-start justify-start"
+                  >
+                    <span className="w-10 h-10 rounded-full bg-highlight text-on-highlight flex items-center justify-center">
+                      <Icon className="w-5 h-5" />
+                    </span>
+                    <p className="text-sm font-bold text-on-surface mt-3 leading-snug">{cat.name}</p>
+                    {cat.description && <p className="text-xs text-on-surface-variant mt-0.5 line-clamp-2">{cat.description}</p>}
+                  </motion.button>
+                );
+              })}
+            </div>
+          )}
         </section>
 
-        {/* Category Grid (Bento Style) */}
-        <section id="at-your-service-section" className="space-y-4">
-          <div className="flex justify-between items-center px-1">
-            <h2 className="text-xl font-bold text-on-surface">At Your Service</h2>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Room Dining (Large 2x2 Bento card) */}
-            <div
-              id="service-card-dining"
-              onClick={() => onNavigate('room_dining')}
-              className="col-span-2 row-span-2 relative rounded-2xl overflow-hidden cursor-pointer group shadow-sm border border-outline-variant hover:shadow-md transition-all h-60 md:h-80 opacity-100"
-            >
-              <div 
-                className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105 opacity-100"
-                style={{ 
-                  backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuDFn_TeCi5piq666qSWt3Hro67LM4aqJ3KOdCqcFwqj8IEsLL71l8pBEB0NAnUCJ1VetsgipFB4eIYXBUv4plasCoux9XaBg5ik93465PeiTVB4IeF8AUK983CQ9arBB9nZCHCDSEduj6yBSIPDvkHUtJ-LkkW2QTv-SelsUmKzC9aaeVY4FIUsVs6IlKfACSjlKXtcYIQm_-VC6aE-6sTLm5kW2FWww-KStayTJXgRSxrXYooZOu1e')`
-                }}
-              ></div>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent opacity-100"></div>
-              
-              <div className="absolute bottom-0 left-0 p-5 w-full text-white">
-                <div className="p-2 bg-[#bd9b60] text-white rounded-lg w-fit mb-2 shadow-xs opacity-100">
-                  <Utensils className="w-5 h-5" />
-                </div>
-                <h3 className="text-xl md:text-2xl font-bold drop-shadow-sm">Room Dining</h3>
-                <p className="text-xs text-white mt-0.5 drop-shadow-xs">Explore our curated chef specialities &amp; beverages.</p>
-              </div>
-            </div>
-
-            {/* Owner-managed (Services tab) — not every property offers the same things, so this is no longer a fixed four cards. */}
-            {(serviceCategories ?? []).map(cat => {
-              const Icon = serviceIconFor(cat.iconKey);
-              return (
-                <div
-                  key={cat.id}
-                  id={`service-card-${cat.id}`}
-                  onClick={() => setActiveModal(cat)}
-                  className="col-span-1 relative rounded-2xl overflow-hidden cursor-pointer group shadow-sm border border-outline-variant hover:shadow-md transition-all h-36 md:h-38 bg-surface-container-lowest hover:bg-surface-container-low flex flex-col items-center justify-center p-4 text-center opacity-100"
-                >
-                  <div className="bg-primary/10 rounded-full p-3 mb-2 text-primary group-hover:scale-110 transition-transform opacity-100">
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-sm font-bold text-on-surface">{cat.name}</h3>
-                  {cat.description && <p className="text-[11px] text-on-surface-variant mt-0.5">{cat.description}</p>}
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Guest's Active Reserved Experiences Live Status Banner */}
-        {reservedBookings.length > 0 && (
-          <section id="your-reserved-experiences-section" className="space-y-3 pt-2 animate-in fade-in duration-300">
-            <div className="flex items-center justify-between px-1">
-              <h2 className="text-lg font-bold text-on-surface flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-primary" />
-                <span>Your Experience Reservations ({reservedBookings.length})</span>
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {reservedBookings.map(b => (
-                <div
-                  key={b.id}
-                  className="p-4 rounded-2xl border border-outline-variant/60 bg-surface-container-lowest shadow-sm flex flex-col justify-between space-y-2.5"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h3 className="text-sm font-bold text-on-surface">{b.experienceName}</h3>
-                      <p className="text-[11px] text-on-surface-variant font-medium mt-0.5">
-                        {b.guestCount} Guests ({b.unitLabel || 'per person'}) · {formatCurrency(b.totalPrice, currency)}
+        {reserved.length > 0 && (
+          <section>
+            <h2 className="text-xl font-bold text-on-surface mb-3 px-1">Your bookings</h2>
+            <div className="rounded-[24px] bg-surface-container-lowest divide-y divide-outline-variant shadow-sm overflow-hidden">
+              {reserved.map(b => {
+                const confirmed = b.status === 'confirmed';
+                return (
+                  <div key={b.id} className="flex items-center gap-3 p-4">
+                    <span className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${confirmed ? 'bg-success text-on-success' : 'bg-surface-container-low text-on-surface-variant'}`}>
+                      {confirmed ? <Calendar className="w-4.5 h-4.5" /> : <Clock className="w-4.5 h-4.5" />}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-on-surface truncate">{b.experienceName}</p>
+                      <p className="text-xs text-on-surface-variant truncate">
+                        {b.scheduledTime ? `Confirmed for ${b.scheduledTime}` : b.status === 'cancelled' ? 'Cancelled' : b.status === 'completed' ? 'Completed' : `Waiting for the hotel to confirm${b.preferredTime ? ` · you asked for ${b.preferredTime}` : ''}`}
                       </p>
                     </div>
-
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold capitalize shrink-0 ${
-                        b.status === 'confirmed'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : b.status === 'completed'
-                          ? 'bg-blue-100 text-blue-800'
-                          : b.status === 'cancelled'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-amber-100 text-amber-800'
-                      }`}
-                    >
-                      {b.status === 'confirmed'
-                        ? '🗓️ Confirmed'
-                        : b.status === 'pending' || b.status === 'requested'
-                        ? '⏳ Concierge Reviewing'
-                        : b.status}
-                    </span>
+                    <span className="text-sm font-semibold text-on-surface shrink-0">{formatCurrency(b.totalPrice, currency)}</span>
                   </div>
-
-                  {b.scheduledTime ? (
-                    <div className="flex items-center gap-1.5 p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 text-xs font-bold border border-emerald-200/60">
-                      <Calendar className="w-4 h-4 shrink-0 text-emerald-600" />
-                      <span>Scheduled Slot: {b.scheduledTime}</span>
-                    </div>
-                  ) : b.preferredTime ? (
-                    <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
-                      <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                      <span>Requested Slot: {b.preferredTime}</span>
-                    </div>
-                  ) : null}
-
-                  {b.notes && (
-                    <p className="text-[11px] text-on-surface-variant italic bg-surface-container-low p-2 rounded-lg">
-                      "{b.notes}"
-                    </p>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}
 
-        {/* Featured Curated Experiences — matching Hero Greeting Box Design Language */}
-        {(experiences ?? []).length > 0 && (
-          <section id="curated-experiences-section" className="space-y-4 pt-2">
-            <div className="flex items-center justify-between px-1">
-              <h2 className="text-xl font-bold text-on-surface">Curated For You</h2>
-              <span className="text-xs font-semibold text-primary">Exclusive Experiences</span>
+        {experiences.length > 0 && (
+          <section id="curated-experiences-section">
+            <div className="flex items-end justify-between mb-3 px-1">
+              <div>
+                <h2 className="text-xl font-bold text-on-surface">What else to do here</h2>
+                <p className="text-xs text-on-surface-variant mt-0.5">Arranged by {propertyName}</p>
+              </div>
+              <button onClick={() => onNavigate('guest_activities')} className="text-sm font-semibold text-on-surface inline-flex items-center gap-0.5">
+                See all <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {experiences.map((exp) => (
-                <div
+            <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-px-4 pb-2 -mx-4 px-4 scrollbar-none">
+              {experiences.map((exp, i) => (
+                <motion.button
                   key={exp.id}
                   id={`exp-card-${exp.id}`}
-                  className="relative rounded-[28px] overflow-hidden h-72 sm:h-80 shadow-lg group border border-outline-variant/40 bg-surface-container-high transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl opacity-100"
+                  custom={i}
+                  variants={fadeUp}
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={{ once: true }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setBooking(exp)}
+                  className="snap-start shrink-0 w-[70%] sm:w-64 rounded-[24px] bg-surface-container-lowest overflow-hidden text-left shadow-sm"
                 >
-                  {/* Full-bleed Background Experience Image */}
-                  {exp.image ? (
-                    <img
-                      src={exp.image}
-                      alt={exp.name}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-100"
-                    />
-                  ) : (
-                    <div
-                      className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-700 opacity-100"
-                      style={{
-                        backgroundImage: `url('https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80')`,
-                      }}
-                    />
-                  )}
-
-                  {/* Gradient Overlay for Text Contrast */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent opacity-100" />
-
-                  {/* Top-Right Price Tag Pill */}
-                  <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-md rounded-full px-3.5 py-1.5 text-white border border-white/30 shadow-md opacity-100">
-                    <span className="text-xs sm:text-sm font-extrabold text-amber-300">
-                      {formatCurrency(exp.price, currency)}
-                    </span>
-                    <span className="text-[10px] text-white font-medium ml-1">
-                      {exp.unitLabel}
-                    </span>
+                  <div className="h-36 bg-surface-container-high">
+                    <img src={exp.image || FALLBACK_EXPERIENCE_IMAGE} alt="" className="w-full h-full object-cover" />
                   </div>
-
-                  {/* Bottom Content Card (Matching Greeting Box) */}
-                  <div className="absolute bottom-5 left-5 right-5 text-white flex flex-col justify-end">
-                    <p className="text-[11px] font-extrabold tracking-widest uppercase text-amber-300">
-                      CURATED EXPERIENCE
-                    </p>
-                    <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-white leading-tight mt-0.5 drop-shadow-sm">
-                      {exp.name}
-                    </h3>
-
-                    {/* Gold Accent Bar */}
-                    <div className="w-8 h-1 bg-amber-400 rounded-full my-2 shadow-2xs" />
-
-                    {exp.description && (
-                      <p className="text-xs sm:text-sm font-semibold text-white line-clamp-2 leading-snug drop-shadow-xs">
-                        {exp.description}
-                      </p>
-                    )}
-
-                    {/* Reserve Action Button */}
-                    <div className="pt-3">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedExperience(exp);
-                          setGuestCount(1);
-                          setPreferredTime('');
-                          setBookingNotes('');
-                        }}
-                        className="px-5 py-2.5 rounded-full bg-primary text-on-primary text-xs font-extrabold hover:bg-primary-hover transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-2 opacity-100"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Reserve Now</span>
-                      </button>
-                    </div>
+                  <div className="p-4">
+                    <p className="text-sm font-bold text-on-surface truncate">{exp.name}</p>
+                    <p className="text-xs text-on-surface-variant mt-0.5">{formatCurrency(exp.price, currency)} {exp.unitLabel}</p>
                   </div>
-                </div>
+                </motion.button>
               ))}
             </div>
           </section>
         )}
-      </div>
+      </main>
 
-      {/* Service request — the owner's form for this service (0075): options, route, time, note */}
-      {activeModal && (
+      {activeService && (
         <ServiceRequestSheet
           token={token}
-          service={activeModal}
+          service={activeService}
           routes={transportRoutes}
           currency={currency}
-          onClose={() => setActiveModal(null)}
-          onSent={name => {
-            setBookedExperience(name);
-            setTimeout(() => setBookedExperience(null), 4000);
-          }}
+          onClose={() => setActiveService(null)}
+          onSent={name => showToast(`${name}: request sent`)}
         />
       )}
 
-      {/* Experience Booking Modal with Guest Count & Preferred Schedule */}
-      {selectedExperience && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-          <div className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant space-y-4">
-            <div className="flex justify-between items-start pb-3 border-b border-outline-variant">
-              <div>
-                <h3 className="text-lg font-bold text-on-surface">{selectedExperience.name}</h3>
-                <p className="text-xs text-primary font-bold">{formatCurrency(selectedExperience.price, currency)} {selectedExperience.unitLabel}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedExperience(null)}
-                className="text-gray-400 hover:text-gray-600 text-xl font-bold cursor-pointer"
-              >
-                &times;
-              </button>
-            </div>
-
-            {selectedExperience.image && (
-              <div className="h-36 w-full rounded-xl overflow-hidden bg-surface-container-low border border-outline-variant">
-                <img src={selectedExperience.image} alt={selectedExperience.name} className="w-full h-full object-cover" />
-              </div>
-            )}
-
-            {selectedExperience.description && (
-              <p className="text-xs text-on-surface-variant leading-relaxed">{selectedExperience.description}</p>
-            )}
-
-            {/* Party Size Selector */}
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-on-surface block">Number of Guests / Party Size</label>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center border border-outline-variant rounded-xl bg-surface-container-low overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setGuestCount(g => Math.max(1, g - 1))}
-                    className="w-10 h-10 flex items-center justify-center text-lg font-bold hover:bg-surface-container-high transition-colors cursor-pointer text-on-surface"
-                  >
-                    -
-                  </button>
-                  <span className="w-12 text-center text-sm font-extrabold text-on-surface">{guestCount}</span>
-                  <button
-                    type="button"
-                    onClick={() => setGuestCount(g => g + 1)}
-                    className="w-10 h-10 flex items-center justify-center text-lg font-bold hover:bg-surface-container-high transition-colors cursor-pointer text-on-surface"
-                  >
-                    +
-                  </button>
-                </div>
-                <span className="text-xs font-semibold text-on-surface-variant">
-                  ({selectedExperience.unitLabel || 'per person'})
-                </span>
-              </div>
-            </div>
-
-            {/* Preferred Date & Time */}
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-on-surface block">Preferred Date &amp; Time (Optional)</label>
-              <input
-                type="text"
-                value={preferredTime}
-                onChange={e => setPreferredTime(e.target.value)}
-                placeholder="e.g. Today at 4:30 PM or Tomorrow morning"
-                className="w-full h-10 px-3 text-xs border border-outline-variant rounded-xl focus:border-primary focus:outline-none bg-surface-container-lowest"
-              />
-            </div>
-
-            {/* Notes */}
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-on-surface block">Special Requests or Preferences (Optional)</label>
-              <textarea
-                value={bookingNotes}
-                onChange={e => setBookingNotes(e.target.value)}
-                placeholder="e.g. Dietary preferences, surprise setup..."
-                rows={2}
-                className="w-full p-2.5 text-xs border border-outline-variant rounded-xl focus:border-primary focus:outline-none bg-surface-container-lowest resize-none"
-              />
-            </div>
-
-            {/* Total Price Summary */}
-            <div className="flex items-center justify-between p-3 rounded-xl bg-primary/10 border border-primary/20">
-              <span className="text-xs font-bold text-primary">Estimated Total ({currency})</span>
-              <span className="text-base font-extrabold text-primary">
-                {formatCurrency(selectedExperience.price * guestCount, currency)}
-              </span>
-            </div>
-
-            {/* Submit Actions */}
-            <div className="flex gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setSelectedExperience(null)}
-                className="flex-1 h-10 rounded-xl border border-outline-variant text-xs font-semibold text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={submittingExperience}
-                onClick={async () => {
-                  setSubmittingExperience(true);
-                  try {
-                    await onBookExperience(
-                      selectedExperience.name,
-                      selectedExperience.price,
-                      guestCount,
-                      preferredTime,
-                      bookingNotes,
-                      selectedExperience.unitLabel
-                    );
-                    setBookedExperience(selectedExperience.name);
-                    setSelectedExperience(null);
-                    setTimeout(() => setBookedExperience(null), 5000);
-                  } catch (err) {
-                    console.warn('Failed to submit experience booking:', err);
-                  } finally {
-                    setSubmittingExperience(false);
-                  }
-                }}
-                className="flex-1 h-10 rounded-xl bg-primary text-on-primary text-xs font-bold hover:bg-primary-hover disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
-              >
-                {submittingExperience ? 'Sending Request...' : 'Send Reservation Request'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {booking && (
+          <ExperienceBookingSheet
+            key={booking.id}
+            experience={booking}
+            currency={currency}
+            onClose={() => setBooking(null)}
+            onBook={async (guests, when, notes) => {
+              await onBookExperience(booking.name, booking.price, guests, when, notes, booking.unitLabel);
+              setBooking(null);
+              showToast(`${booking.name}: the hotel will confirm your time`);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
+
+/**
+ * The welcome card: the hotel's photo and name, the guest's greeting, and
+ * (when the hotel lists any) a swipeable carousel of things to do that
+ * advances on its own until the guest touches it.
+ */
+function WelcomeCard({ propertyName, propertyImage, firstName, experiences, currency, onPick, onSeeAll }: {
+  propertyName: string;
+  propertyImage?: string;
+  firstName: string;
+  experiences: GuestExperience[];
+  currency: string;
+  onPick: (exp: GuestExperience) => void;
+  onSeeAll: () => void;
+}) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [index, setIndex] = useState(0);
+  const pausedUntil = useRef(0);
+  const now = new Date();
+  const slides = experiences.slice(0, 6);
+
+  // Auto-advance every 4.5s; any touch or scroll by the guest pauses it for 10s.
+  useEffect(() => {
+    if (slides.length < 2) return;
+    const timer = setInterval(() => {
+      const track = trackRef.current;
+      if (!track || Date.now() < pausedUntil.current) return;
+      const next = (index + 1) % slides.length;
+      const card = track.children[next] as HTMLElement | undefined;
+      if (card) track.scrollTo({ left: card.offsetLeft - track.offsetLeft, behavior: 'smooth' });
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [index, slides.length]);
+
+  const onScroll = () => {
+    const track = trackRef.current;
+    if (!track) return;
+    const width = (track.children[0] as HTMLElement | undefined)?.offsetWidth ?? 1;
+    setIndex(Math.round(track.scrollLeft / (width + 10)));
+  };
+
+  return (
+    <motion.section
+      id="guest-hero-banner"
+      initial={{ opacity: 0, y: 20, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+      className="relative rounded-[32px] overflow-hidden shadow-xl bg-surface-container-high"
+    >
+      <motion.img
+        src={propertyImage || FALLBACK_HOTEL_IMAGE}
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover"
+        initial={{ scale: 1.08 }}
+        animate={{ scale: 1 }}
+        transition={{ duration: 1.4, ease: 'easeOut' }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/25 to-black/80" />
+
+      <div className="relative px-5 pt-5 pb-5 text-white">
+        <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="inline-flex text-[12px] font-medium bg-white/15 backdrop-blur rounded-full px-3 py-1">
+          Welcome to {propertyName}
+        </motion.p>
+        <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="text-[34px] leading-[1.05] font-bold tracking-tight mt-3">
+          {greeting(now.getHours())},<br />{firstName}
+        </motion.h1>
+        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }} className="text-sm text-white/80 mt-2">
+          {now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
+        </motion.p>
+
+        {slides.length > 0 ? (
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 0.5 }} className="mt-8">
+            <div className="flex items-center justify-between mb-2.5">
+              <p className="text-[13px] font-semibold text-white/90 inline-flex items-center gap-1.5"><Sparkles className="w-4 h-4" /> Things to do here</p>
+              <button onClick={onSeeAll} className="text-[13px] font-semibold text-white inline-flex items-center gap-0.5">See all <ChevronRight className="w-4 h-4" /></button>
+            </div>
+            <div
+              ref={trackRef}
+              onScroll={onScroll}
+              onPointerDown={() => { pausedUntil.current = Date.now() + 10_000; }}
+              onTouchStart={() => { pausedUntil.current = Date.now() + 10_000; }}
+              className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scroll-px-1 scrollbar-none -mx-1 px-1"
+            >
+              {slides.map(exp => (
+                <button
+                  key={exp.id}
+                  onClick={() => onPick(exp)}
+                  className={`snap-start shrink-0 ${slides.length > 1 ? 'w-[86%]' : 'w-full'} flex items-center gap-3 rounded-[22px] bg-white/15 backdrop-blur-md border border-white/25 p-2.5 text-left`}
+                >
+                  <img src={exp.image || FALLBACK_EXPERIENCE_IMAGE} alt="" className="w-16 h-16 rounded-[16px] object-cover shrink-0" />
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm font-bold truncate">{exp.name}</span>
+                    {exp.description && <span className="block text-xs text-white/80 truncate mt-0.5">{exp.description}</span>}
+                    <span className="block text-xs font-semibold mt-1">{formatCurrency(exp.price, currency)} <span className="font-normal text-white/75">{exp.unitLabel}</span></span>
+                  </span>
+                  <span className="h-8 px-3 rounded-full bg-white text-black text-xs font-bold flex items-center shrink-0">Book</span>
+                </button>
+              ))}
+            </div>
+            {slides.length > 1 && (
+              <div className="flex justify-center gap-1.5 mt-3">
+                {slides.map((s, i) => (
+                  <motion.span key={s.id} animate={{ width: i === index ? 18 : 6, opacity: i === index ? 1 : 0.5 }} className="h-1.5 rounded-full bg-white" />
+                ))}
+              </div>
+            )}
+          </motion.div>
+        ) : (
+          <p className="mt-10 text-sm text-white/85">Your stay, our priority. Ask for anything below.</p>
+        )}
+      </div>
+    </motion.section>
+  );
+}
