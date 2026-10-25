@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { resolveRoomToken } from '../lib/guestApi';
 
 /**
- * What a printed room-door QR actually points at: /guest/room/:roomId.
+ * What a printed room-door QR actually points at: /guest/room/:roomId,
+ * where :roomId is the room's random QR code (rooms.qr_code, 0074), not its id.
  * Resolves to whoever's checked-in reservation is current right now, then
  * hands off to the normal token-scoped guest page — see
  * guest_resolve_room_token in 0011_room_qr.sql for why this indirection

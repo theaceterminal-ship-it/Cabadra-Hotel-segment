@@ -213,6 +213,25 @@ export async function fetchRevenueTrend(propertyId: string, days: 7 | 30 | 90 = 
  * reservations, the same way a receptionist would actually think about it
  * ("who's in 204?" is a reservations question, not a rooms question).
  */
+/** A room's QR code (rooms.qr_code, 0074); null if it has none yet. */
+export async function fetchRoomQrCode(roomId: string): Promise<string | null> {
+  const { data, error } = await supabase.from('rooms').select('qr_code').eq('id', roomId).maybeSingle();
+  if (error) throw error;
+  return (data?.qr_code as string | undefined) ?? null;
+}
+
+/**
+ * Gives a room a new random QR code, retiring its printed sticker (e.g. a
+ * copied one). Same format as the database default in 0074: 32 hex chars.
+ */
+export async function regenerateRoomQrCode(roomId: string): Promise<string> {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  const code = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+  const { error } = await supabase.from('rooms').update({ qr_code: code }).eq('id', roomId);
+  if (error) throw error;
+  return code;
+}
+
 export async function fetchRoomsForProperty(propertyId: string): Promise<Room[]> {
   const [{ data: rooms, error: roomsError }, { data: occupied, error: resError }] = await Promise.all([
     supabase.from('rooms').select('*').eq('property_id', propertyId),
@@ -238,6 +257,7 @@ export async function fetchRoomsForProperty(propertyId: string): Promise<Room[]>
       number: r.number,
       type: r.type,
       floor: r.floor,
+      qrCode: r.qr_code ?? undefined,
       maxOccupancy: r.max_occupancy ?? 2,
       bedsDescription: r.beds_description || defaultBeds,
       bathroomDetails: r.bathroom_details || defaultBath,

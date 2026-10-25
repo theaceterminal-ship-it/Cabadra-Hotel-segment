@@ -38,6 +38,8 @@ export interface Room {
   issueDescription?: string;
   pricePerNight: number;
   image?: string;
+  /** Random code printed in the room's QR (/guest/room/<qrCode>); never the room id, so links can't be guessed. See 0074. */
+  qrCode?: string;
   /** The current guest's link token — set only when the room is genuinely occupied by a checked-in reservation. Builds their guest_token URL: /guest/:guestToken. */
   guestToken?: string;
   /** The checked-in reservation behind this room's occupancy, if any — what staff_get_folio/staff_checkout_reservation key off. */

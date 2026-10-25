@@ -200,7 +200,7 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
         />
       )}
 
-      {showQr && <RoomQrModal roomNumber={displayRoom.number} roomId={displayRoom.id} onClose={() => setShowQr(false)} />}
+      {showQr && <RoomQrModal roomNumber={displayRoom.number} roomId={displayRoom.id} qrCode={displayRoom.qrCode} onClose={() => setShowQr(false)} />}
 
       {showChat && displayRoom.reservationId && (
         <StaffFolioChatModal
