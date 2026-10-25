@@ -188,12 +188,11 @@
 }
 
 /*
- * Website theme for the owner side (onboarding + owner dashboard): the
- * fog-and-ink palette of the public site (src/pages/MarketingPage.tsx)
- * instead of the staff lavender. OwnerApp puts `theme-site` on <html>
- * while it's mounted (useSiteTheme), so every component that uses the
- * semantic tokens follows without per-component edits, and Reception and
- * the guest app keep their own look. Radii are rounder too, matching the
+ * Website theme: the fog-and-ink palette of the public site
+ * (src/pages/MarketingPage.tsx), used by every app now (owner, reception
+ * and staff screens, guest app). Each puts `theme-site` on <html> while
+ * it's mounted (useSiteTheme), so every component that uses the semantic
+ * tokens follows without per-component edits. Radii are rounder too, matching the
  * site's pill buttons and soft cards.
  *
  * `.dark.theme-site` has to out-rank plain `.theme-site`, since both
@@ -264,6 +263,14 @@
   --color-room-occupied-on: #ffffff;
   --color-room-maintenance: #9aa095;
   --color-room-maintenance-on: #ffffff;
+  /* Status colours on the site palette (the staff app runs on it too): amber
+     for VIP, a sand wash for cleaning, terracotta for a room that needs it. */
+  --color-room-vip: #e0a43a;
+  --color-room-vip-on: #111111;
+  --color-room-cleaning: #ead9b5;
+  --color-room-cleaning-on: #111111;
+  --color-room-dirty: #d9826b;
+  --color-room-dirty-on: #ffffff;
 }
 
 .dark.theme-site {
@@ -326,6 +333,12 @@
   --color-room-occupied-on: #f2f3f0;
   --color-room-maintenance: #5c615a;
   --color-room-maintenance-on: #f2f3f0;
+  --color-room-vip: #c9963a;
+  --color-room-vip-on: #111111;
+  --color-room-cleaning: #6b5c3f;
+  --color-room-cleaning-on: #f2f3f0;
+  --color-room-dirty: #b8644f;
+  --color-room-dirty-on: #ffffff;
 }
 
 /* The guest status pill's label: a short slide-in whenever the situation

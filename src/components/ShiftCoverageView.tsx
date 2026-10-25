@@ -106,7 +106,7 @@ export const ShiftCoverageView: React.FC<ShiftCoverageViewProps> = ({ propertyId
           <CalendarClock className="w-5 h-5" />
         </div>
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-on-surface">Shift Coverage</h1>
+          <h1 className="text-xl md:text-2xl font-semibold text-on-surface">Shift Coverage</h1>
           <p className="text-xs text-on-surface-variant">Who scanned in, who didn't, and when</p>
         </div>
       </div>
@@ -150,10 +150,10 @@ export const ShiftCoverageView: React.FC<ShiftCoverageViewProps> = ({ propertyId
               <article key={shift.id} className="bg-surface-container-lowest rounded-xl border border-outline-variant p-4 sm:p-5">
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                   <div>
-                    <p className="font-bold text-on-surface">{shift.name}</p>
+                    <p className="font-semibold text-on-surface">{shift.name}</p>
                     <p className="text-xs text-on-surface-variant">{shift.startTime} – {shift.endTime}</p>
                   </div>
-                  <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border ${style.className}`}>
+                  <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border ${style.className}`}>
                     <Icon className="w-3.5 h-3.5" /> {style.label}
                   </span>
                 </div>
@@ -167,7 +167,7 @@ export const ShiftCoverageView: React.FC<ShiftCoverageViewProps> = ({ propertyId
                     )}
                   </div>
                 )}
-                <button onClick={() => handleDeleteShift(shift.id)} className="text-[11px] text-error hover:text-red-700 mt-3 flex items-center gap-1">
+                <button onClick={() => handleDeleteShift(shift.id)} className="text-[11px] text-error hover:underline mt-3 flex items-center gap-1">
                   <Trash2 className="w-3 h-3" /> Remove this shift
                 </button>
               </article>
@@ -179,25 +179,25 @@ export const ShiftCoverageView: React.FC<ShiftCoverageViewProps> = ({ propertyId
       {showNewShift ? (
         <form onSubmit={handleAddShift} className="bg-surface-container-lowest rounded-xl border border-outline-variant p-4 grid grid-cols-2 sm:grid-cols-4 gap-2 items-end">
           <div className="col-span-2 sm:col-span-1">
-            <label className="text-[11px] font-bold text-on-surface-variant block mb-1">Name</label>
+            <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Name</label>
             <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Morning" className="w-full h-9 px-2.5 text-xs border border-outline-variant rounded-lg bg-surface-container-lowest" />
           </div>
           <div>
-            <label className="text-[11px] font-bold text-on-surface-variant block mb-1">Start</label>
+            <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Start</label>
             <input type="time" value={newStart} onChange={e => setNewStart(e.target.value)} className="w-full h-9 px-2.5 text-xs border border-outline-variant rounded-lg bg-surface-container-lowest" />
           </div>
           <div>
-            <label className="text-[11px] font-bold text-on-surface-variant block mb-1">End</label>
+            <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">End</label>
             <input type="time" value={newEnd} onChange={e => setNewEnd(e.target.value)} className="w-full h-9 px-2.5 text-xs border border-outline-variant rounded-lg bg-surface-container-lowest" />
           </div>
-          <button type="submit" disabled={!newName.trim()} className="h-9 rounded-lg bg-primary text-on-primary text-xs font-bold disabled:opacity-50 flex items-center justify-center gap-1">
+          <button type="submit" disabled={!newName.trim()} className="h-9 rounded-lg bg-primary text-on-primary text-xs font-semibold disabled:opacity-50 flex items-center justify-center gap-1">
             <Plus className="w-3.5 h-3.5" /> Add Shift
           </button>
         </form>
       ) : (
         <button
           onClick={() => setShowNewShift(true)}
-          className="h-10 px-4 rounded-lg border border-outline-variant text-on-surface-variant text-xs font-bold hover:bg-surface-container-low flex items-center gap-1.5"
+          className="h-10 px-4 rounded-lg border border-outline-variant text-on-surface-variant text-xs font-semibold hover:bg-surface-container-low flex items-center gap-1.5"
         >
           <Plus className="w-3.5 h-3.5" /> New Shift for {DEPT_LABELS[department]}
         </button>

@@ -66,7 +66,7 @@ export function LiveOpsSpreadsheetModal({ isOpen, onClose, tasks, propertyName }
           <div className="flex items-center gap-2">
             <FileSpreadsheet className="w-5 h-5 text-primary" />
             <div>
-              <h2 className="text-base font-bold text-on-surface">Live Ops Work History Spreadsheet</h2>
+              <h2 className="text-base font-semibold text-on-surface">Live Ops Work History Spreadsheet</h2>
               <p className="text-[11px] text-on-surface-variant">Excel-style data grid of department tasks, assignments, and audit trails.</p>
             </div>
           </div>
@@ -76,7 +76,7 @@ export function LiveOpsSpreadsheetModal({ isOpen, onClose, tasks, propertyName }
               type="button"
               onClick={handleExportCsv}
               disabled={filteredTasks.length === 0}
-              className="h-9 px-3.5 rounded-xl bg-primary text-on-primary text-xs font-bold hover:bg-primary-hover disabled:opacity-50 flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              className="h-9 px-3.5 rounded-xl bg-primary text-on-primary text-xs font-semibold hover:bg-primary-hover disabled:opacity-50 flex items-center gap-1.5 cursor-pointer shadow-2xs"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Export CSV</span>
@@ -84,7 +84,7 @@ export function LiveOpsSpreadsheetModal({ isOpen, onClose, tasks, propertyName }
             <button
               type="button"
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 text-xl font-bold cursor-pointer px-2"
+              className="text-on-surface-variant hover:text-on-surface text-xl font-semibold cursor-pointer px-2"
             >
               &times;
             </button>
@@ -125,7 +125,7 @@ export function LiveOpsSpreadsheetModal({ isOpen, onClose, tasks, propertyName }
               <option value="rejected">Rejected</option>
             </select>
 
-            <span className="text-xs font-bold text-on-surface-variant px-2">
+            <span className="text-xs font-semibold text-on-surface-variant px-2">
               Showing {filteredTasks.length} rows
             </span>
           </div>
@@ -140,7 +140,7 @@ export function LiveOpsSpreadsheetModal({ isOpen, onClose, tasks, propertyName }
           ) : (
             <table className="w-full text-left border-collapse text-xs">
               <thead className="sticky top-0 bg-surface-container-low z-10 shadow-2xs">
-                <tr className="border-b border-outline-variant/60 text-on-surface-variant font-bold text-[11px] uppercase tracking-wider">
+                <tr className="border-b border-outline-variant/60 text-on-surface-variant font-medium text-xs">
                   <th className="p-3 pl-5 border-r border-outline-variant/40">Room</th>
                   <th className="p-3 border-r border-outline-variant/40">Department</th>
                   <th className="p-3 border-r border-outline-variant/40">Task Title</th>
@@ -154,32 +154,32 @@ export function LiveOpsSpreadsheetModal({ isOpen, onClose, tasks, propertyName }
               <tbody className="divide-y divide-outline-variant/40 font-mono text-[11px]">
                 {filteredTasks.map((t, idx) => (
                   <tr key={t.id} className={idx % 2 === 0 ? 'bg-surface-container-lowest' : 'bg-surface-container-low/30'}>
-                    <td className="p-2.5 pl-5 border-r border-outline-variant/30 font-extrabold text-on-surface">
+                    <td className="p-2.5 pl-5 border-r border-outline-variant/30 font-semibold text-on-surface">
                       {t.roomNumber || 'N/A'}
                     </td>
-                    <td className="p-2.5 border-r border-outline-variant/30 font-bold capitalize text-primary">
+                    <td className="p-2.5 border-r border-outline-variant/30 font-semibold capitalize text-primary">
                       {t.category}
                     </td>
                     <td className="p-2.5 border-r border-outline-variant/30 font-sans font-semibold text-on-surface max-w-xs truncate">
                       {t.title}
                     </td>
                     <td className="p-2.5 border-r border-outline-variant/30 font-sans text-on-surface-variant">
-                      {t.assignedTo || <span className="text-gray-400 italic">Unassigned</span>}
+                      {t.assignedTo || <span className="text-on-surface-variant italic">Unassigned</span>}
                     </td>
-                    <td className="p-2.5 border-r border-outline-variant/30 font-bold">
-                      <span className={`px-2 py-0.5 rounded text-[10px] uppercase ${t.priority === 'high' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-700'}`}>
+                    <td className="p-2.5 border-r border-outline-variant/30 font-semibold">
+                      <span className={`px-2 py-0.5 rounded text-[10px] uppercase ${t.priority === 'high' ? 'bg-error/10 text-error' : 'bg-surface-container text-on-surface-variant'}`}>
                         {t.priority}
                       </span>
                     </td>
-                    <td className="p-2.5 border-r border-outline-variant/30 font-bold">
+                    <td className="p-2.5 border-r border-outline-variant/30 font-semibold">
                       <span className={`px-2 py-0.5 rounded text-[10px] capitalize ${
                         t.status === 'completed'
-                          ? 'bg-emerald-100 text-emerald-800'
+                          ? 'bg-success/15 text-success'
                           : t.status === 'in_progress'
-                          ? 'bg-amber-100 text-amber-800'
+                          ? 'bg-warning/15 text-warning'
                           : t.status === 'rejected'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-blue-100 text-blue-800'
+                          ? 'bg-error/10 text-error'
+                          : 'bg-surface-container-high text-on-surface'
                       }`}>
                         {t.status.replace('_', ' ')}
                       </span>
@@ -191,9 +191,9 @@ export function LiveOpsSpreadsheetModal({ isOpen, onClose, tasks, propertyName }
                       {t.rejectionNote ? (
                         <span className="text-error font-semibold">Declined: "{t.rejectionNote}"</span>
                       ) : t.price ? (
-                        <span className="text-success font-bold">${t.price}</span>
+                        <span className="text-success font-semibold">${t.price}</span>
                       ) : (
-                        <span className="text-gray-400">—</span>
+                        <span className="text-on-surface-variant">—</span>
                       )}
                     </td>
                   </tr>

@@ -20,7 +20,7 @@ function defaultCheckoutDate(): string {
 }
 
 const inputCls = 'w-full h-10 px-3 text-sm border border-outline-variant rounded-lg focus:border-primary focus:outline-none';
-const labelCls = 'text-[11px] font-bold text-on-surface-variant block mb-1';
+const labelCls = 'text-[11px] font-semibold text-on-surface-variant block mb-1';
 
 /**
  * The actual "assign this room to this person" step. Before this existed,
@@ -71,9 +71,9 @@ export function CheckInModal({ propertyId, room, source = 'built_in', onClose, o
         <div className="flex items-center justify-between pb-3 border-b border-outline-variant">
           <div className="flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-bold text-on-surface">Check In — Room {room.number}</h3>
+            <h3 className="text-lg font-semibold text-on-surface">Check In — Room {room.number}</h3>
           </div>
-          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1"><X className="w-5 h-5" /></button>
+          <button type="button" onClick={onClose} className="text-on-surface-variant hover:text-on-surface p-1"><X className="w-5 h-5" /></button>
         </div>
 
         <p className="text-xs text-on-surface-variant">
@@ -114,13 +114,13 @@ export function CheckInModal({ propertyId, room, source = 'built_in', onClose, o
           </label>
         </div>
 
-        {error && <p className="text-xs text-red-600">{error}</p>}
+        {error && <p className="text-xs text-error">{error}</p>}
 
         <div className="flex justify-end gap-2 pt-3 border-t border-outline-variant">
           <button type="button" onClick={onClose} className="px-4 py-2 border border-outline-variant rounded-lg text-xs font-semibold text-on-surface-variant">
             Cancel
           </button>
-          <button type="submit" disabled={submitting || !name.trim()} className="px-5 py-2 bg-primary text-on-primary rounded-lg text-xs font-bold hover:bg-primary-hover disabled:opacity-60">
+          <button type="submit" disabled={submitting || !name.trim()} className="px-5 py-2 bg-primary text-on-primary rounded-lg text-xs font-semibold hover:bg-primary-hover disabled:opacity-60">
             {submitting ? 'Checking in…' : 'Check In & Assign Room'}
           </button>
         </div>

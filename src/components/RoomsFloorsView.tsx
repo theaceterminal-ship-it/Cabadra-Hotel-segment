@@ -24,12 +24,12 @@ interface RoomsFloorsViewProps {
 
 /** One room tile's look, keyed by status — kept as data instead of a JSX switch so a floor section is just `rooms.map(tile)`. */
 const STATUS_STYLE: Record<RoomStatus, { tile: string; text: string; icon: React.ComponentType<{ className?: string }> }> = {
-  ready: { tile: 'bg-surface-container-lowest border border-outline-variant hover:border-primary', text: 'text-on-surface', icon: () => <div className="w-2.5 h-2.5 rounded-full bg-[#d2dbe4] border border-[#d1c5b5] mt-1" /> },
-  occupied: { tile: 'bg-[#bd9b60] border-transparent', text: 'text-[#4a3301]', icon: User },
-  occupied_vip: { tile: 'bg-[#bd9b60] border-2 border-primary shadow-[0_0_15px_rgba(189,155,96,0.35)]', text: 'text-[#4a3301]', icon: Star },
-  cleaning: { tile: 'bg-[#e2e2e5] border-transparent', text: 'text-[#636467]', icon: Brush },
-  dirty: { tile: 'bg-error-container border-transparent', text: 'text-on-error-container', icon: AlertCircle },
-  maintenance: { tile: 'bg-[#9ea0a1] border-transparent', text: 'text-[#343738]', icon: Wrench },
+  ready: { tile: 'bg-surface-container-lowest border border-outline-variant hover:border-primary', text: 'text-on-surface', icon: () => <div className="w-2.5 h-2.5 rounded-full bg-room-ready mt-1" /> },
+  occupied: { tile: 'bg-room-occupied border-transparent', text: 'text-room-occupied-on', icon: User },
+  occupied_vip: { tile: 'bg-room-vip border-2 border-room-occupied', text: 'text-room-vip-on', icon: Star },
+  cleaning: { tile: 'bg-room-cleaning border-transparent', text: 'text-room-cleaning-on', icon: Brush },
+  dirty: { tile: 'bg-room-dirty border-transparent', text: 'text-room-dirty-on', icon: AlertCircle },
+  maintenance: { tile: 'bg-room-maintenance border-transparent', text: 'text-room-maintenance-on', icon: Wrench },
 };
 
 /** One line only — these tiles are small on purpose (a floor plan, not a room dossier). Click through to the detail modal for everything else. */
@@ -38,15 +38,15 @@ function RoomTileBody({ room, currency }: { room: Room; currency: string }) {
     case 'occupied':
       return <p className="text-[10px] font-semibold truncate opacity-90">{room.guestName || 'Occupied'}</p>;
     case 'occupied_vip':
-      return <p className="text-[10px] font-bold truncate">{room.guestName || 'VIP'}</p>;
+      return <p className="text-[10px] font-semibold truncate">{room.guestName || 'VIP'}</p>;
     case 'cleaning':
       return (
-        <div className="w-full bg-[#c6c6c9] h-1 rounded-full overflow-hidden">
-          <div className="bg-[#636467] h-full rounded-full transition-all" style={{ width: `${room.cleanProgress || 60}%` }} />
+        <div className="w-full bg-outline-variant h-1 rounded-full overflow-hidden">
+          <div className="bg-on-surface-variant h-full rounded-full transition-all" style={{ width: `${room.cleanProgress || 60}%` }} />
         </div>
       );
     case 'dirty':
-      return <p className="text-[10px] font-semibold truncate text-on-error-container">{room.issueDescription || 'Requires service'}</p>;
+      return <p className="text-[11px] font-semibold truncate">{room.issueDescription || 'Needs cleaning'}</p>;
     case 'maintenance':
       return <p className="text-[10px] font-semibold truncate">ETA {room.maintenanceEta || 'TBD'}</p>;
     default:
@@ -149,7 +149,7 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Capacity / Guests Filter */}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-on-surface flex items-center gap-1 shrink-0">
+            <span className="text-xs font-semibold text-on-surface flex items-center gap-1 shrink-0">
               <Users className="w-3.5 h-3.5 text-primary" /> Capacity:
             </span>
             <div className="flex bg-surface-container-low p-0.5 rounded-lg border border-outline-variant text-xs">
@@ -195,7 +195,7 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
           {/* Room Category Dropdown */}
           {availableTypes.length > 0 && (
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-on-surface flex items-center gap-1 shrink-0">
+              <span className="text-xs font-semibold text-on-surface flex items-center gap-1 shrink-0">
                 <Bed className="w-3.5 h-3.5 text-primary" /> Category:
               </span>
               <select
@@ -216,7 +216,7 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
             <div className="flex items-center gap-1.5 text-xs">
               <span className="text-on-surface-strong-muted font-semibold">Jump:</span>
               {floors.map(fl => (
-                <button key={fl} onClick={() => scrollToFloor(fl)} className="px-2 py-0.5 rounded bg-surface-container-low text-primary font-bold hover:bg-[#dbe4ed]">
+                <button key={fl} onClick={() => scrollToFloor(fl)} className="px-2 py-0.5 rounded bg-surface-container-low text-primary font-semibold hover:bg-surface-container-high">
                   Floor {fl}
                 </button>
               ))}
@@ -254,7 +254,7 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
           if (floorRooms.length === 0) return null;
           return (
             <section key={floor} id={`floor-section-${floor}`} className="scroll-mt-4">
-              <h2 className="text-sm font-bold text-on-surface mb-3 flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-on-surface mb-3 flex items-center gap-2">
                 Floor {floor}
                 <span className="text-on-surface-strong-muted font-medium">({floorRooms.length} room{floorRooms.length === 1 ? '' : 's'})</span>
               </h2>
@@ -270,7 +270,7 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
                         className={`w-full h-full rounded-xl p-2.5 text-left transition-all shadow-2xs hover:brightness-95 flex flex-col justify-between ${style.tile} ${style.text}`}
                       >
                         <div className="flex justify-between items-start">
-                          <span className="text-lg font-bold">{room.number}</span>
+                          <span className="text-lg font-semibold">{room.number}</span>
                           <Icon className="w-3.5 h-3.5 opacity-80 shrink-0" />
                         </div>
                         <RoomTileBody room={room} currency={currency} />

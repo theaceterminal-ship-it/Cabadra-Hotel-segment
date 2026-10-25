@@ -42,28 +42,28 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
         <div className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant space-y-4">
           <div className="flex justify-between items-start pb-3 border-b border-outline-variant">
             <div>
-              <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
+              <span className="text-xs font-medium text-primary">
                 Floor {displayRoom.floor} • Room Details
               </span>
-              <h3 className="text-2xl font-bold text-on-surface">Room {displayRoom.number}</h3>
+              <h3 className="text-2xl font-semibold text-on-surface">Room {displayRoom.number}</h3>
               <p className="text-xs text-on-surface-variant">{displayRoom.type}</p>
             </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl font-bold p-1">&times;</button>
+            <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface text-xl font-semibold p-1">&times;</button>
           </div>
 
           <div className="space-y-3 text-xs">
             <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant space-y-1.5">
               <div className="flex justify-between">
                 <span className="text-on-surface-variant">Current Status:</span>
-                <span className="font-bold text-on-surface uppercase">{displayRoom.status}</span>
+                <span className="font-semibold text-on-surface uppercase">{displayRoom.status}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-on-surface-variant">Category / Type:</span>
-                <span className="font-bold text-primary">{displayRoom.type}</span>
+                <span className="font-semibold text-primary">{displayRoom.type}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-on-surface-variant">Occupancy:</span>
-                <span className="font-bold text-on-surface">Sleeps {displayRoom.maxOccupancy} Guests</span>
+                <span className="font-semibold text-on-surface">Sleeps {displayRoom.maxOccupancy} Guests</span>
               </div>
               {displayRoom.bedsDescription && (
                 <div className="flex justify-between">
@@ -80,7 +80,7 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
               {displayRoom.guestName && (
                 <div className="flex justify-between">
                   <span className="text-on-surface-variant">Guest Name:</span>
-                  <span className="font-bold text-on-surface">{displayRoom.guestName}</span>
+                  <span className="font-semibold text-on-surface">{displayRoom.guestName}</span>
                 </div>
               )}
               {displayRoom.notes && (
@@ -91,13 +91,13 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
               )}
               <div className="flex justify-between pt-1 border-t border-outline-variant/60">
                 <span className="text-on-surface-variant">Standard Rate:</span>
-                <span className="font-bold text-success">{formatCurrency(displayRoom.pricePerNight, currency)} / night</span>
+                <span className="font-semibold text-success">{formatCurrency(displayRoom.pricePerNight, currency)} / night</span>
               </div>
             </div>
 
             {(displayRoom.guestPhone || displayRoom.guestEmail || displayRoom.guestIdDocumentUrl) && (
               <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant space-y-1.5">
-                <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Guest Profile</p>
+                <p className="text-xs font-medium text-on-surface-variant">Guest Profile</p>
                 {displayRoom.guestPhone && (
                   <div className="flex items-center gap-1.5 text-on-surface"><Phone className="w-3 h-3 text-on-surface-variant" /> {displayRoom.guestPhone}</div>
                 )}
@@ -118,14 +118,14 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
               <button
                 type="button"
                 onClick={() => setShowCheckIn(true)}
-                className="w-full h-10 rounded-lg bg-primary text-on-primary text-xs font-bold hover:bg-primary-hover flex items-center justify-center gap-1.5"
+                className="w-full h-10 rounded-lg bg-primary text-on-primary text-xs font-semibold hover:bg-primary-hover flex items-center justify-center gap-1.5"
               >
                 <UserPlus className="w-3.5 h-3.5" /> Check In Guest
               </button>
             )}
 
             <div>
-              <label className="font-bold text-on-surface block mb-2">Housekeeping Status</label>
+              <label className="font-semibold text-on-surface block mb-2">Housekeeping Status</label>
               <p className="text-[10px] text-on-surface-variant mb-2">Occupancy is set by checking a guest in, not chosen here — these are the states a room moves through around a stay.</p>
               <div className="grid grid-cols-2 gap-2">
                 {(['ready', 'cleaning', 'dirty', 'maintenance'] as RoomStatus[]).map((st) => (
@@ -137,7 +137,7 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
                       onUpdateRoom(updated);
                       setDisplayRoom(updated);
                     }}
-                    className={`p-2 rounded-lg border text-xs font-bold capitalize transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                    className={`p-2 rounded-lg border text-xs font-semibold capitalize transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
                       displayRoom.status === st ? 'bg-primary text-on-primary border-primary' : 'bg-surface-container-lowest border-outline-variant text-on-surface-variant hover:bg-surface-container-low'
                     }`}
                   >
@@ -151,7 +151,7 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
           <div className="flex justify-between items-center pt-3 border-t border-outline-variant gap-2">
             <button
               onClick={() => setShowQr(true)}
-              className="h-9 px-3 rounded-lg border border-outline-variant text-on-surface-variant text-xs font-bold hover:border-primary hover:text-primary flex items-center gap-1.5 whitespace-nowrap"
+              className="h-9 px-3 rounded-lg border border-outline-variant text-on-surface-variant text-xs font-semibold hover:border-primary hover:text-primary flex items-center gap-1.5 whitespace-nowrap"
             >
               <QrCode className="w-3.5 h-3.5" /> Room QR
             </button>
@@ -159,7 +159,7 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
               {displayRoom.reservationId && (
                 <button
                   onClick={() => setShowChat(true)}
-                  className="h-9 px-3 rounded-lg border border-outline-variant text-on-surface-variant text-xs font-bold hover:border-primary hover:text-primary flex items-center gap-1.5 whitespace-nowrap"
+                  className="h-9 px-3 rounded-lg border border-outline-variant text-on-surface-variant text-xs font-semibold hover:border-primary hover:text-primary flex items-center gap-1.5 whitespace-nowrap"
                   title="Message this guest (Folio Chat)"
                 >
                   <MessageCircle className="w-3.5 h-3.5" /> Chat
@@ -169,7 +169,7 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
                 <button
                   type="button"
                   onClick={() => setShowFolio(true)}
-                  className="h-9 px-3 rounded-lg border border-primary text-primary text-xs font-bold hover:bg-highlight flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
+                  className="h-9 px-3 rounded-lg border border-primary text-primary text-xs font-semibold hover:bg-highlight flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
                 >
                   <Receipt className="w-3.5 h-3.5" /> Folio &amp; Checkout
                 </button>

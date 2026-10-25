@@ -63,11 +63,11 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
             <div className="p-2 bg-error-container text-on-error-container rounded-lg">
               <Megaphone className="w-5 h-5" />
             </div>
-            <h3 className="font-bold text-lg text-on-surface">
+            <h3 className="font-semibold text-lg text-on-surface">
               {mode === 'staff' ? 'Log Guest / Urgent Request' : 'Request Something'}
             </h3>
           </div>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-surface-container-low text-on-surface-variant hover:text-on-surface">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -75,7 +75,7 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           {mode === 'staff' && (
             <div>
-              <label className="font-bold text-on-surface block mb-1">Room Number</label>
+              <label className="font-semibold text-on-surface block mb-1">Room Number</label>
               <input
                 type="text"
                 required
@@ -88,7 +88,7 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
           )}
 
           <div>
-            <label className="font-bold text-on-surface block mb-1">Request Summary</label>
+            <label className="font-semibold text-on-surface block mb-1">Request Summary</label>
             <input
               type="text"
               required
@@ -100,7 +100,7 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
           </div>
 
           <div>
-            <label className="font-bold text-on-surface block mb-1">Priority Level</label>
+            <label className="font-semibold text-on-surface block mb-1">Priority Level</label>
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value as typeof priority)}
@@ -114,7 +114,7 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
 
           {mode === 'staff' && (
             <div>
-              <label className="font-bold text-on-surface block mb-1">Routes To</label>
+              <label className="font-semibold text-on-surface block mb-1">Routes To</label>
               <select
                 value={department}
                 onChange={(e) => setDepartment(e.target.value as Department)}
@@ -139,7 +139,7 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
             <button
               type="submit"
               disabled={submitting}
-              className="px-5 py-2 bg-primary text-on-primary rounded-lg font-bold hover:bg-primary-hover disabled:opacity-60"
+              className="px-5 py-2 bg-primary text-on-primary rounded-lg font-semibold hover:bg-primary-hover disabled:opacity-60"
             >
               {submitting ? 'Sending…' : mode === 'staff' ? 'Log Request' : 'Send Request'}
             </button>

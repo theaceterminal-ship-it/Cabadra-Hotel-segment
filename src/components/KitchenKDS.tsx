@@ -187,7 +187,7 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
             <div className="p-2 bg-primary text-on-primary rounded-lg">
               <ChefHat className="w-5 h-5" />
             </div>
-            <span className="text-xl font-bold text-primary">Kitchen KDS</span>
+            <span className="text-xl font-semibold text-primary">Kitchen KDS</span>
           </div>
 
           <span className="hidden sm:flex items-center gap-2 text-xs font-semibold text-on-surface-variant bg-surface-container-low px-3 py-1 rounded-full border border-outline-variant">
@@ -197,7 +197,7 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 font-mono text-xl md:text-2xl font-bold text-on-surface bg-surface-container-low px-3 py-1 rounded-lg border border-outline-variant">
+          <div className="flex items-center gap-2 font-mono text-xl md:text-2xl font-semibold text-on-surface bg-surface-container-low px-3 py-1 rounded-lg border border-outline-variant">
             <Clock className="w-4 h-4 text-primary" />
             <span>{currentTime || '17:59:00'}</span>
           </div>
@@ -209,10 +209,10 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
         {/* COLUMN 1: NEW ORDERS */}
         <section className="flex-none w-[85vw] sm:w-[360px] md:w-[380px] lg:w-[400px] flex flex-col gap-3">
           <div className="flex items-center justify-between pb-2 border-b border-outline-variant">
-            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-on-surface flex items-center gap-2">
               <span>New</span>
             </h2>
-            <span className="bg-[#bd9b60] text-white px-2.5 py-0.5 rounded-full text-xs font-bold shadow-xs">
+            <span className="bg-primary text-on-primary px-2.5 py-0.5 rounded-full text-xs font-semibold shadow-xs">
               {newOrders.length}
             </span>
           </div>
@@ -230,14 +230,14 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
                   className="bg-surface-container-lowest border-2 border-warning rounded-xl p-4 flex flex-col shadow-sm relative overflow-hidden"
                 >
                   {/* Timer Header Badge */}
-                  <div className="absolute top-0 right-0 bg-warning text-on-warning px-3 py-1 rounded-bl-lg text-xs font-bold flex items-center gap-1">
+                  <div className="absolute top-0 right-0 bg-warning text-on-warning px-3 py-1 rounded-bl-lg text-xs font-semibold flex items-center gap-1">
                     <Timer className="w-3.5 h-3.5" />
                     <span>{order.timeElapsed}</span>
                   </div>
 
                   <div className="flex justify-between items-start mb-3 pr-20">
                     <div>
-                      <h3 className="text-2xl font-bold text-on-surface">{order.roomNumber}</h3>
+                      <h3 className="text-2xl font-semibold text-on-surface">{order.roomNumber}</h3>
                       <p className="text-xs text-on-surface-variant">
                         Order {order.orderNumber} {order.isVip ? '• VIP Guest' : ''}
                       </p>
@@ -262,7 +262,7 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
 
                     {order.notes && (
                       <div className="bg-error-container/30 text-on-error-container p-2.5 rounded-lg text-xs border border-error-container mt-2">
-                        <span className="font-bold">Note: </span>
+                        <span className="font-semibold">Note: </span>
                         {order.notes}
                       </div>
                     )}
@@ -287,7 +287,7 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
                     <button
                       id={`btn-start-prep-${order.id}`}
                       onClick={() => handleStartPreparing(order)}
-                      className="flex-1 h-11 bg-primary text-on-primary rounded-lg text-sm font-bold uppercase tracking-wider hover:bg-primary-hover active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                      className="flex-1 h-11 bg-primary text-on-primary rounded-lg text-sm font-medium hover:bg-primary-hover active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                     >
                       <Play className="w-4 h-4 fill-white" />
                       <span>Start Preparing</span>
@@ -302,10 +302,10 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
         {/* COLUMN 2: PREPARING */}
         <section className="flex-none w-[85vw] sm:w-[360px] md:w-[380px] lg:w-[400px] flex flex-col gap-3">
           <div className="flex items-center justify-between pb-2 border-b border-outline-variant">
-            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-on-surface flex items-center gap-2">
               <span>Preparing</span>
             </h2>
-            <span className="bg-[#e2e2e5] text-[#636467] px-2.5 py-0.5 rounded-full text-xs font-bold">
+            <span className="bg-surface-container text-on-surface-variant px-2.5 py-0.5 rounded-full text-xs font-semibold">
               {preparingOrders.length}
             </span>
           </div>
@@ -323,14 +323,14 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
                     key={order.id}
                     id={`kds-card-${order.id}`}
                     className={`bg-surface-container-lowest border-2 ${
-                      isOverdue ? 'border-error' : 'border-[#bd9b60]'
+                      isOverdue ? 'border-error' : 'border-primary'
                     } rounded-xl p-4 flex flex-col shadow-sm relative overflow-hidden`}
                   >
                     {/* Timer Tag */}
                     <div
                       className={`absolute top-0 right-0 ${
-                        isOverdue ? 'bg-error text-on-error animate-pulse' : 'bg-[#bd9b60] text-white'
-                      } px-3 py-1 rounded-bl-lg text-xs font-bold flex items-center gap-1`}
+                        isOverdue ? 'bg-error text-on-error animate-pulse' : 'bg-primary text-on-primary'
+                      } px-3 py-1 rounded-bl-lg text-xs font-semibold flex items-center gap-1`}
                     >
                       <Timer className="w-3.5 h-3.5" />
                       <span>{order.timeElapsed}</span>
@@ -338,7 +338,7 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
 
                     <div className="flex justify-between items-start mb-3 pr-28">
                       <div>
-                        <h3 className="text-2xl font-bold text-on-surface">{order.roomNumber}</h3>
+                        <h3 className="text-2xl font-semibold text-on-surface">{order.roomNumber}</h3>
                         <p className="text-xs text-on-surface-variant">
                           Order {order.orderNumber} {order.isRush ? '• Rush' : ''}
                         </p>
@@ -356,7 +356,7 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
                             onClick={() => handleToggleItemComplete(order, idx)}
                             className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer ${
                               item.completed
-                                ? 'bg-success border-success text-white'
+                                ? 'bg-success border-success text-on-success'
                                 : 'border-outline-variant hover:border-success text-transparent'
                             }`}
                           >
@@ -383,7 +383,7 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
                     <button
                       id={`btn-mark-ready-${order.id}`}
                       onClick={() => handleMarkReady(order)}
-                      className="w-full h-11 bg-success text-on-success rounded-lg text-sm font-bold uppercase tracking-wider hover:opacity-95 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-success/20"
+                      className="w-full h-11 bg-success text-on-success rounded-lg text-sm font-medium hover:opacity-95 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-success/20"
                     >
                       <CheckCheck className="w-4 h-4" />
                       <span>Mark Ready</span>
@@ -398,10 +398,10 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
         {/* COLUMN 3: READY FOR PICKUP */}
         <section className="flex-none w-[85vw] sm:w-[360px] md:w-[380px] lg:w-[400px] flex flex-col gap-3">
           <div className="flex items-center justify-between pb-2 border-b border-outline-variant">
-            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-on-surface flex items-center gap-2">
               <span>Ready for Pickup</span>
             </h2>
-            <span className="bg-success/20 text-success px-2.5 py-0.5 rounded-full text-xs font-bold">
+            <span className="bg-success/20 text-success px-2.5 py-0.5 rounded-full text-xs font-semibold">
               {readyOrders.length}
             </span>
           </div>
@@ -409,7 +409,7 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
           <div className="flex-1 overflow-y-auto space-y-4 pr-1">
             {readyOrders.length === 0 ? (
               <div className="h-64 flex flex-col items-center justify-center border-2 border-dashed border-outline-variant rounded-xl p-8 text-center">
-                <CheckCircle2 className="w-12 h-12 text-[#9ea0a1] mb-2" />
+                <CheckCircle2 className="w-12 h-12 text-on-surface-variant mb-2" />
                 <p className="text-sm font-semibold text-on-surface-variant">No items waiting for pickup</p>
                 <p className="text-xs text-on-surface-variant mt-1">Orders marked ready will appear here for staff delivery dispatch</p>
               </div>
@@ -422,10 +422,10 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
                 >
                   <div className="flex justify-between items-start mb-3">
                     <div>
-                      <h3 className="text-2xl font-bold text-on-surface">{order.roomNumber}</h3>
-                      <p className="text-xs text-success font-bold">Ready on Expediter Station</p>
+                      <h3 className="text-2xl font-semibold text-on-surface">{order.roomNumber}</h3>
+                      <p className="text-xs text-success font-semibold">Ready on Expediter Station</p>
                     </div>
-                    <span className="bg-success text-on-success text-xs px-2 py-1 rounded-md font-bold">
+                    <span className="bg-success text-on-success text-xs px-2 py-1 rounded-md font-semibold">
                       Order {order.orderNumber}
                     </span>
                   </div>
@@ -434,14 +434,14 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
                     {order.items.map((it, idx) => (
                       <div key={idx} className="flex justify-between">
                         <span>{it.quantity}x {it.name}</span>
-                        <span className="text-success font-bold">✓ Plated</span>
+                        <span className="text-success font-semibold">✓ Plated</span>
                       </div>
                     ))}
                   </div>
 
                   <button
                     onClick={() => handleDispatchRunner(order)}
-                    className="w-full h-11 bg-primary text-on-primary rounded-lg text-sm font-bold hover:bg-primary-hover flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                    className="w-full h-11 bg-primary text-on-primary rounded-lg text-sm font-semibold hover:bg-primary-hover flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                   >
                     <Truck className="w-4 h-4" />
                     <span>Dispatch to Runner &rarr;</span>
@@ -456,7 +456,7 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
       {rejectingOrder && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-surface-container-lowest rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-outline-variant space-y-3">
-            <h3 className="text-lg font-bold text-on-surface">Reject Order {rejectingOrder.orderNumber}?</h3>
+            <h3 className="text-lg font-semibold text-on-surface">Reject Order {rejectingOrder.orderNumber}?</h3>
             <p className="text-xs text-on-surface-variant">
               The guest sees this reason and isn't charged for it — say why so they know what happened.
             </p>
@@ -471,14 +471,14 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
             <div className="flex justify-end gap-2 pt-1">
               <button
                 onClick={() => setRejectingOrder(null)}
-                className="px-4 py-2 border border-outline-variant rounded-lg text-xs font-semibold text-on-surface-variant hover:bg-gray-50"
+                className="px-4 py-2 border border-outline-variant rounded-lg text-xs font-semibold text-on-surface-variant hover:bg-surface-container-low"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmReject}
                 disabled={!rejectNote.trim()}
-                className="px-4 py-2 bg-error text-on-error rounded-lg text-xs font-bold hover:bg-red-700 disabled:opacity-50"
+                className="px-4 py-2 bg-error text-on-error rounded-lg text-xs font-semibold hover:brightness-95 disabled:opacity-50"
               >
                 Reject Order
               </button>

@@ -46,7 +46,7 @@ import { NewRequestModal } from '../components/NewRequestModal';
 import { SupabaseSetupNeeded } from '../components/SupabaseSetupNeeded';
 import { NotificationBell } from '../components/NotificationBell';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { useTheme } from '../hooks/useTheme';
+import { useSiteTheme, useTheme } from '../hooks/useTheme';
 import { useNotifications } from '../hooks/useNotifications';
 import LoginPage from './LoginPage';
 
@@ -84,6 +84,8 @@ export default function ReceptionApp() {
   const { loading, session, assignments } = useAuth();
   const [view, setView] = useState<ReceptionTab>('dashboard');
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  // The website's palette and shapes, the same as the owner side; the toggle still switches it to dark.
+  useSiteTheme();
   const [theme, setTheme] = useTheme();
 
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -334,7 +336,7 @@ export default function ReceptionApp() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface p-6">
         <div className="max-w-md text-center space-y-3">
-          <h1 className="text-lg font-bold text-on-surface">No property assigned yet</h1>
+          <h1 className="text-lg font-semibold text-on-surface">No property assigned yet</h1>
           <p className="text-sm text-on-surface-variant">
             You're signed in, but this account isn't linked to a hotel yet. Reception access isn't self-serve —
             ask your hotel's owner to invite this email from their property's Staff tab, and you'll land here
@@ -375,6 +377,7 @@ export default function ReceptionApp() {
 
       <div className="flex-1 min-w-0 flex flex-col">
         <div className="h-14 flex items-center justify-end gap-3 px-4 sm:px-6 shrink-0">
+          <p className="mr-auto text-sm font-medium text-on-surface-variant truncate">{propertyName}</p>
           <ThemeToggle theme={theme} onChange={setTheme} />
           <NotificationBell notifications={notifications} unreadCount={unreadCount} onMarkRead={markRead} onMarkAllRead={markAllRead} date={notificationsDate} onDateChange={setNotificationsDate} />
         </div>

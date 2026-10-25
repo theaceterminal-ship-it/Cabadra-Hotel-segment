@@ -209,11 +209,11 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-outline-variant">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-[#bd9b60] text-white rounded-lg">
+          <div className="p-2 bg-primary text-on-primary rounded-lg">
             <Brush className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-xl md:text-2xl font-bold text-on-surface">Live Ops</h1>
+            <h1 className="text-xl md:text-2xl font-semibold text-on-surface">Live Ops</h1>
             <p className="text-xs text-on-surface-variant">Housekeeping &amp; Staff Operations</p>
           </div>
         </div>
@@ -246,10 +246,10 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
           className="bg-surface-container-lowest rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.03)] border border-outline-variant flex justify-between items-center"
         >
           <div>
-            <h2 className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Active Tasks</h2>
-            <p className="text-3xl font-bold text-primary mt-1">{pendingCount}</p>
+            <h2 className="text-xs font-medium text-on-surface-variant">Active Tasks</h2>
+            <p className="text-3xl font-semibold text-primary mt-1">{pendingCount}</p>
           </div>
-          <div className="h-11 w-11 rounded-full bg-[#bd9b60] flex items-center justify-center text-white shadow-xs shrink-0">
+          <div className="h-11 w-11 rounded-full bg-primary flex items-center justify-center text-on-primary shadow-xs shrink-0">
             <CheckCircle2 className="w-5 h-5" />
           </div>
         </div>
@@ -258,20 +258,20 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
           id="stat-urgent"
           className="bg-error-container rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between"
         >
-          <h2 className="text-xs font-bold text-on-error-container uppercase tracking-wider">Urgent</h2>
+          <h2 className="text-xs font-medium text-on-error-container">Urgent</h2>
           <div className="flex justify-between items-end mt-1">
-            <p className="text-2xl font-bold text-on-error-container">{urgentCount}</p>
+            <p className="text-2xl font-semibold text-on-error-container">{urgentCount}</p>
             <AlertTriangle className="w-5 h-5 text-on-error-container opacity-80" />
           </div>
         </div>
 
         <div
           id="stat-completed"
-          className="bg-[#e6eff8] rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.03)] border border-outline-variant flex flex-col justify-between"
+          className="bg-surface-container-low rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.03)] border border-outline-variant flex flex-col justify-between"
         >
-          <h2 className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Completed</h2>
+          <h2 className="text-xs font-medium text-on-surface-variant">Completed</h2>
           <div className="flex justify-between items-end mt-1">
-            <p className="text-2xl font-bold text-primary">{completedCount}</p>
+            <p className="text-2xl font-semibold text-primary">{completedCount}</p>
             <Check className="w-5 h-5 text-primary opacity-80" />
           </div>
         </div>
@@ -284,7 +284,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface-container-lowest p-3 rounded-xl border border-outline-variant shadow-2xs">
             {/* Date Range Selector */}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold text-on-surface flex items-center gap-1">
+              <span className="text-xs font-semibold text-on-surface flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 text-primary" /> Date:
               </span>
               <div className="flex bg-surface-container-low p-0.5 rounded-lg border border-outline-variant text-[11px]">
@@ -360,7 +360,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
               <button
                 type="button"
                 onClick={() => setShowSpreadsheetModal(true)}
-                className="h-8 px-3 rounded-lg bg-surface-container-lowest border border-outline-variant text-primary text-xs font-bold hover:bg-highlight flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                className="h-8 px-3 rounded-lg bg-surface-container-lowest border border-outline-variant text-primary text-xs font-semibold hover:bg-highlight flex items-center gap-1.5 cursor-pointer shadow-2xs"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5" />
                 <span>Spreadsheet View</span>
@@ -371,7 +371,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
           {/* Task Cards */}
           <div className="space-y-3">
             {filteredTasks.length === 0 ? (
-              <div className="p-8 text-center bg-surface-container-lowest rounded-xl border border-outline-variant text-gray-500 text-xs">
+              <div className="p-8 text-center bg-surface-container-lowest rounded-xl border border-outline-variant text-on-surface-variant text-xs">
                 No tasks in this category.
               </div>
             ) : (
@@ -390,7 +390,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
                       isHigh && !isDone && !isRejected
                         ? 'border-error-container shadow-[0_4px_12px_rgba(188,71,73,0.1)]'
                         : 'border-outline-variant shadow-[0_4px_12px_rgba(0,0,0,0.03)]'
-                    } overflow-hidden relative transition-all ${isDone || isRejected ? 'opacity-60 bg-gray-50' : ''}`}
+                    } overflow-hidden relative transition-all ${isDone || isRejected ? 'opacity-60 bg-surface-container-low' : ''}`}
                   >
                     {isHigh && !isDone && !isRejected && (
                       <div className="absolute top-0 left-0 w-1.5 h-full bg-error"></div>
@@ -399,13 +399,13 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
                     <div className="p-4 pl-5">
                       <div className="flex justify-between items-start mb-1.5">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-base font-bold text-on-surface">{task.roomNumber}</span>
+                          <span className="text-base font-semibold text-on-surface">{task.roomNumber}</span>
                           {isHigh ? (
-                            <span className="px-2 py-0.5 rounded bg-error-container text-on-error-container text-[10px] font-bold flex items-center gap-1">
+                            <span className="px-2 py-0.5 rounded bg-error-container text-on-error-container text-[10px] font-semibold flex items-center gap-1">
                               <AlertTriangle className="w-3 h-3" /> High Priority
                             </span>
                           ) : (
-                            <span className="px-2 py-0.5 rounded bg-[#dbe4ed] text-on-surface-variant text-[10px] font-semibold">
+                            <span className="px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant text-[10px] font-semibold">
                               Standard
                             </span>
                           )}
@@ -464,24 +464,24 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
 
                       {isRejected && task.rejectionNote && (
                         <div className="bg-error-container/30 text-on-error-container p-2.5 rounded-lg text-xs border border-error-container mb-3">
-                          <span className="font-bold">Rejected: </span>
+                          <span className="font-semibold">Rejected: </span>
                           {task.rejectionNote}
                         </div>
                       )}
 
                       <div className="flex items-center justify-between gap-2">
                         {isDone ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-success bg-success/10 px-3 py-1.5 rounded-lg w-full justify-center">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-success bg-success/10 px-3 py-1.5 rounded-lg w-full justify-center">
                             <CheckCheck className="w-4 h-4" /> Completed
                           </span>
                         ) : isRejected ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-error bg-error/10 px-3 py-1.5 rounded-lg w-full justify-center">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-error bg-error/10 px-3 py-1.5 rounded-lg w-full justify-center">
                             <Ban className="w-4 h-4" /> Rejected
                           </span>
                         ) : inProgress ? (
                           <button
                             onClick={() => handleAction(task)}
-                            className="flex-1 h-11 bg-success text-on-success rounded-lg text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                            className="flex-1 h-11 bg-success text-on-success rounded-lg text-xs font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 cursor-pointer shadow-xs"
                           >
                             <Check className="w-4 h-4" /> Mark Complete
                           </button>
@@ -496,7 +496,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
                             </button>
                             <button
                               onClick={() => handleAction(task)}
-                              className={`flex-1 h-11 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                              className={`flex-1 h-11 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-2 cursor-pointer ${
                                 isHigh
                                   ? 'bg-primary text-on-primary hover:bg-primary-hover shadow-xs'
                                   : 'bg-transparent border border-primary text-primary hover:bg-surface-container-low'
@@ -518,15 +518,15 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
 
         {/* Department Contacts — right column, uses the space this page used to leave empty */}
         <aside className="xl:col-span-4 space-y-3">
-          <h3 className="text-sm font-bold text-on-surface px-1">Department Contacts</h3>
+          <h3 className="text-sm font-semibold text-on-surface px-1">Department Contacts</h3>
           {(Object.keys(DEPT_LABELS) as DirectoryContact['department'][]).map(dept => {
             const contacts = directoryByDept(dept);
             const openCount = tasks.filter(t => t.category === dept && t.status !== 'completed').length;
             return (
               <div key={dept} className="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
                 <div className="px-4 py-2.5 border-b border-outline-variant bg-surface-container-low flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-on-surface">{DEPT_LABELS[dept]}</h4>
-                  {openCount > 0 && <span className="text-[10px] font-bold text-primary bg-highlight px-2 py-0.5 rounded-full">{openCount} open</span>}
+                  <h4 className="text-xs font-semibold text-on-surface">{DEPT_LABELS[dept]}</h4>
+                  {openCount > 0 && <span className="text-[10px] font-semibold text-primary bg-highlight px-2 py-0.5 rounded-full">{openCount} open</span>}
                 </div>
                 {contacts.length === 0 ? (
                   <p className="text-[11px] text-on-surface-variant text-center py-4 px-3">No contacts added yet — Owner &gt; Staff tab.</p>
@@ -556,7 +556,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
               or configure first. */}
           <div className="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
             <div className="px-4 py-2.5 border-b border-outline-variant bg-surface-container-low">
-              <h4 className="text-xs font-bold text-on-surface">Department QR Codes</h4>
+              <h4 className="text-xs font-semibold text-on-surface">Department QR Codes</h4>
               <p className="text-[10px] text-on-surface-variant mt-0.5">Scan before a shift — opens that department's queue.</p>
             </div>
             <div className="divide-y divide-outline-variant">
@@ -578,7 +578,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
                       <button
                         onClick={() => handleShowDepartmentQr(dept)}
                         disabled={gettingQrFor === dept}
-                        className="h-8 px-3 rounded-lg bg-primary text-on-primary text-[11px] font-bold hover:bg-primary-hover disabled:opacity-50 flex items-center gap-1.5"
+                        className="h-8 px-3 rounded-lg bg-primary text-on-primary text-[11px] font-semibold hover:bg-primary-hover disabled:opacity-50 flex items-center gap-1.5"
                       >
                         <Tablet className="w-3.5 h-3.5" /> {gettingQrFor === dept ? 'Getting QR…' : 'Show QR'}
                       </button>
@@ -597,7 +597,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
       {rejectingTask && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-surface-container-lowest rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-outline-variant space-y-3">
-            <h3 className="text-lg font-bold text-on-surface">Reject this task?</h3>
+            <h3 className="text-lg font-semibold text-on-surface">Reject this task?</h3>
             <p className="text-xs text-on-surface-variant">
               {rejectingTask.title} — {rejectingTask.roomNumber}. Say why so whoever's tracking it knows what happened.
             </p>
@@ -612,14 +612,14 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
             <div className="flex justify-end gap-2 pt-1">
               <button
                 onClick={() => setRejectingTask(null)}
-                className="px-4 py-2 border border-outline-variant rounded-lg text-xs font-semibold text-on-surface-variant hover:bg-gray-50"
+                className="px-4 py-2 border border-outline-variant rounded-lg text-xs font-semibold text-on-surface-variant hover:bg-surface-container-low"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmReject}
                 disabled={!rejectNote.trim()}
-                className="px-4 py-2 bg-error text-on-error rounded-lg text-xs font-bold hover:bg-red-700 disabled:opacity-50"
+                className="px-4 py-2 bg-error text-on-error rounded-lg text-xs font-semibold hover:brightness-95 disabled:opacity-50"
               >
                 Reject Task
               </button>
@@ -632,7 +632,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
       {showNewTaskModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant">
-            <h3 className="text-lg font-bold text-on-surface mb-4 pb-2 border-b border-outline-variant">
+            <h3 className="text-lg font-semibold text-on-surface mb-4 pb-2 border-b border-outline-variant">
               Create Live Ops Assignment
             </h3>
             <form onSubmit={handleCreateTask} className="space-y-3 text-xs">
@@ -704,13 +704,13 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowNewTaskModal(false)}
-                  className="px-4 py-2 border border-outline-variant rounded-lg font-semibold text-on-surface-variant cursor-pointer hover:bg-gray-50"
+                  className="px-4 py-2 border border-outline-variant rounded-lg font-semibold text-on-surface-variant cursor-pointer hover:bg-surface-container-low"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-primary text-on-primary rounded-lg font-bold hover:bg-primary-hover cursor-pointer shadow-xs"
+                  className="px-5 py-2 bg-primary text-on-primary rounded-lg font-semibold hover:bg-primary-hover cursor-pointer shadow-xs"
                 >
                   Dispatch Task
                 </button>

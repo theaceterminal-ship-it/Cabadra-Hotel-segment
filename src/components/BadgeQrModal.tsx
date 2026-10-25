@@ -73,9 +73,9 @@ export function BadgeQrModal({ contact, onClose, onRegenerated }: BadgeQrModalPr
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <QrCode className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-bold text-on-surface">{contact.name}'s Badge</h3>
+            <h3 className="text-lg font-semibold text-on-surface">{contact.name}'s Badge</h3>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface p-1"><X className="w-5 h-5" /></button>
         </div>
 
         <p className="text-xs text-on-surface-variant">
@@ -94,7 +94,7 @@ export function BadgeQrModal({ contact, onClose, onRegenerated }: BadgeQrModalPr
           <button
             onClick={handleRegenerate}
             disabled={regenerating}
-            className="flex-1 h-10 rounded-lg border border-outline-variant text-on-surface-variant text-xs font-bold hover:bg-surface-container-low disabled:opacity-50 flex items-center justify-center gap-1.5"
+            className="flex-1 h-10 rounded-lg border border-outline-variant text-on-surface-variant text-xs font-semibold hover:bg-surface-container-low disabled:opacity-50 flex items-center justify-center gap-1.5"
             title="Lost badge — this invalidates the old one"
           >
             <RefreshCw className="w-3.5 h-3.5" /> {regenerating ? 'Regenerating…' : 'Lost — Regenerate'}
@@ -102,7 +102,7 @@ export function BadgeQrModal({ contact, onClose, onRegenerated }: BadgeQrModalPr
           <button
             onClick={handlePrint}
             disabled={!qrDataUrl}
-            className="flex-1 h-10 rounded-lg bg-primary text-on-primary text-xs font-bold hover:bg-primary-hover disabled:opacity-50 flex items-center justify-center gap-1.5"
+            className="flex-1 h-10 rounded-lg bg-primary text-on-primary text-xs font-semibold hover:bg-primary-hover disabled:opacity-50 flex items-center justify-center gap-1.5"
           >
             <Printer className="w-3.5 h-3.5" /> Print
           </button>

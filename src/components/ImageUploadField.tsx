@@ -39,7 +39,7 @@ export function ImageUploadField({ label, value, onChange }: ImageUploadFieldPro
 
   return (
     <div>
-      <label className="text-[10px] font-bold text-on-surface-variant block mb-1">{label}</label>
+      <label className="text-[10px] font-semibold text-on-surface-variant block mb-1">{label}</label>
       <div className="flex gap-1.5 items-center">
         {value && (
           <div className="relative shrink-0">
@@ -75,7 +75,7 @@ export function ImageUploadField({ label, value, onChange }: ImageUploadFieldPro
         )}
       </div>
       {uploading && <p className="text-[10px] text-on-surface-variant mt-1">Uploading…</p>}
-      {error && <p className="text-[10px] text-red-600 mt-1">{error}</p>}
+      {error && <p className="text-[10px] text-error mt-1">{error}</p>}
     </div>
   );
 }

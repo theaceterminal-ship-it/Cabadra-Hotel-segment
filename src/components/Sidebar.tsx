@@ -17,20 +17,19 @@ interface SidebarProps {
 }
 
 /**
- * The icon-only rail from the TimeFrame reference — a fixed-width column
- * of rounded circular icon buttons, active one filled solid, logo mark at
- * top, sign-out at the bottom. Replaces the old collapsible text-label
- * sidebar entirely: this design has no expanded state, on purpose — it's
- * meant to stay this narrow always, same as the reference.
+ * The icon-only rail: a narrow column of round icon buttons on the page's
+ * own background, the active one filled ink like the website's pill
+ * buttons, the Cabadra mark at the top and sign-out at the bottom. It has no
+ * expanded state on purpose; each button names itself on hover.
  */
 export const Sidebar: React.FC<SidebarProps> = ({ navItems, activeId, onNavigate, onSignOut }) => {
   return (
     <aside className="shrink-0 h-screen sticky top-0 w-20 bg-surface flex flex-col items-center py-5 gap-6">
-      <div className="w-10 h-10 rounded-full border-2 border-on-surface-strong-muted flex items-center justify-center shrink-0" title="Cabadra">
-        <span className="w-2.5 h-2.5 rounded-full bg-on-surface-strong-muted" />
+      <div className="size-11 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0 text-lg font-semibold tracking-[-0.03em]" title="Cabadra">
+        C
       </div>
 
-      <nav className="flex-1 flex flex-col items-center gap-2">
+      <nav className="flex-1 flex flex-col items-center gap-1.5 overflow-y-auto">
         {navItems.map(item => {
           const Icon = item.icon;
           const active = item.id === activeId;
@@ -39,13 +38,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ navItems, activeId, onNavigate
               key={item.id}
               onClick={() => onNavigate(item.id)}
               title={item.label}
-              className={`relative w-11 h-11 shrink-0 rounded-full flex items-center justify-center transition-colors ${
-                active ? 'bg-primary text-on-primary shadow-md' : 'text-on-surface-strong-muted hover:bg-primary-container/30 hover:text-on-surface-strong'
+              aria-label={item.label}
+              aria-current={active ? 'page' : undefined}
+              className={`relative size-11 shrink-0 rounded-full flex items-center justify-center transition-colors ${
+                active ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container-lowest hover:text-on-surface'
               }`}
             >
-              <Icon className="w-4.5 h-4.5" />
+              <Icon className="size-[18px]" />
               {!!item.badge && (
-                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-error text-on-error font-bold text-[9px] px-1">
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-room-ready text-room-ready-on font-semibold text-[10px] px-1">
                   {item.badge > 9 ? '9+' : item.badge}
                 </span>
               )}
@@ -57,9 +58,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ navItems, activeId, onNavigate
       <button
         onClick={onSignOut}
         title="Sign out"
-        className="w-11 h-11 shrink-0 rounded-full flex items-center justify-center text-on-surface-strong-muted hover:bg-primary-container/30 hover:text-on-surface-strong transition-colors"
+        aria-label="Sign out"
+        className="size-11 shrink-0 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-lowest hover:text-on-surface transition-colors"
       >
-        <LogOut className="w-4.5 h-4.5" />
+        <LogOut className="size-[18px]" />
       </button>
     </aside>
   );

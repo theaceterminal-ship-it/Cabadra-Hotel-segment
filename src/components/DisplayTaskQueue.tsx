@@ -56,13 +56,13 @@ export function DisplayTaskQueue({ tasks, actingOn, onStart, onComplete, onRejec
                     </span>
                   )}
                   {isHigh && (
-                    <span className="bg-error-container text-on-error-container rounded-full px-2.5 py-1 text-xs font-bold">
+                    <span className="bg-error-container text-on-error-container rounded-full px-2.5 py-1 text-xs font-semibold">
                       High Priority
                     </span>
                   )}
                 </div>
 
-                <p className="font-bold text-on-surface">{task.title}</p>
+                <p className="font-semibold text-on-surface">{task.title}</p>
                 {task.description && <p className="text-sm text-on-surface-variant mt-1">{task.description}</p>}
                 {task.assignedTo && <p className="text-xs text-on-surface-variant mt-2">Assigned to {task.assignedTo}</p>}
 
@@ -71,7 +71,7 @@ export function DisplayTaskQueue({ tasks, actingOn, onStart, onComplete, onRejec
                     <button
                       onClick={() => setRejectingTask(task)}
                       disabled={actingOn === task.id}
-                      className="h-12 px-4 rounded-xl border border-error text-error font-bold flex items-center justify-center disabled:opacity-50"
+                      className="h-12 px-4 rounded-xl border border-error text-error font-semibold flex items-center justify-center disabled:opacity-50"
                     >
                       <X className="w-5 h-5" />
                     </button>
@@ -80,7 +80,7 @@ export function DisplayTaskQueue({ tasks, actingOn, onStart, onComplete, onRejec
                     <button
                       onClick={() => onComplete(task)}
                       disabled={actingOn === task.id}
-                      className="flex-1 h-12 rounded-xl bg-success text-on-success font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                      className="flex-1 h-12 rounded-xl bg-success text-on-success font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       <Check className="w-5 h-5" /> {actingOn === task.id ? 'Marking done…' : 'Mark Done'}
                     </button>
@@ -88,7 +88,7 @@ export function DisplayTaskQueue({ tasks, actingOn, onStart, onComplete, onRejec
                     <button
                       onClick={() => onStart(task)}
                       disabled={actingOn === task.id}
-                      className="flex-1 h-12 rounded-xl bg-primary text-on-primary font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                      className="flex-1 h-12 rounded-xl bg-primary text-on-primary font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       <Play className="w-5 h-5 fill-current" /> {actingOn === task.id ? 'Starting…' : 'Accept'}
                     </button>
@@ -103,7 +103,7 @@ export function DisplayTaskQueue({ tasks, actingOn, onStart, onComplete, onRejec
       {rejectingTask && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-surface-container-lowest rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-outline-variant space-y-3">
-            <h3 className="text-lg font-bold text-on-surface">Reject this task?</h3>
+            <h3 className="text-lg font-semibold text-on-surface">Reject this task?</h3>
             <p className="text-xs text-on-surface-variant">{rejectingTask.title}. Say why so whoever's tracking it knows what happened.</p>
             <textarea
               autoFocus
@@ -123,7 +123,7 @@ export function DisplayTaskQueue({ tasks, actingOn, onStart, onComplete, onRejec
               <button
                 onClick={handleConfirmReject}
                 disabled={!rejectNote.trim()}
-                className="px-4 py-2 bg-error text-on-error rounded-lg text-xs font-bold disabled:opacity-50"
+                className="px-4 py-2 bg-error text-on-error rounded-lg text-xs font-semibold disabled:opacity-50"
               >
                 Reject Task
               </button>
