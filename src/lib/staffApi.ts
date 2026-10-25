@@ -591,9 +591,98 @@ export async function checkInReservation(reservationId: string): Promise<void> {
 }
 
 /** Cancels a future ('upcoming') booking that never happened — distinct from checkout, which is for a stay that actually occurred (staff_cancel_reservation, 0015_advance_booking.sql). */
-export async function cancelReservation(reservationId: string): Promise<void> {
-  const { error } = await supabase.rpc('staff_cancel_reservation', { p_reservation_id: reservationId });
+/** Cancels a booking that hasn't arrived; a fee goes on its bill. Money already taken stays there: a negative balance is a refund due. */
+export async function cancelReservation(reservationId: string, reason?: string, fee = 0): Promise<Booking> {
+  const { data, error } = await supabase.rpc('staff_cancel_reservation', { p_reservation_id: reservationId, p_reason: reason || null, p_fee: fee });
   if (error) throw error;
+  return data as Booking;
+}
+
+// ============================================================================
+// BOOKINGS — the calendar, the list, and changing a booking (0080)
+// ============================================================================
+
+export type BookingStatus = 'upcoming' | 'checked_in' | 'checked_out' | 'cancelled' | 'no_show';
+export type BookingChannel = 'walk_in' | 'phone' | 'email' | 'website' | 'ota' | 'agent' | 'other';
+
+export const BOOKING_CHANNELS: { id: BookingChannel; label: string }[] = [
+  { id: 'walk_in', label: 'Walk-in' },
+  { id: 'phone', label: 'Phone' },
+  { id: 'email', label: 'Email' },
+  { id: 'website', label: 'Website' },
+  { id: 'ota', label: 'OTA' },
+  { id: 'agent', label: 'Agent' },
+  { id: 'other', label: 'Other' },
+];
+
+export interface Booking {
+  id: string;
+  ref: string;
+  status: BookingStatus;
+  source: 'built_in' | 'imported';
+  roomId: string;
+  roomNumber: string;
+  roomType: string;
+  guest: { id: string; name: string; phone?: string; email?: string; vip: boolean };
+  checkIn: string;
+  checkOut: string;
+  /** India dates, YYYY-MM-DD: the first night and the departure day. */
+  checkInDate: string;
+  checkOutDate: string;
+  nights: number;
+  partySize: number;
+  ratePerNight: number | null;
+  channel: BookingChannel;
+  channelDetail?: string;
+  notes?: string;
+  createdAt: string;
+  checkedOutAt?: string;
+  cancelledAt?: string;
+  cancelReason?: string;
+  totals: { subtotal: number; tax: number; total: number; paid: number; refunded: number; balance: number };
+  invoiceNumber?: string;
+}
+
+/** Bookings overlapping from..to (YYYY-MM-DD, at most ~4 months), or with a query, a search by name, phone, email, reference or room across all dates. */
+export async function listBookings(propertyId: string, from: string | null, to: string | null, query?: string): Promise<Booking[]> {
+  const { data, error } = await supabase.rpc('staff_list_bookings', { p_property_id: propertyId, p_from: from, p_to: to, p_query: query || null });
+  if (error) throw error;
+  return (data ?? []) as Booking[];
+}
+
+export interface BookingChanges {
+  checkInDate?: string;
+  checkOutDate?: string;
+  roomId?: string;
+  ratePerNight?: number;
+  partySize?: number;
+  notes?: string;
+  channel?: BookingChannel;
+  channelDetail?: string;
+  guestName?: string;
+  guestPhone?: string;
+  guestEmail?: string;
+  vip?: boolean;
+}
+
+/** Only the keys passed change. For a guest in house: departure date and room move (the old room is marked for cleaning). */
+export async function updateBooking(reservationId: string, changes: BookingChanges): Promise<Booking> {
+  const { data, error } = await supabase.rpc('staff_update_booking', { p_reservation_id: reservationId, p_changes: changes });
+  if (error) throw error;
+  return data as Booking;
+}
+
+export async function markNoShow(reservationId: string, fee = 0, reason?: string): Promise<Booking> {
+  const { data, error } = await supabase.rpc('staff_mark_no_show', { p_reservation_id: reservationId, p_fee: fee, p_reason: reason || null });
+  if (error) throw error;
+  return data as Booking;
+}
+
+/** Numbered bill for a cancelled or no-show booking once its balance is zero. */
+export async function issueBookingBill(reservationId: string): Promise<{ invoiceNumber: string; shareToken: string }> {
+  const { data, error } = await supabase.rpc('staff_issue_bill', { p_reservation_id: reservationId });
+  if (error) throw error;
+  return data as { invoiceNumber: string; shareToken: string };
 }
 
 export interface AvailableRoom {
@@ -640,6 +729,9 @@ export interface WalkInGuestInput {
   source?: 'built_in' | 'imported';
   /** The rate agreed for this stay; defaults to the room's listed price. */
   ratePerNight?: number;
+  channel?: BookingChannel;
+  channelDetail?: string;
+  notes?: string;
 }
 
 /**
@@ -664,6 +756,9 @@ export async function checkInNewGuest(propertyId: string, roomId: string, guest:
     p_party_size: guest.partySize ?? 1,
     p_source: guest.source ?? 'built_in',
     p_rate_per_night: guest.ratePerNight ?? null,
+    p_channel: guest.channel ?? 'walk_in',
+    p_channel_detail: guest.channelDetail || null,
+    p_notes: guest.notes || null,
   });
   if (error) throw error;
   return data as string;
