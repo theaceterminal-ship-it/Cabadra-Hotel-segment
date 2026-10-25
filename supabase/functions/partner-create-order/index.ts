@@ -1,18 +1,19 @@
 // Edge Function: partner-create-order
 //
 // Step one of a business paying for its listing (or a featured spot) from
-// its partner page. The partner page link is the only credential: the
-// portal token picks the business. The price comes from partner_settings
-// via system_create_partner_order (0084, service_role only), never from
-// the browser. Then a Razorpay order is created for it.
+// its partner page. The business is the signed-in account's own
+// (partnerId), or the one a partner page link opens while it has no
+// account yet (token): partner_resolve (0085) decides, as the caller. The
+// price comes from partner_settings via system_create_partner_order
+// (service_role only), never from the browser. Then a Razorpay order is
+// created for it.
 //
 // Deploy: supabase functions deploy partner-create-order
 // Secrets: RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET (see ../_shared/razorpay.ts)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { corsHeaders, json, razorpay, razorpayKeys } from '../_shared/razorpay.ts';
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { resolvePartner } from '../_shared/partnerAuth.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -21,17 +22,18 @@ Deno.serve(async (req) => {
   const keys = razorpayKeys();
   if (!keys) return json({ success: false, message: 'Online payments are not set up yet. Contact us to pay.' }, 500);
 
-  let body: { token?: string; kind?: string; months?: number };
+  let body: { token?: string; partnerId?: string; kind?: string; months?: number };
   try {
     body = await req.json();
   } catch {
     return json({ success: false, message: 'Invalid JSON body' }, 400);
   }
-  if (!body.token || !UUID.test(body.token)) return json({ success: false, message: 'This partner link isn’t valid' }, 400);
+  const partnerId = await resolvePartner(req, body);
+  if (typeof partnerId !== 'string') return partnerId;
 
   const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   const { data, error } = await admin.rpc('system_create_partner_order', {
-    p_token: body.token,
+    p_partner_id: partnerId,
     p_kind: body.kind,
     p_months: body.months,
   });

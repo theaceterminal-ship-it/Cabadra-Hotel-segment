@@ -1776,3 +1776,33 @@ export async function fetchExtrasReport(propertyId: string, from: string, to: st
   if (error) throw error;
   return data as ExtrasReport;
 }
+
+// ============================================================================
+// CONCIERGE: BOOKING LOCAL PARTNERS FOR GUESTS (0085)
+// ============================================================================
+
+export interface ConciergeStay { reservationId: string; guestName: string; roomNumber: string | null; status: 'checked_in' | 'upcoming'; hasPhone: boolean; checkOut: string }
+export interface ConciergePartner {
+  id: string; name: string; category: string; tagline: string | null; photo: string | null; phone: string | null; whatsapp: string | null;
+  offerText: string | null; openingHours: string | null; takesRequests: boolean; featured: boolean; rating: { average: number | null; count: number };
+}
+export interface ConciergeRequest {
+  id: string; partnerName: string; guestName: string | null; roomNumber: string | null; message: string; preferredTime: string | null;
+  partySize: number | null; status: 'new' | 'accepted' | 'declined' | 'done'; businessNote: string | null; source: 'guest' | 'reception'; createdAt: string;
+}
+
+/** staff_concierge_get: who's staying, which local partners show here, and the last 14 days of requests to them. */
+export async function fetchConcierge(propertyId: string): Promise<{ stays: ConciergeStay[]; partners: ConciergePartner[]; requests: ConciergeRequest[] }> {
+  const { data, error } = await supabase.rpc('staff_concierge_get', { p_property_id: propertyId });
+  if (error) throw new Error(error.message);
+  return data as { stays: ConciergeStay[]; partners: ConciergePartner[]; requests: ConciergeRequest[] };
+}
+
+/** Books a partner for a guest who asked the front desk to (the guest's details go to that business). */
+export async function bookPartnerForGuest(input: { reservationId: string; partnerId: string; message: string; preferredTime?: string; partySize?: number; phone?: string; guestAgreed: boolean }) {
+  const { error } = await supabase.rpc('staff_partner_request', {
+    p_reservation_id: input.reservationId, p_partner_id: input.partnerId, p_message: input.message,
+    p_preferred_time: input.preferredTime ?? null, p_party_size: input.partySize ?? null, p_phone: input.phone ?? null, p_guest_agreed: input.guestAgreed,
+  });
+  if (error) throw new Error(error.message);
+}

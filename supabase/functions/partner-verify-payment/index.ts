@@ -16,7 +16,8 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { corsHeaders, isValidCheckoutSignature, json, razorpay, razorpayKeys } from '../_shared/razorpay.ts';
-import { figuresHtml, formatDate, inBackground, inr, partnerPageUrl, sendPartnerEmail } from '../_shared/partnerEmail.ts';
+import { figuresHtml, formatDate, inBackground, inr, invoiceUrl, partnerPageUrl, sendPartnerEmail } from '../_shared/partnerEmail.ts';
+import { resolvePartner } from '../_shared/partnerAuth.ts';
 
 interface RazorpayPayment {
   id: string;
@@ -33,24 +34,25 @@ Deno.serve(async (req) => {
   const keys = razorpayKeys();
   if (!keys) return json({ success: false, message: 'Online payments are not set up yet.' }, 500);
 
-  let body: { token?: string; orderId?: string; paymentId?: string; signature?: string };
+  let body: { token?: string; partnerId?: string; orderId?: string; paymentId?: string; signature?: string };
   try {
     body = await req.json();
   } catch {
     return json({ success: false, message: 'Invalid JSON body' }, 400);
   }
   const orderId = body.orderId?.trim();
-  if (!orderId || !body.token) return json({ success: false, message: 'token and orderId are required' }, 400);
+  if (!orderId) return json({ success: false, message: 'orderId is required' }, 400);
+  const partnerId = await resolvePartner(req, body);
+  if (typeof partnerId !== 'string') return partnerId;
 
   const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   const { data: row, error: rowErr } = await admin
     .from('partner_orders')
-    .select('id, amount_paise, status, partners!inner(portal_token)')
+    .select('id, amount_paise, status, partner_id')
     .eq('razorpay_order_id', orderId)
     .maybeSingle();
   if (rowErr) return json({ success: false, message: rowErr.message }, 500);
-  // deno-lint-ignore no-explicit-any
-  if (!row || (row as any).partners.portal_token !== body.token) return json({ success: false, message: 'Payment not found' }, 404);
+  if (!row || row.partner_id !== partnerId) return json({ success: false, message: 'Payment not found' }, 404);
   if (row.status === 'paid') return json({ success: true, status: 'paid' });
 
   let payment: RazorpayPayment | undefined;
@@ -88,9 +90,10 @@ Deno.serve(async (req) => {
     p_razorpay_payment_id: payment.id,
   });
   if (fulfilErr) return json({ success: false, message: fulfilErr.message }, 500);
-  const r = result as { alreadyPaid: boolean; kind: 'listing' | 'featured'; until: string; amount?: number; months?: number; partnerName?: string; email?: string | null; portalToken?: string };
+  const r = result as { alreadyPaid: boolean; kind: 'listing' | 'featured'; until: string; amount?: number; months?: number; partnerName?: string; email?: string | null; portalToken?: string; paymentId?: string };
 
   if (!r.alreadyPaid && r.email && r.portalToken) {
+    const { data: inv } = await admin.from('partner_invoices').select('id, number').eq('payment_id', r.paymentId).maybeSingle();
     const what = r.kind === 'featured' ? 'Featured spot' : 'Listing';
     inBackground(sendPartnerEmail(r.email, {
       subject: `Payment received: ${r.partnerName}`,
@@ -101,10 +104,11 @@ Deno.serve(async (req) => {
           ['Amount', inr(r.amount ?? 0)],
           [r.kind === 'featured' ? 'Featured until' : 'Listed until', formatDate(r.until)],
           ['Razorpay payment', payment.id],
+          ...(inv ? [['Invoice', inv.number] as [string, string]] : []),
         ]),
       ],
-      button: { label: 'Open your partner page', href: partnerPageUrl(r.portalToken) },
-      footnote: 'We’ll remind you a few days before it runs out.',
+      button: inv ? { label: 'View your invoice', href: invoiceUrl(inv.id) } : { label: 'Open your partner page', href: partnerPageUrl(r.portalToken) },
+      footnote: 'Your invoices are also on your partner page. We’ll remind you a few days before it runs out.',
     }));
   }
 

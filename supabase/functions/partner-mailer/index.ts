@@ -5,6 +5,8 @@
 //                                 partner_requests insert trigger, 0084);
 //   { job: 'review', partnerId }  an admin approved or rejected an
 //                                 application (partners status trigger);
+//   { job: 'applied', partnerId } a signed-in business applied (0085);
+//   { job: 'changes', partnerId } an admin reviewed a listing edit (0085);
 //   { job: 'daily' }              pg_cron at 10:00 IST: renewal reminders
 //                                 5 days and 1 day before the listing runs
 //                                 out, a notice the day after it has, a
@@ -38,8 +40,11 @@ interface Partner {
   reviewed_at: string | null;
   paid_until: string | null;
   featured_until: string | null;
+  changes_note: string | null;
+  changes_reviewed_at: string | null;
+  partner_users?: { user_id: string }[];
 }
-const PARTNER_COLUMNS = 'id, name, email, owner_name, portal_token, status, review_note, reviewed_at, paid_until, featured_until';
+const PARTNER_COLUMNS = 'id, name, email, owner_name, portal_token, status, review_note, reviewed_at, paid_until, featured_until, changes_note, changes_reviewed_at, partner_users(user_id)';
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -58,7 +63,7 @@ function istDate(days = 0) {
 }
 
 const hi = (p: Partner) => `Hi${p.owner_name ? ` ${p.owner_name.split(/\s+/)[0]}` : ''},`;
-const pageButton = (p: Partner, label = 'Open your partner page') => ({ label, href: partnerPageUrl(p.portal_token) });
+const pageButton = (p: Partner, label = 'Open your partner page') => ({ label, href: partnerPageUrl(p.portal_token, (p.partner_users?.length ?? 0) > 0) });
 
 /** Claims, sends, and gives the claim back if sending fails. Returns whether it sent. */
 async function sendOnce(admin: Admin, p: Partner, kind: string, ref: string, email: PartnerEmail): Promise<boolean> {
@@ -81,7 +86,7 @@ async function sendOnce(admin: Admin, p: Partner, kind: string, ref: string, ema
 async function requestJob(admin: Admin, requestId: string) {
   const { data: r } = await admin
     .from('partner_requests')
-    .select(`id, guest_name, guest_phone, hotel_name, room_number, message, preferred_time, party_size, notified_at, partners!inner(${PARTNER_COLUMNS})`)
+    .select(`id, guest_name, guest_phone, hotel_name, room_number, message, preferred_time, party_size, notified_at, source, partners!inner(${PARTNER_COLUMNS})`)
     .eq('id', requestId)
     .maybeSingle();
   if (!r || r.notified_at) return { sent: 0 };
@@ -90,10 +95,12 @@ async function requestJob(admin: Admin, requestId: string) {
   const wa = digits.length === 10 ? `91${digits}` : digits;
   const waText = encodeURIComponent(`Hi ${r.guest_name ?? ''}, this is ${p.name}. We got your request from the Cabadra guest app: "${r.message}".`);
   const sent = await sendOnce(admin, p, 'request', r.id, {
-    subject: `New guest request: ${r.guest_name ?? 'a guest'} at ${r.hotel_name}`,
+    subject: `${r.source === 'reception' ? 'Booking from the front desk' : 'New guest request'}: ${r.guest_name ?? 'a guest'} at ${r.hotel_name}`,
     paragraphs: [
       hi(p),
-      `A guest staying nearby asked ${p.name} for something through the Cabadra guest app. They agreed to share their details so you can reply.`,
+      r.source === 'reception'
+        ? `The front desk at ${r.hotel_name} is booking ${p.name} for one of their guests, who asked them to and agreed to share their details so you can reply.`
+        : `A guest staying nearby asked ${p.name} for something through the Cabadra guest app. They agreed to share their details so you can reply.`,
       { html: `<div style="background:#f4f5f2;border-radius:16px;padding:16px 18px;margin:0 0 16px;font-size:15px;line-height:1.5">“${escapeHtml(r.message)}”</div>` },
       figuresHtml([
         ['Guest', r.guest_name ?? 'Guest'],
@@ -139,6 +146,38 @@ async function reviewJob(admin: Admin, partnerId: string) {
   return { sent: sent ? 1 : 0 };
 }
 
+async function appliedJob(admin: Admin, partnerId: string) {
+  const { data: p } = await admin.from('partners').select(PARTNER_COLUMNS).eq('id', partnerId).maybeSingle();
+  if (!p || !p.email) return { sent: 0 };
+  const partner = p as Partner;
+  const sent = await sendOnce(admin, partner, 'applied', partner.id, {
+    subject: `We’ve got your application: ${partner.name}`,
+    paragraphs: [
+      hi(partner),
+      `Thanks for applying to list ${partner.name} in the Cabadra guest app. We check every business by hand, usually within two working days, and email you as soon as it’s done.`,
+      'Once you’re approved, pay for your listing on your partner page, and guests staying at hotels near you start seeing it straight away.',
+    ],
+    button: pageButton(partner),
+    footnote: 'Sign in with the same Google account (or email and password) to open your partner page any time.',
+  });
+  return { sent: sent ? 1 : 0 };
+}
+
+async function changesJob(admin: Admin, partnerId: string) {
+  const { data: p } = await admin.from('partners').select(PARTNER_COLUMNS).eq('id', partnerId).maybeSingle();
+  if (!p || !p.email || !p.changes_reviewed_at) return { sent: 0 };
+  const partner = p as Partner;
+  const accepted = !partner.changes_note;
+  const sent = await sendOnce(admin, partner, accepted ? 'changes_live' : 'changes_declined', partner.changes_reviewed_at!, {
+    subject: accepted ? `Your changes are live: ${partner.name}` : `About your listing changes: ${partner.name}`,
+    paragraphs: accepted
+      ? [hi(partner), `We’ve checked your edits to ${partner.name}. Guests see the new version from now on.`]
+      : [hi(partner), `We couldn’t accept your latest edits to ${partner.name}, so guests still see the previous version.`, `Our note: ${partner.changes_note}`],
+    button: pageButton(partner),
+  });
+  return { sent: sent ? 1 : 0 };
+}
+
 async function monthlyReport(admin: Admin, p: Partner, from: string, to: string, label: string) {
   const { data: m, error } = await admin.rpc('system_partner_month', { p_partner_id: p.id, p_from: from, p_to: to });
   if (error) throw new Error(error.message);
@@ -157,6 +196,7 @@ async function monthlyReport(admin: Admin, p: Partner, from: string, to: string,
         ['Showed your offer code', String(m.codes)],
         ['Sent you a request', String(m.requests)],
         ['Hotels it showed at', String(m.hotels)],
+        ...(m.rating?.count ? [['Guest rating', `${m.rating.average} ★ from ${m.rating.count}`] as [string, string]] : []),
       ]),
       contacts > 0
         ? `That’s ${contacts} guest${contacts === 1 ? '' : 's'} who got in touch or headed your way.`
@@ -249,6 +289,8 @@ Deno.serve(async (req) => {
   try {
     if (body.job === 'request' && body.requestId) return json(await requestJob(admin, body.requestId));
     if (body.job === 'review' && body.partnerId) return json(await reviewJob(admin, body.partnerId));
+    if (body.job === 'applied' && body.partnerId) return json(await appliedJob(admin, body.partnerId));
+    if (body.job === 'changes' && body.partnerId) return json(await changesJob(admin, body.partnerId));
     if (body.job === 'daily' || !body.job) return json(await dailyJob(admin));
     return json({ message: 'Unknown job' }, 400);
   } catch (err) {

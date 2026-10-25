@@ -14,3 +14,4 @@ supabase/.temp/
 # Unrelated nested project directories that happen to live under this
 # folder's own .claude/worktrees — not part of Cabadra.
 .claude/worktrees/
+deno.lock
