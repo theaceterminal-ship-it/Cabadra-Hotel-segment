@@ -10,6 +10,7 @@
 import { supabase } from './supabaseClient';
 import type { Property, Room, RoomStatus, UpcomingArrival, UrgentRequest, LiveOpsTask, MenuItem, AppNotification, Folio, FolioChatMessage, GuestCrmEntry, SalesReportData } from '../types';
 import { formatCurrency } from './currency';
+import type { Department, ServiceForm } from './departments';
 
 /** Turns "Deluxe King 204" into a URL/id-safe slug. Rooms' primary key is global (not scoped by property_id), so this is prefixed with the property id to guarantee uniqueness — same convention as supabase/seed.sql. */
 function slugify(text: string): string {
@@ -775,15 +776,20 @@ export interface ServiceCategory {
   id: string;
   name: string;
   description: string;
-  department: 'housekeeping' | 'maintenance' | 'amenities' | 'concierge';
-  /** 'transportation' swaps the guest-side free-text modal for a route picker (transport_routes) instead. */
+  department: Department;
+  /** 'transportation' swaps the guest-side form for a route picker (transport_routes). Transport team only (0075). */
   categoryType: 'general' | 'transportation';
+  /** What the guest fills in: tap-to-choose buttons (optionally priced), quantity, time, note. See 0075. */
+  form: ServiceForm;
 }
 
 export async function fetchServiceCategories(propertyId: string): Promise<ServiceCategory[]> {
   const { data, error } = await supabase.from('service_categories').select('*').eq('property_id', propertyId).order('sort_order');
   if (error) throw error;
-  return (data ?? []).map(s => ({ id: s.id, name: s.name, description: s.description, department: s.department, categoryType: s.category_type ?? 'general' }));
+  return (data ?? []).map(s => ({
+    id: s.id, name: s.name, description: s.description, department: s.department,
+    categoryType: s.category_type ?? 'general', form: (s.form ?? {}) as ServiceForm,
+  }));
 }
 
 export async function addServiceCategory(propertyId: string, cat: Omit<ServiceCategory, 'id'>): Promise<void> {
@@ -794,6 +800,7 @@ export async function addServiceCategory(propertyId: string, cat: Omit<ServiceCa
     description: cat.description,
     department: cat.department,
     category_type: cat.categoryType,
+    form: cat.form ?? {},
   });
   if (error) throw error;
 }
@@ -804,6 +811,7 @@ export async function updateServiceCategory(propertyId: string, catId: string, p
     ...(patch.description !== undefined && { description: patch.description }),
     ...(patch.department !== undefined && { department: patch.department }),
     ...(patch.categoryType !== undefined && { category_type: patch.categoryType }),
+    ...(patch.form !== undefined && { form: patch.form }),
   }).eq('property_id', propertyId).eq('id', catId);
   if (error) throw error;
 }
@@ -942,7 +950,7 @@ export interface DirectoryContact {
   id: string;
   name: string;
   phone: string;
-  department: 'housekeeping' | 'maintenance' | 'amenities' | 'concierge';
+  department: Department;
   /** This person's own standing QR for Shift Claims — scanning it on a department display claims/releases it for them. See department_display_scan_badge (0047). */
   badgeToken: string;
 }
@@ -983,7 +991,7 @@ export async function regenerateBadgeToken(contactId: string): Promise<string> {
 
 export interface DepartmentDisplayAdmin {
   id: string;
-  department: 'housekeeping' | 'maintenance' | 'amenities' | 'concierge';
+  department: Department;
   label: string;
   token: string;
   active: boolean;
@@ -1059,7 +1067,7 @@ export async function fetchActiveShiftSessions(propertyId: string): Promise<Acti
 
 export interface Shift {
   id: string;
-  department: 'housekeeping' | 'maintenance' | 'amenities' | 'concierge';
+  department: Department;
   name: string;
   /** "HH:MM", 24-hour, time-of-day only — a shift is a recurring daily window, not a calendar event. end <= start means it crosses midnight. */
   startTime: string;

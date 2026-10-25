@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AppView } from '../types';
 import { GuestPwaInstallPrompt } from '../components/GuestPwaInstallPrompt';
-import { fetchGuestContext, GuestContext, submitGuestRequest, bookGuestExperience } from '../lib/guestApi';
+import { fetchGuestContext, GuestContext, bookGuestExperience } from '../lib/guestApi';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { GuestHome } from '../components/GuestHome';
 import { RoomDiningView } from '../components/RoomDiningView';
@@ -135,7 +135,6 @@ export default function GuestApp() {
           serviceCategories={context.serviceCategories}
           transportRoutes={context.transportRoutes}
           onNavigate={handleNavigate}
-          onSubmitConciergeRequest={(title, department) => submitGuestRequest(effectiveToken, title, 'Standard', department).then(() => {})}
           onBookExperience={(name, price, guestCount, preferredTime, notes, unitLabel) =>
             bookGuestExperience(effectiveToken, name, price, guestCount, preferredTime, notes, unitLabel).then(() => {})
           }

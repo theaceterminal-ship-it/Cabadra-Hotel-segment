@@ -419,6 +419,7 @@ export default function ReceptionApp() {
           {view === 'live_ops' && (
             <LiveOpsView
               propertyId={propertyId ?? ''}
+              currency={currency}
               tasks={tasks}
               directory={directory}
               rooms={rooms}

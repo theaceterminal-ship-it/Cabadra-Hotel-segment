@@ -2,10 +2,9 @@ import React, { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import { QrCode, Copy, Check, Printer, X } from 'lucide-react';
 import { DepartmentDisplayAdmin } from '../lib/staffApi';
+import { DEPARTMENT_LABELS } from '../lib/departments';
 
-const DEPT_LABELS: Record<DepartmentDisplayAdmin['department'], string> = {
-  housekeeping: 'Housekeeping', maintenance: 'Maintenance', amenities: 'Amenities', concierge: 'Concierge',
-};
+const DEPT_LABELS = DEPARTMENT_LABELS;
 
 interface DisplayQrModalProps {
   display: DepartmentDisplayAdmin;

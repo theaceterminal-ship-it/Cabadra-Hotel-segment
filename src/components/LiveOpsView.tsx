@@ -29,9 +29,13 @@ import {
   Power,
   Calendar,
 } from 'lucide-react';
+import { DEPARTMENT_LABELS, DEPARTMENT_VALUES, type Department } from '../lib/departments';
+import { formatCurrency } from '../lib/currency';
 
 interface LiveOpsViewProps {
   propertyId: string;
+  /** For showing a priced task's charge. */
+  currency?: string;
   tasks: LiveOpsTask[];
   directory: DirectoryContact[];
   rooms?: Room[];
@@ -46,12 +50,11 @@ interface LiveOpsViewProps {
   onNavigate: (view: AppView) => void;
 }
 
-const DEPT_LABELS: Record<DirectoryContact['department'], string> = {
-  housekeeping: 'Housekeeping', maintenance: 'Maintenance', amenities: 'Amenities', concierge: 'Concierge',
-};
+const DEPT_LABELS = DEPARTMENT_LABELS;
 
 export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
   propertyId,
+  currency = 'INR',
   tasks,
   directory,
   rooms,
@@ -63,7 +66,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
   onRefresh,
   onNavigate,
 }) => {
-  const [filterCategory, setFilterCategory] = useState<'all' | 'housekeeping' | 'maintenance' | 'amenities' | 'concierge'>('all');
+  const [filterCategory, setFilterCategory] = useState<'all' | Department>('all');
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
   const [showSpreadsheetModal, setShowSpreadsheetModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -120,7 +123,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
   const [newTitle, setNewTitle] = useState('');
   const [newPriority, setNewPriority] = useState<'high' | 'standard'>('standard');
   const [newDue, setNewDue] = useState('');
-  const [newCategory, setNewCategory] = useState<'housekeeping' | 'maintenance' | 'amenities' | 'concierge'>('housekeeping');
+  const [newCategory, setNewCategory] = useState<Department>('housekeeping');
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -340,7 +343,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
             {/* Department / Category Filter & Spreadsheet Button */}
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap gap-1 text-[11px] bg-surface-container-low p-1 rounded-lg border border-outline-variant">
-                {(['all', 'housekeeping', 'amenities', 'maintenance', 'concierge'] as const).map(cat => (
+                {(['all', ...DEPARTMENT_VALUES] as const).map(cat => (
                   <button
                     key={cat}
                     id={`filter-cat-${cat}`}
@@ -349,7 +352,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
                       filterCategory === cat ? 'bg-surface-container-lowest text-primary shadow-xs' : 'text-on-surface-variant'
                     }`}
                   >
-                    {cat}
+                    {cat === 'all' ? 'All' : DEPT_LABELS[cat]}
                   </button>
                 ))}
               </div>
@@ -426,6 +429,11 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
                       </div>
 
                       <p className="text-sm font-medium text-on-surface mb-1">{task.title}</p>
+                      {!!task.price && (
+                        <p className="inline-flex items-center rounded-full bg-highlight text-on-highlight text-[11px] font-semibold px-2 py-0.5 mb-1.5">
+                          {formatCurrency(task.price, currency)} charged to the room when done
+                        </p>
+                      )}
                       <p className="text-xs text-on-surface-variant mb-3">{task.description}</p>
 
                       {/* Assign to — a real person from the department directory, not just a category queue */}
@@ -687,10 +695,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
                     onChange={(e) => setNewCategory(e.target.value as typeof newCategory)}
                     className="w-full h-10 px-3 border border-outline-variant rounded-lg bg-surface-container-lowest"
                   >
-                    <option value="housekeeping">Housekeeping</option>
-                    <option value="amenities">Amenities</option>
-                    <option value="maintenance">Maintenance</option>
-                    <option value="concierge">Concierge</option>
+                    {DEPARTMENT_VALUES.map(d => <option key={d} value={d}>{DEPT_LABELS[d]}</option>)}
                   </select>
                 </div>
               </div>

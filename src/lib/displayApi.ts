@@ -9,6 +9,7 @@
  */
 
 import { supabase } from './supabaseClient';
+import type { Department } from './departments';
 
 export interface DisplayTask {
   id: string;
@@ -23,7 +24,7 @@ export interface DisplayTask {
 
 export interface DepartmentDisplay {
   propertyName: string;
-  department: 'housekeeping' | 'maintenance' | 'amenities' | 'concierge';
+  department: Department;
   label: string;
   tasks: DisplayTask[];
   /** Whoever currently has this display claimed (department_display_scan_badge) — undefined when no one's clocked in right now. */

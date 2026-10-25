@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { AppView, GuestExperienceBooking } from '../types';
-import { GuestExperience, GuestServiceCategory, GuestTransportRoute, Department, fetchGuestExperienceBookings } from '../lib/guestApi';
+import { GuestExperience, GuestServiceCategory, GuestTransportRoute, fetchGuestExperienceBookings } from '../lib/guestApi';
 import { formatCurrency } from '../lib/currency';
 import { DynamicIslandStatusBar } from './DynamicIslandStatusBar';
+import { ServiceRequestSheet } from './ServiceRequestSheet';
 import {
   Utensils,
   Sparkles,
@@ -37,8 +38,6 @@ interface GuestHomeProps {
   /** The route catalog behind any 'transportation'-type service category — a guest picks from these instead of typing a destination out by hand. */
   transportRoutes: GuestTransportRoute[];
   onNavigate: (view: AppView) => void;
-  /** Real submission (guest_submit_request), tagged with the service's department so it routes to the right team instead of Reception guessing from the title. */
-  onSubmitConciergeRequest: (title: string, department: Department) => Promise<void>;
   /** Real submission (guest_book_experience) for the curated-experience "Reserve Now" buttons. */
   onBookExperience: (name: string, price: number, guestCount?: number, preferredTime?: string, notes?: string, unitLabel?: string) => Promise<void>;
 }
@@ -49,20 +48,6 @@ const SERVICE_ICONS: Record<string, typeof Sparkles> = {
 function serviceIconFor(key: string) {
   return SERVICE_ICONS[key] ?? Compass;
 }
-
-// A blank textarea was the only way to ask for anything on a general
-// (non-transportation) service — fine for something unusual, but most
-// requests are one of a handful of common asks that shouldn't need typing
-// at all. Tapping a chip fills the note below rather than submitting
-// immediately, so a guest can still add to it before confirming. Keyed by
-// department (not by the specific service category) since that's the
-// granularity the rest of this app already reasons about.
-const REQUEST_PRESETS: Record<Department, string[]> = {
-  housekeeping: ['Extra towels', 'Extra pillows & blankets', 'Toiletries refill', 'Fresh linens', 'Turn-down service'],
-  maintenance: ['AC not cooling', 'Leaking tap or plumbing', 'Light/bulb not working', 'TV or Wi-Fi issue', 'Door lock issue'],
-  amenities: ['Book a massage', 'Book a sauna session', 'Pool towels', 'Gym access query'],
-  concierge: ['Late checkout request', 'Luggage assistance', 'Local sightseeing info', 'Restaurant reservation', 'Wake-up call'],
-};
 
 export const GuestHome: React.FC<GuestHomeProps> = ({
   token,
@@ -76,14 +61,9 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
   serviceCategories,
   transportRoutes,
   onNavigate,
-  onSubmitConciergeRequest,
   onBookExperience,
 }) => {
   const [activeModal, setActiveModal] = useState<GuestServiceCategory | null>(null);
-  const [requestNote, setRequestNote] = useState('');
-  const [selectedRouteId, setSelectedRouteId] = useState('');
-  const [routeSearch, setRouteSearch] = useState('');
-  const [submittingRequest, setSubmittingRequest] = useState(false);
   const [bookedExperience, setBookedExperience] = useState<string | null>(null);
   const [selectedExperience, setSelectedExperience] = useState<GuestExperience | null>(null);
   const [guestCount, setGuestCount] = useState<number>(1);
@@ -123,44 +103,6 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
       console.warn('Failed to book experience:', err);
     }
   };
-
-  const handleConciergeRequest = async (title: string, department: Department) => {
-    try {
-      await onSubmitConciergeRequest(title, department);
-      setBookedExperience(title);
-      setTimeout(() => setBookedExperience(null), 4000);
-    } catch (err) {
-      console.warn('Failed to submit request:', err);
-    }
-  };
-
-  const handleSubmitServiceRequest = async () => {
-    if (!activeModal) return;
-    setSubmittingRequest(true);
-    try {
-      let title: string;
-      if (activeModal.categoryType === 'transportation') {
-        const route = transportRoutes.find(r => r.id === selectedRouteId);
-        if (!route) return;
-        title = `Transfer: ${route.from} → ${route.to} (${formatCurrency(route.price, currency)} ${route.priceUnit})${requestNote.trim() ? ` — ${requestNote.trim()}` : ''}`;
-      } else {
-        title = requestNote.trim() ? `${activeModal.name}: ${requestNote.trim()}` : activeModal.name;
-      }
-      await handleConciergeRequest(title, activeModal.department);
-    } finally {
-      setSubmittingRequest(false);
-      setActiveModal(null);
-      setRequestNote('');
-      setSelectedRouteId('');
-      setRouteSearch('');
-    }
-  };
-
-  const filteredRoutes = transportRoutes.filter(r =>
-    !routeSearch.trim() ||
-    r.from.toLowerCase().includes(routeSearch.toLowerCase()) ||
-    r.to.toLowerCase().includes(routeSearch.toLowerCase())
-  );
 
   const nameParts = propertyName.trim().split(/\s+/);
   const firstWord = nameParts[0] || propertyName;
@@ -449,103 +391,19 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
         )}
       </div>
 
-      {/* Service Request Modal — one generic form for any owner-defined category, tagged with its department on submit */}
+      {/* Service request — the owner's form for this service (0075): options, route, time, note */}
       {activeModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-          <div className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant">
-            <div className="flex justify-between items-center pb-3 border-b border-outline-variant mb-4">
-              <h3 className="text-lg font-bold text-on-surface">
-                Request {activeModal.name} (Room {roomNumber})
-              </h3>
-              <button
-                onClick={() => { setActiveModal(null); setRequestNote(''); setSelectedRouteId(''); setRouteSearch(''); }}
-                className="text-gray-400 hover:text-gray-600 text-xl font-bold"
-              >
-                &times;
-              </button>
-            </div>
-
-            {activeModal.description && <p className="text-xs text-on-surface-variant mb-3">{activeModal.description}</p>}
-
-            {activeModal.categoryType === 'transportation' ? (
-              <>
-                <label className="text-[11px] font-bold text-on-surface-variant block mb-1">Where to?</label>
-                <div className="relative mb-2">
-                  <MapPin className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant" />
-                  <input
-                    value={routeSearch}
-                    onChange={(e) => setRouteSearch(e.target.value)}
-                    placeholder="Search a destination..."
-                    className="w-full h-9 pl-8 pr-2.5 text-xs border border-outline-variant rounded-lg focus:border-primary focus:outline-none"
-                  />
-                </div>
-                <div className="space-y-1.5 max-h-48 overflow-y-auto mb-4">
-                  {filteredRoutes.length === 0 ? (
-                    <p className="text-xs text-on-surface-variant text-center py-6">No routes match — ask the front desk directly.</p>
-                  ) : (
-                    filteredRoutes.map(route => (
-                      <label
-                        key={route.id}
-                        className={`flex items-center justify-between gap-2 p-2.5 rounded-lg border cursor-pointer text-xs ${
-                          selectedRouteId === route.id ? 'border-primary bg-highlight' : 'border-outline-variant hover:bg-surface-container-low'
-                        }`}
-                      >
-                        <span className="flex items-center gap-2">
-                          <input type="radio" name="route" checked={selectedRouteId === route.id} onChange={() => setSelectedRouteId(route.id)} className="accent-primary" />
-                          {route.from} <Car className="w-3 h-3 text-on-surface-variant" /> {route.to}
-                        </span>
-                        <span className="font-bold text-primary shrink-0">{formatCurrency(route.price, currency)} {route.priceUnit}</span>
-                      </label>
-                    ))
-                  )}
-                </div>
-              </>
-            ) : (
-              <>
-                {REQUEST_PRESETS[activeModal.department].length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-3">
-                    {REQUEST_PRESETS[activeModal.department].map(preset => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => setRequestNote(preset)}
-                        className={`px-2.5 py-1.5 rounded-full border text-[11px] font-semibold transition-colors ${
-                          requestNote === preset ? 'border-primary bg-highlight text-primary' : 'border-outline-variant text-on-surface-variant hover:border-primary'
-                        }`}
-                      >
-                        {preset}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <label className="text-[11px] font-bold text-on-surface-variant block mb-1">Anything specific? (optional)</label>
-                <textarea
-                  rows={3}
-                  value={requestNote}
-                  onChange={(e) => setRequestNote(e.target.value)}
-                  placeholder="e.g. Extra pillows, 3pm arrival, allergic to lavender..."
-                  className="w-full p-2.5 text-xs border border-outline-variant rounded-lg focus:border-primary focus:outline-none resize-none mb-4"
-                />
-              </>
-            )}
-
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => { setActiveModal(null); setRequestNote(''); setSelectedRouteId(''); setRouteSearch(''); }}
-                className="px-4 py-2 border border-outline-variant rounded-lg text-xs font-semibold text-on-surface-variant"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmitServiceRequest}
-                disabled={submittingRequest || (activeModal.categoryType === 'transportation' && !selectedRouteId)}
-                className="px-5 py-2 bg-primary text-on-primary rounded-lg text-xs font-bold hover:bg-primary-hover disabled:opacity-60"
-              >
-                {submittingRequest ? 'Sending…' : 'Confirm Request'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ServiceRequestSheet
+          token={token}
+          service={activeModal}
+          routes={transportRoutes}
+          currency={currency}
+          onClose={() => setActiveModal(null)}
+          onSent={name => {
+            setBookedExperience(name);
+            setTimeout(() => setBookedExperience(null), 4000);
+          }}
+        />
       )}
 
       {/* Experience Booking Modal with Guest Count & Preferred Schedule */}

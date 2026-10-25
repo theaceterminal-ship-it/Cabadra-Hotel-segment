@@ -9,6 +9,7 @@ import { formatCurrency } from '../lib/currency';
 import { NewBookingModal } from './NewBookingModal';
 import { RoomDetailModal, CHECKINABLE_STATUSES } from './RoomDetailModal';
 import { CheckInModal } from './CheckInModal';
+import { DEPARTMENT_LABELS } from '../lib/departments';
 
 interface ReceptionDashboardProps {
   propertyId: string;
@@ -36,9 +37,7 @@ interface ReceptionDashboardProps {
   onNavigate: (view: AppView) => void;
 }
 
-const DEPT_LABELS_FULL: Record<LiveOpsTask['category'], string> = {
-  housekeeping: 'Housekeeping', maintenance: 'Maintenance', amenities: 'Amenities', concierge: 'Concierge',
-};
+const DEPT_LABELS_FULL = DEPARTMENT_LABELS;
 
 /**
  * What a Guest Request click used to do: call onResolveUrgentRequest
@@ -232,9 +231,7 @@ function ListCard({ title, count, icon: Icon, viewAllLabel, onViewAll, children,
   );
 }
 
-const DEPT_LABELS: Record<ActiveShiftSession['department'], string> = {
-  housekeeping: 'Housekeeping', maintenance: 'Maintenance', amenities: 'Amenities', concierge: 'Concierge',
-};
+const DEPT_LABELS = DEPARTMENT_LABELS;
 
 /**
  * Found missing live-testing: once staff started clocking in via a badge
