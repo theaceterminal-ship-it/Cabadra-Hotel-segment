@@ -123,14 +123,14 @@ export function DynamicIslandStatusBar({ token, currency, className }: DynamicIs
       <motion.button
         onClick={() => setOpen(true)}
         whileTap={{ scale: 0.96 }}
-        className="h-10 pl-3 pr-2.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-md border border-white/60 shadow-sm text-on-surface flex items-center gap-2 max-w-[60vw]"
+        className="h-10 pl-3.5 pr-3 rounded-full bg-surface-container-lowest shadow-[0_4px_20px_rgba(0,0,0,0.06)] text-on-surface flex items-center gap-2 max-w-[60vw]"
         aria-label="Live updates"
       >
         <span className="relative flex w-2.5 h-2.5 shrink-0">
           {live && <span className="absolute inset-0 rounded-full bg-success animate-ping opacity-60" />}
-          <span className={`relative w-2.5 h-2.5 rounded-full ${activeOrder?.status === 'rejected' ? 'bg-error' : live ? 'bg-success' : upcomingBookings.length ? 'bg-primary' : 'bg-outline'}`} />
+          <span className={`relative w-2.5 h-2.5 rounded-full ${activeOrder?.status === 'rejected' ? 'bg-error' : live ? 'bg-success' : upcomingBookings.length ? 'bg-room-ready' : 'bg-outline'}`} />
         </span>
-        <span key={pillKey} className="status-pill-in text-[13px] font-semibold truncate">
+        <span key={pillKey} className="status-pill-in text-[14px] font-medium truncate">
           {label}
         </span>
         <ChevronRight className="w-4 h-4 text-on-surface-variant shrink-0" />
@@ -152,9 +152,9 @@ export function DynamicIslandStatusBar({ token, currency, className }: DynamicIs
               exit={{ y: 60, opacity: 0 }}
               transition={{ type: 'spring', damping: 28, stiffness: 320 }}
             >
-              <div className="flex items-center justify-between px-5 pt-5 pb-3">
+              <div className="flex items-center justify-between px-6 pt-6 pb-4">
                 <div>
-                  <h3 className="text-lg font-bold">Live updates</h3>
+                  <h3 className="text-[22px] font-semibold tracking-[-0.03em]">Live updates</h3>
                   <p className="text-xs text-on-surface-variant">{live ? 'Updates every few seconds' : nothingAtAll ? 'Nothing in progress' : 'Nothing on the way right now'}</p>
                 </div>
                 <button onClick={() => setOpen(false)} aria-label="Close" className="w-9 h-9 rounded-full hover:bg-surface-container-low flex items-center justify-center text-on-surface-variant">
@@ -162,18 +162,18 @@ export function DynamicIslandStatusBar({ token, currency, className }: DynamicIs
                 </button>
               </div>
 
-              <div className="px-5 pb-6 space-y-5 overflow-y-auto" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
+              <div className="px-4 pb-6 space-y-5 overflow-y-auto" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
                 {activeOrder && (
-                  <div className="rounded-3xl bg-surface-container-low p-4 space-y-3">
+                  <div className="rounded-[24px] bg-surface p-4 space-y-3">
                     <div className="flex items-start gap-3">
-                      <span className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0"><ChefHat className="w-5 h-5" /></span>
+                      <span className="size-11 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0"><ChefHat className="w-5 h-5" /></span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold">Your food order</p>
+                        <p className="text-[15px] font-semibold">Your food order</p>
                         <p className="text-xs text-on-surface-variant">
                           {activeOrder.status === 'rejected' ? <span className="text-error font-semibold">The kitchen couldn’t make it</span>
                             : activeOrder.status === 'ready' ? <span className="text-success font-semibold">On its way to your room</span>
                             : overdue ? 'Running a few minutes late'
-                            : <>Arriving in about <span className="font-bold text-on-surface">{minutesLeft(remainingMs)} min</span></>}
+                            : <>Arriving in about <span className="font-semibold text-on-surface">{minutesLeft(remainingMs)} min</span></>}
                         </p>
                       </div>
                     </div>
@@ -202,7 +202,7 @@ export function DynamicIslandStatusBar({ token, currency, className }: DynamicIs
                               <span className="font-semibold text-on-surface shrink-0">{formatCurrency(item.price * item.quantity, currency)}</span>
                             </div>
                           ))}
-                          <div className="flex justify-between font-bold pt-1 text-on-surface">
+                          <div className="flex justify-between font-semibold pt-1 text-on-surface">
                             <span>Charged to your room</span>
                             <span>{formatCurrency(activeOrder.totalAmount, currency)}</span>
                           </div>
@@ -221,8 +221,8 @@ export function DynamicIslandStatusBar({ token, currency, className }: DynamicIs
 
                 {visibleRequests.length > 0 && (
                   <section>
-                    <p className="text-xs font-bold text-on-surface-variant mb-2 px-1">Requests</p>
-                    <div className="rounded-3xl bg-surface-container-low divide-y divide-outline-variant">
+                    <p className="text-sm font-medium text-on-surface-variant mb-2 px-2">Requests</p>
+                    <div className="rounded-[24px] bg-surface divide-y divide-outline-variant">
                       {visibleRequests.map(r => {
                         const status = r.taskStatus ?? 'received';
                         const finished = status === 'completed' || status === 'rejected';
@@ -254,14 +254,14 @@ export function DynamicIslandStatusBar({ token, currency, className }: DynamicIs
 
                 {upcomingBookings.length > 0 && (
                   <section>
-                    <p className="text-xs font-bold text-on-surface-variant mb-2 px-1">Your bookings</p>
-                    <div className="rounded-3xl bg-surface-container-low divide-y divide-outline-variant">
+                    <p className="text-sm font-medium text-on-surface-variant mb-2 px-2">Your bookings</p>
+                    <div className="rounded-[24px] bg-surface divide-y divide-outline-variant">
                       {upcomingBookings.map(b => {
                         const confirmed = b.status === 'confirmed';
                         return (
                           <div key={b.id} className="flex items-start gap-3 p-4">
                             <span className="mt-0.5 shrink-0">
-                              {confirmed ? <Calendar className="w-4 h-4 text-success" /> : <Clock className="w-4 h-4 text-on-surface-variant" />}
+                              {confirmed ? <Calendar className="w-4 h-4 text-on-surface" /> : <Clock className="w-4 h-4 text-on-surface-variant" />}
                             </span>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-semibold truncate">{b.experienceName}</p>

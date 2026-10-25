@@ -70,7 +70,7 @@ export function GuestFolioChat({ token }: GuestFolioChatProps) {
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-2xs flex items-end justify-center sm:items-center">
           <div className="w-full sm:max-w-md h-[80vh] sm:h-[32rem] bg-surface-container-lowest rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-250">
             <div className="flex items-center justify-between p-4 border-b border-outline-variant shrink-0">
-              <h3 className="font-bold text-sm text-on-surface">Message the Front Desk</h3>
+              <h3 className="font-semibold text-sm text-on-surface">Message the Front Desk</h3>
               <button onClick={() => setOpen(false)} className="p-1 rounded-full hover:bg-gray-200 text-gray-500">
                 <X className="w-5 h-5" />
               </button>

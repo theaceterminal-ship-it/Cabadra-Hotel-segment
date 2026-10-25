@@ -101,82 +101,67 @@ export function GuestPwaInstallPrompt(): JSX.Element {
     return <></>;
   }
 
+  // Styled like the public website: a borderless white card, an ink icon
+  // chip and ink pill buttons, using the theme tokens so dark mode follows.
   return (
     <div
-      className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-[92%] max-w-md bg-white rounded-2xl shadow-2xl border border-indigo-100 p-4 transition-all duration-300 ease-in-out lg:bottom-6"
+      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-md rounded-[28px] bg-surface-container-lowest text-on-surface shadow-[0_18px_50px_rgba(0,0,0,0.14)] p-4 lg:bottom-6"
       id="guest-install-prompt"
     >
-      <div className="flex items-start justify-between space-x-3">
-        <div className="flex items-start space-x-3 flex-1 min-w-0">
-          <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-md">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18l-6-6h4V4h4v8h4l-6 6zM4 20h16" />
-            </svg>
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-gray-900 text-sm">Install Cabadra Guest App</h3>
-            <p className="text-gray-600 text-xs mt-0.5">
-              Add to your home screen for fast offline access and easy room services.
-            </p>
-          </div>
+      <div className="flex items-start gap-3">
+        <span className="size-11 shrink-0 rounded-full bg-primary text-on-primary flex items-center justify-center">
+          <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18l-6-6h4V4h4v8h4l-6 6zM4 20h16" />
+          </svg>
+        </span>
+        <div className="flex-1 min-w-0 pt-0.5">
+          <h3 className="text-[15px] font-semibold tracking-[-0.01em]">Keep your stay one tap away</h3>
+          <p className="text-[13px] text-on-surface-variant mt-0.5">Add this app to your home screen. It opens fast, even on weak signal.</p>
         </div>
-
         <button
           onClick={handleDismiss}
-          className="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition-colors shrink-0"
+          className="size-8 shrink-0 rounded-full text-on-surface-variant hover:bg-surface-container-low flex items-center justify-center"
           aria-label="Close install prompt"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
 
       {!isSecure && (
-        <div className="mt-2.5 p-2 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-800">
-          ⚠️ Note: Automatic PWA install requires an <strong>HTTPS</strong> secure connection or <strong>localhost</strong>.
-        </div>
+        <p className="mt-3 rounded-2xl bg-surface px-3 py-2 text-[12px] text-on-surface-variant">
+          Installing needs a secure (https) connection.
+        </p>
       )}
 
       {showManualInstructions ? (
-        <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-700 space-y-2 bg-indigo-50/50 p-3 rounded-xl">
-          <p className="font-semibold text-indigo-950">To install on your device:</p>
+        <div className="mt-3 rounded-[20px] bg-surface p-4 text-[13px] space-y-2">
+          <p className="font-medium">To add it to your home screen:</p>
           {isIos ? (
-            <ol className="list-decimal list-inside space-y-1 text-gray-700 text-[11px]">
-              <li>Tap the <strong>Share</strong> button in Safari's bottom toolbar.</li>
-              <li>Scroll down and tap <strong>"Add to Home Screen"</strong>.</li>
-              <li>Tap <strong>Add</strong> in the top right corner.</li>
+            <ol className="list-decimal list-inside space-y-1 text-on-surface-variant">
+              <li>Tap <strong className="text-on-surface font-medium">Share</strong> in Safari’s toolbar.</li>
+              <li>Tap <strong className="text-on-surface font-medium">Add to Home Screen</strong>.</li>
+              <li>Tap <strong className="text-on-surface font-medium">Add</strong>.</li>
             </ol>
           ) : (
-            <ol className="list-decimal list-inside space-y-1 text-gray-700 text-[11px]">
-              <li>Tap the browser menu icon (<strong>⋮</strong> or <strong>Share</strong>).</li>
-              <li>Select <strong>"Add to Home screen"</strong> or <strong>"Install app"</strong>.</li>
-              <li>Confirm when prompted by your device.</li>
+            <ol className="list-decimal list-inside space-y-1 text-on-surface-variant">
+              <li>Open the browser menu (<strong className="text-on-surface font-medium">⋮</strong>).</li>
+              <li>Tap <strong className="text-on-surface font-medium">Add to Home screen</strong> or <strong className="text-on-surface font-medium">Install app</strong>.</li>
+              <li>Confirm.</li>
             </ol>
           )}
-          <button
-            onClick={handleDismiss}
-            className="w-full mt-2 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors"
-          >
+          <button onClick={handleDismiss} className="w-full mt-2 h-10 rounded-full bg-primary text-on-primary text-[13px] font-medium">
             Got it
           </button>
         </div>
       ) : (
         <div className="mt-3 flex items-center justify-end gap-2">
-          <button
-            onClick={handleDismiss}
-            className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 rounded-lg transition-colors"
-          >
+          <button onClick={handleDismiss} className="h-9 px-4 rounded-full text-[13px] font-medium text-on-surface-variant hover:bg-surface-container-low">
             Not now
           </button>
-          <button
-            onClick={handleInstallClick}
-            className="px-4 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 transition-colors flex items-center gap-1.5"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            Install App
+          <button onClick={handleInstallClick} className="h-9 px-5 rounded-full bg-primary text-on-primary text-[13px] font-medium">
+            Add to home screen
           </button>
         </div>
       )}

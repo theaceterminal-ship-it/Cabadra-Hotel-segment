@@ -8,7 +8,7 @@ import { DynamicIslandStatusBar } from './DynamicIslandStatusBar';
 import { ServiceRequestSheet } from './ServiceRequestSheet';
 import { ExperienceBookingSheet } from './ExperienceBookingSheet';
 import {
-  ArrowRight, BedDouble, Calendar, Car, ChefHat, Check, ChevronRight, Clock, Compass, ConciergeBell,
+  ArrowRight, ArrowUpRight, BedDouble, Calendar, Car, ChefHat, Check, Clock, Compass, ConciergeBell,
   Flower2, Shirt, Sparkles, UtensilsCrossed, Wrench,
 } from 'lucide-react';
 
@@ -41,10 +41,13 @@ const TEAM_ICONS: Record<Department, typeof Sparkles> = {
   laundry: Shirt, spa: Flower2, transport: Car, kitchen: ChefHat,
 };
 
+const EASE = [0.22, 1, 0.36, 1] as const;
 const fadeUp = {
-  hidden: { opacity: 0, y: 18 },
-  show: (i = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.45, delay: 0.06 * i, ease: [0.22, 1, 0.36, 1] as const } }),
+  hidden: { opacity: 0, y: 24 },
+  show: (i = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.6, delay: 0.07 * i, ease: EASE } }),
 };
+/** The site's card hover: no border, a soft wide shadow. */
+const CARD_HOVER = 'hover:shadow-[0_18px_50px_rgba(0,0,0,0.08)] transition-shadow duration-300';
 
 function greeting(hour: number) {
   if (hour < 5) return 'Good evening';
@@ -53,11 +56,26 @@ function greeting(hour: number) {
   return 'Good evening';
 }
 
+/** The site's section heading: a quiet eyebrow over a tight, large title. */
+function SectionHeading({ eyebrow, title, action }: { eyebrow: string; title: string; action?: React.ReactNode }) {
+  return (
+    <motion.div variants={fadeUp} initial="hidden" whileInView="show" viewport={{ once: true }} className="flex items-end justify-between gap-3 mb-4 px-1">
+      <div>
+        <p className="text-sm font-medium text-on-surface-variant">{eyebrow}</p>
+        <h2 className="mt-1 text-[28px] leading-[1.05] font-semibold tracking-[-0.03em] text-on-surface">{title}</h2>
+      </div>
+      {action}
+    </motion.div>
+  );
+}
+
 /**
- * The guest's home screen. The hotel's name lives in the welcome card (not
- * squeezed into a corner); the top bar carries the room and the live status
- * pill. Things to do and the guest's own bookings sit together further
- * down, with a link to the full list (GuestActivitiesView).
+ * The guest's home screen, in the public website's design language: fog
+ * background, borderless white cards, ink pill buttons, glass panels over
+ * photos. The hotel's name lives in the welcome card; the top bar carries
+ * the room and the live status pill. Things to do and the guest's own
+ * bookings sit together further down, with a link to the full list
+ * (GuestActivitiesView).
  */
 export const GuestHome: React.FC<GuestHomeProps> = ({
   token, propertyName, propertyImage, roomNumber, guestName, isVip, currency,
@@ -84,61 +102,58 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
   };
 
   return (
-    <div id="guest-home-canvas" className="w-full min-h-screen bg-surface pb-28">
-      <header className="sticky top-0 z-30 px-4 pt-3 pb-3 bg-gradient-to-b from-surface via-surface/90 to-surface/0">
+    <div id="guest-home-canvas" className="w-full min-h-screen bg-surface text-on-surface pb-28">
+      <header className="sticky top-0 z-30 px-4 pt-3 pb-4 bg-gradient-to-b from-surface via-surface/90 to-surface/0">
         <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
-          <div className="h-10 pl-2 pr-3.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-md border border-white/60 shadow-sm flex items-center gap-2 text-on-surface shrink-0">
-            <span className="w-7 h-7 rounded-full bg-primary text-on-primary flex items-center justify-center"><BedDouble className="w-4 h-4" /></span>
-            <span className="text-[13px] font-semibold">Room {roomNumber}</span>
-            {isVip && <span className="text-[10px] font-bold text-room-vip">VIP</span>}
+          <div className="h-10 pl-1.5 pr-4 rounded-full bg-surface-container-lowest shadow-[0_4px_20px_rgba(0,0,0,0.06)] flex items-center gap-2 shrink-0">
+            <span className="size-7 rounded-full bg-primary text-on-primary flex items-center justify-center"><BedDouble className="size-4" /></span>
+            <span className="text-[14px] font-medium">Room {roomNumber}</span>
+            {isVip && <span className="text-[10px] font-semibold rounded-full bg-room-ready text-room-ready-on px-1.5 py-0.5">VIP</span>}
           </div>
           <DynamicIslandStatusBar token={token} currency={currency} roomNumber={roomNumber} className="min-w-0 flex justify-end" />
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 space-y-8">
-        <WelcomeCard propertyName={propertyName} propertyImage={propertyImage} firstName={firstName} />
+      <main className="max-w-3xl mx-auto px-4 space-y-12">
+        <WelcomeCard propertyName={propertyName} propertyImage={propertyImage} firstName={firstName} roomNumber={roomNumber} />
 
         <AnimatePresence>
           {toast && (
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: -10, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10 }}
-              className="rounded-2xl bg-success text-on-success px-4 py-3 flex items-center gap-3 shadow-lg"
+              className="-mt-6 rounded-full bg-primary text-on-primary pl-2 pr-5 py-2 flex items-center gap-3 shadow-lg"
             >
-              <Check className="w-5 h-5 shrink-0" />
-              <p className="text-sm font-semibold">{toast}</p>
+              <span className="size-8 rounded-full bg-room-ready text-room-ready-on flex items-center justify-center shrink-0"><Check className="size-4" /></span>
+              <p className="text-sm font-medium">{toast}</p>
             </motion.div>
           )}
         </AnimatePresence>
 
         <section id="at-your-service-section">
-          <motion.h2 variants={fadeUp} initial="hidden" whileInView="show" viewport={{ once: true }} className="text-xl font-bold text-on-surface mb-3 px-1">
-            At your service
-          </motion.h2>
+          <SectionHeading eyebrow="Anything you need" title="At your service" />
 
           <motion.button
             variants={fadeUp}
             initial="hidden"
             whileInView="show"
             viewport={{ once: true }}
-            whileTap={{ scale: 0.98 }}
+            whileTap={{ scale: 0.985 }}
             onClick={() => onNavigate('room_dining')}
             id="service-card-dining"
-            className="relative w-full h-48 rounded-[28px] overflow-hidden text-left shadow-md group"
+            className="relative w-full h-60 rounded-[28px] overflow-hidden text-left group"
           >
             <img src={FALLBACK_DINING_IMAGE} alt="" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
-            <div className="absolute inset-x-5 bottom-5 flex items-end justify-between gap-3 text-white">
-              <div>
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold bg-white/20 backdrop-blur rounded-full px-2.5 py-1">
-                  <UtensilsCrossed className="w-3.5 h-3.5" /> In-room dining
-                </span>
-                <p className="text-2xl font-bold mt-2 leading-tight">Hungry? We’ll bring it up.</p>
-              </div>
-              <span className="w-11 h-11 rounded-full bg-white text-black flex items-center justify-center shrink-0 transition-transform group-hover:translate-x-0.5">
-                <ArrowRight className="w-5 h-5" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-transparent" />
+            <div className="absolute inset-x-3 bottom-3 rounded-3xl border border-white/40 bg-white/25 backdrop-blur-xl p-3 pl-4 flex items-center gap-3 text-white shadow-[0_8px_40px_rgba(0,0,0,0.12)]">
+              <span className="size-10 shrink-0 rounded-full bg-white/90 text-[#111] flex items-center justify-center"><UtensilsCrossed className="size-[18px]" /></span>
+              <span className="flex-1 min-w-0">
+                <span className="block text-[13px] text-white/85">In-room dining</span>
+                <span className="block text-[17px] font-medium truncate">Hungry? We’ll bring it up.</span>
+              </span>
+              <span className="size-10 shrink-0 rounded-full bg-[#111] text-white flex items-center justify-center transition-transform duration-300 group-hover:translate-x-0.5">
+                <ArrowRight className="size-[18px]" />
               </span>
             </div>
           </motion.button>
@@ -158,13 +173,16 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
                     viewport={{ once: true }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => setActiveService(cat)}
-                    className="rounded-[24px] bg-surface-container-lowest p-4 text-left shadow-sm hover:shadow-md transition-shadow flex flex-col items-start justify-start"
+                    className={`group rounded-[28px] bg-surface-container-lowest p-5 text-left flex flex-col items-start ${CARD_HOVER}`}
                   >
-                    <span className="w-10 h-10 rounded-full bg-highlight text-on-highlight flex items-center justify-center">
-                      <Icon className="w-5 h-5" />
+                    <span className="w-full flex items-start justify-between">
+                      <span className="size-11 rounded-full bg-surface flex items-center justify-center transition-colors duration-300 group-hover:bg-primary group-hover:text-on-primary">
+                        <Icon className="size-5" />
+                      </span>
+                      <ArrowUpRight className="size-4 text-on-surface-variant opacity-0 -translate-x-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0" />
                     </span>
-                    <p className="text-sm font-bold text-on-surface mt-3 leading-snug">{cat.name}</p>
-                    {cat.description && <p className="text-xs text-on-surface-variant mt-0.5 line-clamp-2">{cat.description}</p>}
+                    <span className="mt-6 text-[15px] font-semibold tracking-[-0.01em] leading-snug">{cat.name}</span>
+                    {cat.description && <span className="mt-1 text-[13px] text-on-surface-variant leading-snug line-clamp-2">{cat.description}</span>}
                   </motion.button>
                 );
               })}
@@ -174,17 +192,15 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
 
         {(experiences.length > 0 || reserved.length > 0) && (
           <section id="curated-experiences-section">
-            <div className="flex items-end justify-between mb-3 px-1">
-              <div>
-                <h2 className="text-xl font-bold text-on-surface">Things to do here</h2>
-                <p className="text-xs text-on-surface-variant mt-0.5">Arranged by {propertyName}</p>
-              </div>
-              {experiences.length > 0 && (
-                <button onClick={() => onNavigate('guest_activities')} className="text-sm font-semibold text-on-surface inline-flex items-center gap-0.5">
-                  See all <ChevronRight className="w-4 h-4" />
+            <SectionHeading
+              eyebrow={`Arranged by ${propertyName}`}
+              title="Things to do here"
+              action={experiences.length > 0 && (
+                <button onClick={() => onNavigate('guest_activities')} className="h-9 px-4 rounded-full bg-surface-container-lowest text-sm font-medium inline-flex items-center gap-1 shrink-0 hover:bg-primary hover:text-on-primary transition-colors">
+                  See all <ArrowRight className="size-3.5" />
                 </button>
               )}
-            </div>
+            />
 
             {reserved.length > 0 && (
               <motion.div
@@ -192,23 +208,23 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
                 initial="hidden"
                 whileInView="show"
                 viewport={{ once: true }}
-                className="rounded-[24px] bg-surface-container-lowest divide-y divide-outline-variant shadow-sm overflow-hidden mb-4"
+                className="rounded-[28px] bg-surface-container-lowest p-2 mb-3"
               >
-                <p className="px-4 pt-3.5 pb-2 text-xs font-bold text-on-surface-variant">Your bookings</p>
+                <p className="px-3 pt-2 pb-1 text-sm font-medium text-on-surface-variant">Your bookings</p>
                 {reserved.map(b => {
                   const confirmed = b.status === 'confirmed';
                   return (
-                    <div key={b.id} className="flex items-center gap-3 p-4">
-                      <span className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${confirmed ? 'bg-success text-on-success' : 'bg-surface-container-low text-on-surface-variant'}`}>
-                        {confirmed ? <Calendar className="w-4.5 h-4.5" /> : <Clock className="w-4.5 h-4.5" />}
+                    <div key={b.id} className="flex items-center gap-3 p-3 rounded-[20px] hover:bg-surface-container-low transition-colors">
+                      <span className={`size-11 rounded-full flex items-center justify-center shrink-0 ${confirmed ? 'bg-room-ready text-room-ready-on' : 'bg-surface text-on-surface-variant'}`}>
+                        {confirmed ? <Calendar className="size-[18px]" /> : <Clock className="size-[18px]" />}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-on-surface truncate">{b.experienceName}</p>
-                        <p className="text-xs text-on-surface-variant truncate">
+                        <p className="text-[15px] font-medium truncate">{b.experienceName}</p>
+                        <p className="text-[13px] text-on-surface-variant truncate">
                           {b.scheduledTime ? `Confirmed for ${b.scheduledTime}` : b.status === 'cancelled' ? 'Cancelled' : b.status === 'completed' ? 'Completed' : `Waiting for the hotel to confirm${b.preferredTime ? ` · you asked for ${b.preferredTime}` : ''}`}
                         </p>
                       </div>
-                      <span className="text-sm font-semibold text-on-surface shrink-0">{formatCurrency(b.totalPrice, currency)}</span>
+                      <span className="text-sm font-medium shrink-0">{formatCurrency(b.totalPrice, currency)}</span>
                     </div>
                   );
                 })}
@@ -226,19 +242,21 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
                     initial="hidden"
                     whileInView="show"
                     viewport={{ once: true }}
-                    whileTap={{ scale: 0.98 }}
+                    whileTap={{ scale: 0.985 }}
                     onClick={() => setBooking(exp)}
-                    className={`snap-start shrink-0 ${experiences.length > 1 ? 'w-[78%] sm:w-72' : 'w-full'} relative h-60 rounded-[28px] overflow-hidden text-left shadow-md group`}
+                    className={`snap-start shrink-0 ${experiences.length > 1 ? 'w-[80%] sm:w-80' : 'w-full'} relative h-72 rounded-[28px] overflow-hidden text-left group`}
                   >
                     <img src={exp.image || FALLBACK_EXPERIENCE_IMAGE} alt="" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
-                    <div className="absolute inset-x-4 bottom-4 flex items-end justify-between gap-3 text-white">
-                      <div className="min-w-0">
-                        <p className="text-lg font-bold leading-tight">{exp.name}</p>
-                        {exp.description && <p className="text-xs text-white/80 mt-1 line-clamp-2">{exp.description}</p>}
-                        <p className="text-sm font-semibold mt-1.5">{formatCurrency(exp.price, currency)} <span className="font-normal text-white/75">{exp.unitLabel}</span></p>
-                      </div>
-                      <span className="h-9 px-4 rounded-full bg-white text-black text-xs font-bold flex items-center shrink-0">Book</span>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-transparent" />
+                    <span className="absolute top-3 left-3 rounded-full bg-white/80 backdrop-blur px-3 py-1 text-[13px] font-medium text-[#111]">
+                      {formatCurrency(exp.price, currency)} <span className="text-[#111]/60">{exp.unitLabel}</span>
+                    </span>
+                    <div className="absolute inset-x-3 bottom-3 rounded-3xl border border-white/40 bg-white/25 backdrop-blur-xl p-4 flex items-end gap-3 text-white shadow-[0_8px_40px_rgba(0,0,0,0.12)]">
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-[17px] font-medium leading-tight">{exp.name}</span>
+                        {exp.description && <span className="block text-[13px] text-white/85 mt-1 line-clamp-2">{exp.description}</span>}
+                      </span>
+                      <span className="h-9 px-4 rounded-full bg-[#111] text-white text-[13px] font-medium flex items-center shrink-0">Book</span>
                     </div>
                   </motion.button>
                 ))}
@@ -278,44 +296,62 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
   );
 };
 
-/** The welcome card: the hotel's photo and name, and the guest's greeting. */
-function WelcomeCard({ propertyName, propertyImage, firstName }: {
+/**
+ * The welcome card, built like the website's hero: the hotel's photo, a fog
+ * wash at the top carrying the greeting in ink, and a glass panel at the
+ * bottom with the room.
+ */
+function WelcomeCard({ propertyName, propertyImage, firstName, roomNumber }: {
   propertyName: string;
   propertyImage?: string;
   firstName: string;
+  roomNumber: string;
 }) {
   const now = new Date();
 
   return (
     <motion.section
       id="guest-hero-banner"
-      initial={{ opacity: 0, y: 20, scale: 0.98 }}
+      initial={{ opacity: 0, y: 24, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className="relative h-64 rounded-[32px] overflow-hidden shadow-xl bg-surface-container-high"
+      transition={{ duration: 0.8, ease: EASE }}
+      className="relative h-[360px] rounded-[32px] overflow-hidden bg-surface-container-high"
     >
       <motion.img
         src={propertyImage || FALLBACK_HOTEL_IMAGE}
         alt=""
         className="absolute inset-0 w-full h-full object-cover"
-        initial={{ scale: 1.08 }}
+        initial={{ scale: 1.1 }}
         animate={{ scale: 1 }}
-        transition={{ duration: 1.4, ease: 'easeOut' }}
+        transition={{ duration: 1.6, ease: 'easeOut' }}
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/10 to-black/75" />
+      <div className="absolute inset-0 bg-gradient-to-b from-surface/95 from-10% via-surface/50 via-35% to-transparent to-65%" />
+      <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/30 to-transparent" />
 
-      <div className="relative h-full px-5 pt-5 pb-5 flex flex-col text-white">
-        <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="self-start text-[12px] font-medium bg-white/15 backdrop-blur rounded-full px-3 py-1">
+      <div className="relative h-full flex flex-col p-5">
+        <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, ease: EASE }} className="text-sm font-medium text-on-surface-variant">
           Welcome to {propertyName}
         </motion.p>
-        <div className="mt-auto">
-          <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="text-[34px] leading-[1.05] font-bold tracking-tight">
-            {greeting(now.getHours())},<br />{firstName}
-          </motion.h1>
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }} className="text-sm text-white/80 mt-2">
-            {now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })} · Your stay, our priority
-          </motion.p>
-        </div>
+        <motion.h1 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.6, ease: EASE }} className="mt-2 text-[38px] leading-[1.02] font-semibold tracking-[-0.035em] text-on-surface">
+          {greeting(now.getHours())},<br />{firstName}
+        </motion.h1>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.7, ease: EASE }}
+          className="mt-auto rounded-3xl border border-white/40 bg-white/25 backdrop-blur-xl p-3 flex items-center gap-3 text-white shadow-[0_8px_40px_rgba(0,0,0,0.12)]"
+        >
+          <span className="size-10 shrink-0 rounded-full bg-white/90 text-[#111] flex items-center justify-center"><BedDouble className="size-[18px]" /></span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-[13px] text-white/85">{now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+            <span className="block text-[15px] font-medium truncate">Room {roomNumber} · Checked in</span>
+          </span>
+          <span className="relative flex size-2.5 mr-1.5 shrink-0">
+            <span className="absolute inset-0 rounded-full bg-room-ready animate-ping opacity-70" />
+            <span className="relative size-2.5 rounded-full bg-room-ready" />
+          </span>
+        </motion.div>
       </div>
     </motion.section>
   );
