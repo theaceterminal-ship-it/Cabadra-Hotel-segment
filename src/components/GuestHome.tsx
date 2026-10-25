@@ -7,6 +7,7 @@ import type { Department } from '../lib/departments';
 import { DynamicIslandStatusBar } from './DynamicIslandStatusBar';
 import { ServiceRequestSheet } from './ServiceRequestSheet';
 import { ExperienceBookingSheet } from './ExperienceBookingSheet';
+import { LocalPartnersRow } from './LocalPartnersRow';
 import {
   ArrowRight, ArrowUpRight, BedDouble, Calendar, Car, ChefHat, Check, Clock, Compass, ConciergeBell,
   Flower2, Shirt, Sparkles, UtensilsCrossed, Wrench,
@@ -264,6 +265,9 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
             )}
           </section>
         )}
+
+        {/* After the hotel's own things to do, never before them. */}
+        <LocalPartnersRow token={token} propertyName={propertyName} />
       </main>
 
       {activeService && (

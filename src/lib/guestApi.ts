@@ -147,6 +147,40 @@ export interface CheckoutSuggestion {
   items: MenuItem[];
 }
 
+/** A local business listed by Cabadra for guests near this hotel (0078). Contact only: the guest reaches the business directly. */
+export interface PartnerListing {
+  id: string;
+  name: string;
+  category: 'restaurant' | 'cafe' | 'taxi' | 'tours' | 'adventure' | 'spa' | 'shopping' | 'other';
+  tagline?: string;
+  description?: string;
+  photo?: string;
+  phone?: string;
+  whatsapp?: string;
+  mapsUrl?: string;
+  address?: string;
+  openingHours?: string;
+  offerText?: string;
+  offerCode?: string;
+}
+
+export type PartnerEventKind = 'impression' | 'tap' | 'call' | 'whatsapp' | 'directions' | 'code';
+
+/** guest_get_partner_listings (0078): the partners this hotel's guests can see today, and the place to title the row with. Empty on any error: ads never get in a guest's way. */
+export async function fetchPartnerListings(token: string): Promise<{ area: string; items: PartnerListing[] }> {
+  const { data, error } = await supabase.rpc('guest_get_partner_listings', { p_token: token });
+  if (error || !data) return { area: '', items: [] };
+  const d = data as { area?: string; items?: PartnerListing[] };
+  return { area: d.area ?? '', items: d.items ?? [] };
+}
+
+/** Fire-and-forget: what the guest did with a listing. The server dedupes, so a re-render can't inflate a business's numbers. */
+export function logPartnerEvents(token: string, events: { partnerId: string; event: PartnerEventKind }[]): void {
+  if (events.length === 0) return;
+  supabase.rpc('guest_log_partner_events', { p_token: token, p_events: events.slice(0, 20) })
+    .then(({ error }) => { if (error) console.warn('Failed to log partner event:', error.message); });
+}
+
 /** guest_checkout_suggestion (0076). Null when the order has no real gap, or on any error: never worth blocking an order over. */
 export async function fetchCheckoutSuggestion(token: string, cartItemIds: string[]): Promise<CheckoutSuggestion | null> {
   const { data, error } = await supabase.rpc('guest_checkout_suggestion', { p_token: token, p_cart_item_ids: cartItemIds });

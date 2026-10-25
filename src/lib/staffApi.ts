@@ -1368,3 +1368,22 @@ export async function fetchSalesReport(
   if (error) throw new Error(`Failed to load sales report: ${error.message}`);
   return data as SalesReportData;
 }
+
+/** Local partner listings (0078): whether this property's guests see them, and which categories are blocked. */
+export interface PartnerSettings {
+  enabled: boolean;
+  blocked: string[];
+  /** How many partner listings this property's guests can see right now. */
+  liveCount: number;
+}
+
+export async function fetchPartnerSettings(propertyId: string): Promise<PartnerSettings> {
+  const { data, error } = await supabase.rpc('owner_get_partner_settings', { p_property_id: propertyId });
+  if (error) throw new Error(error.message);
+  return data as PartnerSettings;
+}
+
+export async function savePartnerSettings(propertyId: string, enabled: boolean, blocked: string[]): Promise<void> {
+  const { error } = await supabase.rpc('owner_set_partner_settings', { p_property_id: propertyId, p_enabled: enabled, p_blocked: blocked });
+  if (error) throw new Error(error.message);
+}

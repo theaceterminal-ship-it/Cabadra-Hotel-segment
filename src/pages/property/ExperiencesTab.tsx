@@ -3,6 +3,7 @@ import { Pencil, Plus, Sparkles } from 'lucide-react';
 import { addExperience, deleteExperience, Experience, updateExperience } from '../../lib/staffApi';
 import { formatCurrency } from '../../lib/currency';
 import { PresetSelect } from '../../components/PresetSelect';
+import { PartnerSettingsPanel } from './PartnerSettingsPanel';
 import { DeleteButton, EmptyState, ErrorNote, Field, Modal, PhotoField, SectionHeader, btnPrimary, btnSecondary, iconBtn, inputCls, textareaCls } from './ui';
 
 const EXPERIENCE_PRESETS = [
@@ -114,6 +115,8 @@ export function ExperiencesTab({ propertyId, currency, experiences, onChanged }:
           ))}
         </div>
       )}
+
+      <PartnerSettingsPanel propertyId={propertyId} />
 
       {editing && (
         <Modal
