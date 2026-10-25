@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   Car, Check, Coffee, Copy, Flower2, MapPin, Map as MapIcon, MessageCircle, Mountain, Phone, ShoppingBag, Store, Tag,
-  UtensilsCrossed, X, Clock, Send, Sparkles, Loader2, Star,
+  UtensilsCrossed, X, Clock, Send, Sparkles, Loader2, Star, Search,
 } from 'lucide-react';
 import {
   fetchPartnerListings, fetchPartnerRequests, logPartnerEvents, ratePartner, sendPartnerRequest, PartnerListing, PartnerEventKind, PartnerRequest,
@@ -47,6 +47,7 @@ export function LocalPartnersRow({ token, propertyName }: { token: string; prope
   const [area, setArea] = useState('');
   const [items, setItems] = useState<PartnerListing[]>([]);
   const [open, setOpen] = useState<PartnerListing | null>(null);
+  const [query, setQuery] = useState('');
   const seen = useRef(false);
 
   useEffect(() => {
@@ -59,6 +60,16 @@ export function LocalPartnersRow({ token, propertyName }: { token: string; prope
     return () => { cancelled = true; };
   }, [token]);
 
+  const shown = useMemo(() => {
+    const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (words.length === 0) return items;
+    return items.filter(p => {
+      const haystack = [p.name, p.tagline, p.description, p.offerText, CATEGORY[p.category]?.label, ...(SEARCH_WORDS[p.category] ?? [])]
+        .filter(Boolean).join(' ').toLowerCase();
+      return words.every(w => haystack.includes(w));
+    });
+  }, [items, query]);
+
   if (items.length === 0) return null;
 
   const log = (partnerId: string, event: PartnerEventKind) => logPartnerEvents(token, [{ partnerId, event }]);
@@ -70,8 +81,8 @@ export function LocalPartnersRow({ token, propertyName }: { token: string; prope
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6, ease: EASE }}
-        // Counted when the row is actually on screen, once per visit (the
-        // server also keeps it to once a day per guest).
+        // Counted when the section is actually on screen, once per visit
+        // (the server also keeps it to once a day per guest).
         onViewportEnter={() => {
           if (seen.current) return;
           seen.current = true;
@@ -80,46 +91,37 @@ export function LocalPartnersRow({ token, propertyName }: { token: string; prope
         className="mb-4 px-1"
       >
         <p className="text-sm font-medium text-on-surface-variant">Local favourites, picked by Cabadra</p>
-        <h2 className="mt-1 text-[28px] leading-[1.05] font-semibold tracking-[-0.03em] text-on-surface">Around {area || 'here'}</h2>
+        <div className="mt-1 flex items-end justify-between gap-3">
+          <h2 className="text-[28px] leading-[1.05] font-semibold tracking-[-0.03em] text-on-surface">Around {area || 'here'}</h2>
+          {items.length > 1 && <span className="text-[13px] text-on-surface-variant shrink-0 pb-1">{items.length} places</span>}
+        </div>
+        {items.length > 2 && (
+          <label className="mt-3 relative block">
+            <Search className="size-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none" />
+            <input
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Search taxi, rafting, spa…"
+              aria-label="Search local places"
+              className="w-full h-10 pl-10 pr-10 rounded-full bg-surface-container-lowest border border-outline-variant text-[14px] text-on-surface placeholder:text-on-surface-variant/70 focus:outline-none focus:border-on-surface/40 transition-colors"
+            />
+            {query && (
+              <button onClick={() => setQuery('')} aria-label="Clear search" className="absolute right-1.5 top-1/2 -translate-y-1/2 size-7 rounded-full hover:bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+                <X className="size-4" />
+              </button>
+            )}
+          </label>
+        )}
       </motion.div>
 
-      <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-px-4 pb-2 -mx-4 px-4 scrollbar-none">
-        {items.map((p, i) => {
-          const Icon = CATEGORY[p.category]?.icon ?? Store;
-          return (
-            <motion.button
-              key={p.id}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: Math.min(i, 5) * 0.07, ease: EASE }}
-              whileTap={{ scale: 0.985 }}
-              onClick={() => { setOpen(p); log(p.id, 'tap'); }}
-              className="group snap-start shrink-0 w-[72%] sm:w-64 rounded-[28px] bg-surface-container-lowest overflow-hidden text-left hover:shadow-[0_18px_50px_rgba(0,0,0,0.08)] transition-shadow duration-300"
-            >
-              <div className="relative h-36 bg-surface-container-high">
-                {p.photo
-                  ? <img src={p.photo} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                  : <span className="absolute inset-0 flex items-center justify-center text-on-surface-variant"><Icon className="size-8 opacity-40" /></span>}
-                <span className="absolute top-3 left-3 rounded-full bg-white/85 backdrop-blur px-2.5 py-1 text-[11px] font-medium text-[#111] inline-flex items-center gap-1">
-                  {p.featured ? <><Sparkles className="size-3" /> Featured</> : 'Partner'}
-                </span>
-              </div>
-              <div className="p-4">
-                <p className="text-[12px] text-on-surface-variant flex items-center gap-1"><Icon className="size-3.5" /> {CATEGORY[p.category]?.label ?? 'Local'}</p>
-                <p className="mt-1 text-[15px] font-semibold tracking-[-0.01em] text-on-surface truncate">{p.name}</p>
-                {p.rating != null && <p className="mt-0.5 text-[12px] font-medium text-on-surface inline-flex items-center gap-1"><Star className="size-3 fill-current" /> {p.rating} <span className="font-normal text-on-surface-variant">({p.ratingCount})</span></p>}
-                {p.tagline && <p className="mt-0.5 text-[13px] text-on-surface-variant line-clamp-1">{p.tagline}</p>}
-                {p.offerText && (
-                  <p className="mt-3 inline-flex max-w-full items-center gap-1.5 rounded-full bg-room-ready text-room-ready-on px-2.5 py-1 text-[12px] font-medium">
-                    <Tag className="size-3.5 shrink-0" /> <span className="truncate">{p.offerText}</span>
-                  </p>
-                )}
-              </div>
-            </motion.button>
-          );
-        })}
-      </div>
+      {shown.length === 0 ? (
+        <div className="rounded-[28px] bg-surface-container-lowest px-5 py-8 text-center">
+          <p className="text-[15px] font-medium text-on-surface">Nothing for “{query.trim()}” around {area || 'here'}</p>
+          <button onClick={() => setQuery('')} className="mt-3 h-9 px-4 rounded-full bg-surface-container-high text-[13px] font-medium text-on-surface">Show all</button>
+        </div>
+      ) : (
+        <PartnerDeck key={query.trim().toLowerCase()} items={shown} onOpen={p => { setOpen(p); log(p.id, 'tap'); }} />
+      )}
 
       <AnimatePresence>
         {open && (
@@ -134,6 +136,135 @@ export function LocalPartnersRow({ token, propertyName }: { token: string; prope
         )}
       </AnimatePresence>
     </section>
+  );
+}
+
+/** Extra words a guest might search for each kind of business. */
+const SEARCH_WORDS: Record<PartnerListing['category'], string[]> = {
+  taxi: ['cab', 'car', 'taxi', 'transfer', 'airport', 'driver', 'ride'],
+  tours: ['tour', 'guide', 'sightseeing', 'trip', 'trek', 'walk'],
+  adventure: ['adventure', 'rafting', 'paragliding', 'trek', 'camping', 'zipline', 'bike', 'hike', 'ski'],
+  spa: ['spa', 'massage', 'wellness', 'ayurveda', 'salon'],
+  restaurant: ['food', 'eat', 'dinner', 'lunch', 'restaurant', 'dhaba'],
+  cafe: ['cafe', 'coffee', 'tea', 'bakery', 'snacks'],
+  shopping: ['shop', 'shopping', 'market', 'shawl', 'souvenir', 'handicraft'],
+  other: [],
+};
+
+const DECK_DEPTH = 3;
+/** How far each card behind sticks out above the one in front, so its label shows. */
+const PEEK = 30;
+/** A card leaving the stack flies off the way it was swiped (custom = direction). */
+const DECK_VARIANTS = {
+  gone: (dir: number) => ({ x: dir * -340, opacity: 0, rotate: dir * -8, transition: { duration: 0.32 } }),
+};
+const SWIPE_DISTANCE = 70;
+const SWIPE_SPEED = 450;
+
+/**
+ * The partners as a stack of cards: the front one full size, the next two
+ * peeking out above it. Swipe the front card either way (or tap a dot) to
+ * bring up the next; tap it to open the business. A single partner is just
+ * one card.
+ */
+function PartnerDeck({ items, onOpen }: { items: PartnerListing[]; onOpen: (p: PartnerListing) => void }) {
+  const [index, setIndex] = useState(0);
+  const [direction, setDirection] = useState<1 | -1>(1);
+  const dragged = useRef(false);
+  const n = items.length;
+  const go = (step: 1 | -1) => {
+    setDirection(step);
+    setIndex(i => (i + step + n) % n);
+  };
+  // depth 0 is the front card.
+  const stack = Array.from({ length: Math.min(DECK_DEPTH, n) }, (_, k) => ({ partner: items[(index + k) % n], depth: k }));
+
+  return (
+    <div>
+      <div className="relative" style={{ height: 260 + (Math.min(DECK_DEPTH, n) - 1) * PEEK }}>
+        <AnimatePresence initial={false} custom={direction}>
+          {stack.slice().reverse().map(({ partner: p, depth }) => {
+            const front = depth === 0;
+            const Icon = CATEGORY[p.category]?.icon ?? Store;
+            return (
+              <motion.div
+                key={p.id}
+                custom={direction}
+                initial={{ opacity: 0, y: -PEEK * DECK_DEPTH, scale: 1 - 0.05 * DECK_DEPTH }}
+                animate={{ opacity: 1, y: -PEEK * depth, scale: 1 - 0.05 * depth, x: 0, rotate: 0 }}
+                variants={DECK_VARIANTS}
+                exit="gone"
+                transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+                style={{ zIndex: DECK_DEPTH - depth, transformOrigin: 'top center' }}
+                drag={front && n > 1 ? 'x' : false}
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.8}
+                onDragStart={() => { dragged.current = true; }}
+                onDragEnd={(_, info) => {
+                  if (info.offset.x < -SWIPE_DISTANCE || info.velocity.x < -SWIPE_SPEED) go(1);
+                  else if (info.offset.x > SWIPE_DISTANCE || info.velocity.x > SWIPE_SPEED) go(-1);
+                  setTimeout(() => { dragged.current = false; }, 0);
+                }}
+                onClick={() => { if (front && !dragged.current) onOpen(p); }}
+                role={front ? 'button' : undefined}
+                tabIndex={front ? 0 : -1}
+                aria-hidden={!front}
+                aria-label={front ? `${p.name}, ${CATEGORY[p.category]?.label ?? 'Local'}. Open` : undefined}
+                onKeyDown={e => {
+                  if (!front) return;
+                  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(p); }
+                  if (e.key === 'ArrowRight') go(1);
+                  if (e.key === 'ArrowLeft') go(-1);
+                }}
+                className={`absolute inset-x-0 bottom-0 h-[260px] rounded-[28px] overflow-hidden bg-surface-container-high shadow-[0_18px_40px_rgba(0,0,0,0.14)] select-none ${front ? 'cursor-grab active:cursor-grabbing touch-pan-y' : 'pointer-events-none'}`}
+              >
+                {p.photo
+                  ? <img src={p.photo} alt="" draggable={false} className="absolute inset-0 w-full h-full object-cover" />
+                  : <span className="absolute inset-0 bg-[linear-gradient(135deg,#8fa58a,#4f6b55)] flex items-center justify-center text-white/30"><Icon className="size-16" /></span>}
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.38)_0%,rgba(0,0,0,0)_32%,rgba(0,0,0,0)_45%,rgba(0,0,0,0.72)_100%)]" />
+                <motion.div className="absolute inset-0 bg-black pointer-events-none" initial={false} animate={{ opacity: depth * 0.12 }} />
+
+                <div className="absolute top-2.5 left-4 right-16 flex items-center gap-1.5 text-white text-[11px] font-semibold uppercase tracking-[0.08em]">
+                  <Icon className="size-3.5 shrink-0" /> <span className="truncate">{CATEGORY[p.category]?.label ?? 'Local'}</span>
+                </div>
+                <span className={`absolute top-3 right-3 size-10 rounded-full transition-opacity ${front ? '' : 'opacity-0'} bg-white/25 backdrop-blur-md flex items-center justify-center text-white`} title={p.featured ? 'Featured' : 'Partner'}>
+                  {p.featured ? <Sparkles className="size-4" /> : <Star className="size-4" />}
+                </span>
+
+                <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+                  {p.offerText && (
+                    <p className="mb-2 inline-flex max-w-full items-center gap-1.5 rounded-full bg-white/90 text-[#111] px-2.5 py-1 text-[11px] font-semibold">
+                      <Tag className="size-3 shrink-0" /> <span className="truncate">{p.offerText}</span>
+                    </p>
+                  )}
+                  <p className="text-[24px] leading-[1.08] font-semibold tracking-[-0.02em] line-clamp-2">{p.name}</p>
+                  <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-white/85">
+                    {p.rating != null && <span className="inline-flex items-center gap-1 font-semibold text-white"><Star className="size-3.5 fill-current" /> {p.rating}</span>}
+                    {p.tagline ? <span className="line-clamp-1">{p.tagline}</span> : p.openingHours && <span className="inline-flex items-center gap-1"><Clock className="size-3.5" /> {p.openingHours}</span>}
+                    {p.featured && <span className="inline-flex items-center gap-1"><Sparkles className="size-3.5" /> Featured</span>}
+                  </p>
+                </div>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
+
+      {n > 1 && (
+        <div className="mt-3 flex items-center justify-center gap-1.5" role="tablist" aria-label="Local places">
+          {items.map((p, i) => (
+            <button
+              key={p.id}
+              role="tab"
+              aria-selected={i === index}
+              aria-label={p.name}
+              onClick={() => { setDirection(i > index ? 1 : -1); setIndex(i); }}
+              className={`h-1.5 rounded-full transition-all duration-300 ${i === index ? 'w-5 bg-on-surface' : 'w-1.5 bg-on-surface/25'}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
