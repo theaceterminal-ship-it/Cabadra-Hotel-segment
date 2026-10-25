@@ -8,7 +8,7 @@
  */
 
 import { supabase } from './supabaseClient';
-import type { Property, Room, RoomStatus, UpcomingArrival, UrgentRequest, LiveOpsTask, MenuItem, AppNotification, Folio, FolioChatMessage, GuestCrmEntry, SalesReportData } from '../types';
+import type { Property, Room, RoomStatus, UpcomingArrival, UrgentRequest, LiveOpsTask, MenuItem, AppNotification, Folio, Bill, PaymentMethod, FolioChatMessage, GuestCrmEntry, SalesReportData } from '../types';
 import { formatCurrency } from './currency';
 import type { Department, ServiceForm } from './departments';
 
@@ -638,6 +638,8 @@ export interface WalkInGuestInput {
   partySize?: number;
   /** 'imported' marks a check-in made in PMS mode (the property's real booking already lives in an external PMS — this just links a guest to a room so the guest app works). Defaults to 'built_in', Cabadra's own booking. */
   source?: 'built_in' | 'imported';
+  /** The rate agreed for this stay; defaults to the room's listed price. */
+  ratePerNight?: number;
 }
 
 /**
@@ -661,6 +663,7 @@ export async function checkInNewGuest(propertyId: string, roomId: string, guest:
     p_check_out: guest.checkOut ? guest.checkOut.toISOString() : null,
     p_party_size: guest.partySize ?? 1,
     p_source: guest.source ?? 'built_in',
+    p_rate_per_night: guest.ratePerNight ?? null,
   });
   if (error) throw error;
   return data as string;
@@ -1121,7 +1124,7 @@ export async function fetchShiftCoverage(propertyId: string, department: Shift['
 }
 
 // ============================================================================
-// ROOM FOLIO — itemized bill for a stay, settled in one payment at checkout
+// ROOM FOLIO — a stay's bill: room nights, extras, GST, payments (0079)
 // ============================================================================
 
 export async function fetchFolio(reservationId: string): Promise<Folio> {
@@ -1130,25 +1133,126 @@ export async function fetchFolio(reservationId: string): Promise<Folio> {
   return data as Folio;
 }
 
-/** Settles every unsettled folio charge and checks the reservation out — see staff_checkout_reservation (0006_room_folio_checkout.sql) for the room-status/reservation-status side effects. */
-export async function checkoutReservation(reservationId: string, paymentMethod: 'cash' | 'card' | 'upi' | 'other'): Promise<{ reservationId: string; amountCharged: number; paymentMethod: string }> {
+export interface CheckoutResult {
+  reservationId?: string;
+  amountCharged: number;
+  paymentMethod: string;
+  invoiceNumber?: string;
+  shareToken?: string;
+  /** Below zero when the guest paid more than the bill: a refund is due. */
+  balanceAfter?: number;
+}
+
+/** Posts the last nights, takes whatever is still due in one method, checks out and issues the bill (staff_checkout_reservation, 0079). */
+export async function checkoutReservation(reservationId: string, paymentMethod: PaymentMethod): Promise<CheckoutResult> {
   const { data, error } = await supabase.rpc('staff_checkout_reservation', { p_reservation_id: reservationId, p_payment_method: paymentMethod });
   if (error) throw error;
-  return data as { reservationId: string; amountCharged: number; paymentMethod: string };
+  return data as CheckoutResult;
+}
+
+/** Records these payments and checks out in one go; refuses (and saves nothing) while anything is still due. */
+export async function checkoutWithPayments(reservationId: string, payments: { amount: number; method: PaymentMethod; reference?: string }[]): Promise<CheckoutResult> {
+  const { data, error } = await supabase.rpc('staff_checkout_with_payments', { p_reservation_id: reservationId, p_payments: payments });
+  if (error) throw error;
+  return data as CheckoutResult;
 }
 
 /** Fallback room checkout directly by room ID — handles occupied rooms even when reservationId is unlinked. */
-export async function checkoutRoom(roomId: string, paymentMethod: 'cash' | 'card' | 'upi' | 'other'): Promise<{ amountCharged: number; paymentMethod: string }> {
+export async function checkoutRoom(roomId: string, paymentMethod: PaymentMethod): Promise<CheckoutResult> {
   const { data, error } = await supabase.rpc('staff_checkout_room', { p_room_id: roomId, p_payment_method: paymentMethod });
   if (error) throw error;
-  return data as { amountCharged: number; paymentMethod: string };
+  return data as CheckoutResult;
 }
 
-/** A deposit at check-in, a UPI payment mid-stay — recorded as a negative folio line that nets against real charges immediately, not held separately until checkout (staff_record_folio_payment, 0021_folio_payments_and_upi.sql). */
-export async function recordFolioPayment(reservationId: string, amount: number, description: string, method: 'cash' | 'card' | 'upi' | 'other'): Promise<void> {
+/** Money received (an advance, a mid-stay payment) or refunded, into the payments ledger. */
+export async function recordFolioPayment(
+  reservationId: string, amount: number, description: string, method: PaymentMethod,
+  opts: { reference?: string; kind?: 'payment' | 'refund' } = {},
+): Promise<void> {
   const { error } = await supabase.rpc('staff_record_folio_payment', {
     p_reservation_id: reservationId, p_amount: amount, p_description: description, p_method: method,
+    p_reference: opts.reference || null, p_kind: opts.kind ?? 'payment',
   });
+  if (error) throw error;
+}
+
+/** A charge added at the desk: extra bed, laundry, minibar. GST is applied server-side. */
+export async function addFolioCharge(reservationId: string, description: string, amount: number, category: 'extra' | 'laundry' | 'minibar' | 'room_service' | 'spa' | 'other'): Promise<void> {
+  const { error } = await supabase.rpc('staff_add_folio_charge', { p_reservation_id: reservationId, p_description: description, p_amount: amount, p_category: category });
+  if (error) throw error;
+}
+
+/** Owner only, with a reason; refused once the bill is issued. */
+export async function voidFolioCharge(chargeId: string, reason: string): Promise<void> {
+  const { error } = await supabase.rpc('staff_void_folio_charge', { p_charge_id: chargeId, p_reason: reason });
+  if (error) throw error;
+}
+
+export async function voidFolioPayment(paymentId: string, reason: string): Promise<void> {
+  const { error } = await supabase.rpc('staff_void_folio_payment', { p_payment_id: paymentId, p_reason: reason });
+  if (error) throw error;
+}
+
+/** The issued bill, or the bill so far (not numbered) before check-out. */
+export async function fetchBill(reservationId: string): Promise<Bill> {
+  const { data, error } = await supabase.rpc('staff_get_bill', { p_reservation_id: reservationId });
+  if (error) throw error;
+  return data as Bill;
+}
+
+/** The guest's copy, by the private link printed at check-out. Null when the link is wrong. */
+export async function fetchPublicBill(shareToken: string): Promise<Bill | null> {
+  const { data, error } = await supabase.rpc('public_get_invoice', { p_share_token: shareToken });
+  if (error) throw error;
+  return (data ?? null) as Bill | null;
+}
+
+export const billLink = (shareToken: string) => `${window.location.origin}/bill/${shareToken}`;
+
+// ============================================================================
+// BILLING SETTINGS — the owner's GST and bill details (0079)
+// ============================================================================
+
+export interface BillingSettings {
+  legalName: string;
+  address: string;
+  phone: string;
+  email: string;
+  gstin: string;
+  gstEnabled: boolean;
+  roomLowRate: number;
+  roomHighRate: number;
+  roomThreshold: number;
+  foodRate: number;
+  otherRate: number;
+  invoicePrefix: string;
+}
+
+export async function fetchBillingSettings(propertyId: string): Promise<BillingSettings> {
+  const { data, error } = await supabase
+    .from('properties')
+    .select('legal_name, billing_address, billing_phone, billing_email, gstin, gst_enabled, gst_room_low_rate, gst_room_high_rate, gst_room_threshold, gst_food_rate, gst_other_rate, invoice_prefix, location')
+    .eq('id', propertyId)
+    .single();
+  if (error) throw error;
+  return {
+    legalName: data.legal_name ?? '',
+    address: data.billing_address ?? data.location ?? '',
+    phone: data.billing_phone ?? '',
+    email: data.billing_email ?? '',
+    gstin: data.gstin ?? '',
+    gstEnabled: data.gst_enabled ?? false,
+    roomLowRate: Number(data.gst_room_low_rate ?? 5),
+    roomHighRate: Number(data.gst_room_high_rate ?? 18),
+    roomThreshold: Number(data.gst_room_threshold ?? 7500),
+    foodRate: Number(data.gst_food_rate ?? 5),
+    otherRate: Number(data.gst_other_rate ?? 18),
+    invoicePrefix: data.invoice_prefix ?? 'INV',
+  };
+}
+
+export async function saveBillingSettings(propertyId: string, settings: BillingSettings): Promise<void> {
+  const { error } = await supabase.rpc('owner_update_billing_settings', { p_property_id: propertyId, p_settings: settings });
   if (error) throw error;
 }
 

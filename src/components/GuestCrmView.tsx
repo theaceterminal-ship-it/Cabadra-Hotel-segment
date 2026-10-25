@@ -347,6 +347,8 @@ export function GuestCrmView({ propertyId, propertyName, currency, upiId, onRefr
           reservationId={selectedFolioResId}
           roomNumber={entries.find(e => e.reservationId === selectedFolioResId)?.roomNumber || '?'}
           guestName={entries.find(e => e.reservationId === selectedFolioResId)?.guestName}
+          guestPhone={entries.find(e => e.reservationId === selectedFolioResId)?.guestPhone}
+          guestEmail={entries.find(e => e.reservationId === selectedFolioResId)?.guestEmail}
           propertyName={propertyName}
           currency={currency}
           upiId={upiId}

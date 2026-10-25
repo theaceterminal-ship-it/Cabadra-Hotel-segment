@@ -338,3 +338,14 @@
 .status-pill-in {
   animation: status-pill-in 180ms ease-out;
 }
+
+/* Printing a bill from inside the app (RoomFolioModal's "Print"): only the
+   element marked .print-only-root goes to paper, A4 with modest margins.
+   The guest's /bill/:token page prints whole, so it doesn't need this. */
+@media print {
+  @page { size: A4; margin: 10mm; }
+  body:has(.print-only-root) * { visibility: hidden; }
+  body:has(.print-only-root) .print-only-root,
+  body:has(.print-only-root) .print-only-root * { visibility: visible; }
+  body:has(.print-only-root) .print-only-root { position: absolute; inset: 0; }
+}

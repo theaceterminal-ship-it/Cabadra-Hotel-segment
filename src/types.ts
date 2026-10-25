@@ -183,13 +183,45 @@ export interface FolioChatMessage {
   createdAt: string;
 }
 
+export type PaymentMethod = 'cash' | 'card' | 'upi' | 'bank' | 'other';
+
+/** One line on a stay's bill (folio_charges). Amounts are before tax; GST, when the property charges it, is per line (0079). */
 export interface FolioCharge {
   id: string;
   description: string;
   amount: number;
-  category: 'room_service' | 'spa' | 'laundry' | 'minibar' | 'other';
+  category: 'room' | 'room_service' | 'spa' | 'laundry' | 'minibar' | 'extra' | 'other';
   postedAt: string;
+  /** The night a room charge is for. */
+  stayDate?: string;
+  taxRate: number;
+  taxAmount: number;
   settled: boolean;
+  voided: boolean;
+  voidReason?: string;
+}
+
+/** Money received for a stay, or refunded (folio_payments, 0079). Never edited: a mistake is voided by the owner. */
+export interface FolioPayment {
+  id: string;
+  kind: 'payment' | 'refund';
+  amount: number;
+  method: PaymentMethod;
+  reference?: string;
+  note?: string;
+  receivedAt: string;
+  voided: boolean;
+  voidReason?: string;
+}
+
+export interface FolioTotals {
+  subtotal: number;
+  tax: number;
+  total: number;
+  paid: number;
+  refunded: number;
+  /** total - paid + refunded. Negative means the guest is owed a refund. */
+  balance: number;
 }
 
 export interface Folio {
@@ -197,9 +229,34 @@ export interface Folio {
   status: 'upcoming' | 'checked_in' | 'checked_out' | 'cancelled';
   checkIn: string;
   checkOut: string;
+  ratePerNight?: number;
+  /** False for a property that bills rooms in its own PMS: only extras go on Cabadra's bill. */
+  billsRoomNights: boolean;
+  gstEnabled: boolean;
   charges: FolioCharge[];
+  payments: FolioPayment[];
+  totals: FolioTotals;
+  /** Same as totals.balance; kept for older screens. */
   totalOutstanding: number;
   totalPaid: number;
+  invoice: { number: string; shareToken: string; issuedAt: string } | null;
+}
+
+/** A bill as printed and as the guest's link shows it: build_bill (0079), frozen into the invoice at check-out. */
+export interface Bill {
+  number: string | null;
+  issuedAt?: string;
+  /** True before check-out: the bill so far, not yet numbered. */
+  provisional?: boolean;
+  shareToken?: string;
+  currency: string;
+  hotel: { name: string; legalName?: string; address?: string; phone?: string; email?: string; gstin?: string; gstEnabled: boolean };
+  guest: { name?: string; phone?: string; email?: string };
+  stay: { room?: string; roomType?: string; checkIn: string; checkOut: string; nights: number; ratePerNight?: number; guests?: number };
+  lines: { date: string; description: string; category: string; amount: number; taxRate: number; taxAmount: number }[];
+  taxSummary: { rate: number; taxable: number; tax: number; cgst: number; sgst: number }[];
+  payments: { date: string; kind: 'payment' | 'refund'; method: PaymentMethod; amount: number; reference?: string }[];
+  totals: FolioTotals;
 }
 
 export interface GuestExperienceBooking {
