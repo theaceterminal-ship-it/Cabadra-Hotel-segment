@@ -64,7 +64,7 @@ export function OrderStatusBar({ token, currency }: OrderStatusBarProps) {
             <AlertTriangle className="w-4 h-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-on-error-container">Order #{order.id.slice(0, 4)} couldn't be fulfilled</p>
+            <p className="text-sm font-semibold text-on-error-container">Order #{order.id.slice(0, 4)} couldn't be fulfilled</p>
             <p className="text-xs text-on-surface-variant mt-1">{order.rejectionNote || 'The kitchen was unable to prepare this order.'}</p>
             <p className="text-[10px] text-on-surface-variant mt-1.5">You haven't been charged for this.</p>
           </div>
@@ -91,7 +91,7 @@ export function OrderStatusBar({ token, currency }: OrderStatusBarProps) {
                 <ChefHat className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-bold text-on-surface truncate">{eta.statusLabel}</p>
+                <p className="text-sm font-semibold text-on-surface truncate">{eta.statusLabel}</p>
                 <p className="text-[11px] text-on-surface-variant">
                   Order #{order.id.slice(0, 4)} ·{' '}
                   {order.status === 'ready' ? (
@@ -122,7 +122,7 @@ export function OrderStatusBar({ token, currency }: OrderStatusBarProps) {
               <div key={step} className={`h-1.5 flex-1 rounded-full ${STATUS_STEPS.indexOf(step) <= stepIndex ? 'bg-primary' : 'bg-outline-variant'}`} />
             ))}
           </div>
-          <div className="flex justify-between mt-1.5 text-[9px] font-semibold uppercase tracking-wider text-on-surface-variant">
+          <div className="flex justify-between mt-1.5 text-xs font-semibold text-on-surface-variant">
             <span className={stepIndex >= 0 ? 'text-primary' : ''}>Received</span>
             <span className={stepIndex >= 1 ? 'text-primary' : ''}>Preparing</span>
             <span className={stepIndex >= 2 ? 'text-success flex items-center gap-0.5' : ''}>
@@ -139,7 +139,7 @@ export function OrderStatusBar({ token, currency }: OrderStatusBarProps) {
                 <span className="text-on-surface font-semibold">{formatCurrency(item.price * item.quantity, currency)}</span>
               </div>
             ))}
-            <div className="flex justify-between text-xs pt-1.5 mt-1.5 border-t border-outline-variant font-bold">
+            <div className="flex justify-between text-xs pt-1.5 mt-1.5 border-t border-outline-variant font-semibold">
               <span className="text-on-surface">Total</span>
               <span className="text-primary">{formatCurrency(order.totalAmount, currency)}</span>
             </div>

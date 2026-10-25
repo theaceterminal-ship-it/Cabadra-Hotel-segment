@@ -72,7 +72,7 @@ export const ActiveDeliveries: React.FC<ActiveDeliveriesProps> = ({ propertyId, 
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <h1 className="text-xl md:text-2xl font-bold text-primary">Active Deliveries</h1>
+            <h1 className="text-xl md:text-2xl font-semibold text-primary">Active Deliveries</h1>
           </div>
 
           <button
@@ -89,8 +89,8 @@ export const ActiveDeliveries: React.FC<ActiveDeliveriesProps> = ({ propertyId, 
           <div className="bg-success text-on-success p-4 rounded-xl shadow-lg flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
             <CheckCheck className="w-6 h-6 shrink-0" />
             <div>
-              <p className="font-bold text-sm">Delivery Completed!</p>
-              <p className="text-xs text-white/90">Room {justDelivered}'s order marked delivered and billed to their folio.</p>
+              <p className="font-semibold text-sm">Delivery Completed!</p>
+              <p className="text-xs opacity-90">Room {justDelivered}'s order marked delivered and billed to their folio.</p>
             </div>
           </div>
         )}
@@ -99,7 +99,7 @@ export const ActiveDeliveries: React.FC<ActiveDeliveriesProps> = ({ propertyId, 
           <div className="p-8 text-center text-sm text-on-surface-variant">Loading…</div>
         ) : orders.length === 0 ? (
           <div className="p-10 text-center bg-surface-container-lowest rounded-2xl border border-outline-variant flex flex-col items-center gap-2">
-            <PackageCheck className="w-10 h-10 text-[#9ea0a1]" />
+            <PackageCheck className="w-10 h-10 text-on-surface-variant" />
             <p className="text-sm font-semibold text-on-surface-variant">No deliveries waiting</p>
             <p className="text-xs text-on-surface-variant">Orders marked "Ready" on the Kitchen KDS board show up here.</p>
           </div>
@@ -114,13 +114,13 @@ export const ActiveDeliveries: React.FC<ActiveDeliveriesProps> = ({ propertyId, 
               >
                 <div className="bg-surface-container-low p-5 border-b border-outline-variant flex justify-between items-start">
                   <div>
-                    <h2 className="text-2xl font-bold text-on-surface mb-0.5 flex items-center gap-2">
+                    <h2 className="text-2xl font-semibold text-on-surface mb-0.5 flex items-center gap-2">
                       <MapPin className="w-5 h-5 text-primary fill-primary" />
                       <span>Room {roomNumber}</span>
                     </h2>
                     <p className="text-xs text-on-surface-variant">Order #{order.id.slice(0, 4)}</p>
                   </div>
-                  <div className="bg-warning/20 text-primary px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5">
+                  <div className="bg-warning/20 text-primary px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5" />
                     <span>{elapsedLabel(order.createdAt)}</span>
                   </div>
@@ -128,14 +128,14 @@ export const ActiveDeliveries: React.FC<ActiveDeliveriesProps> = ({ propertyId, 
 
                 <div className="p-5 flex flex-col gap-4">
                   <div className="border border-outline-variant rounded-xl p-4 bg-surface-container-low">
-                    <h3 className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-2.5">
+                    <h3 className="text-xs font-medium text-on-surface-variant mb-2.5">
                       Items ({order.items.length})
                     </h3>
                     <ul className="space-y-2 text-sm text-on-surface">
                       {order.items.map((item, idx) => (
                         <li key={idx} className="flex justify-between items-center font-medium">
                           <span>{item.name}</span>
-                          <span className="font-bold text-primary">x{item.quantity}</span>
+                          <span className="font-semibold text-primary">x{item.quantity}</span>
                         </li>
                       ))}
                     </ul>
@@ -154,7 +154,7 @@ export const ActiveDeliveries: React.FC<ActiveDeliveriesProps> = ({ propertyId, 
                 <div className="p-5 pt-0">
                   <button
                     onClick={() => handleMarkDelivered(order)}
-                    className="h-14 w-full bg-primary text-on-primary hover:bg-primary-hover font-bold text-base rounded-xl shadow-md flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer"
+                    className="h-14 w-full bg-primary text-on-primary hover:bg-primary-hover font-semibold text-base rounded-xl shadow-md flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer"
                   >
                     <CheckCircle2 className="w-6 h-6" />
                     <span>Mark Delivered</span>

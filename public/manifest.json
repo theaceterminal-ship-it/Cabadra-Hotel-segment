@@ -1,36 +1,36 @@
 {
-  "name": "Cabadra Guest App",
-  "short_name": "Guest App",
-  "description": "Guest experience and hospitality management app",
-  "start_url": "/guest",
-  "scope": "/",
+  "name": "Cabadra Guest",
+  "short_name": "Cabadra Guest",
+  "description": "Your stay: food to your room, services, things to do, your bill.",
   "id": "/guest",
+  "start_url": "/guest",
+  "scope": "/guest",
   "display": "standalone",
-  "theme_color": "#4f46e5",
-  "background_color": "#ffffff",
   "orientation": "portrait-primary",
+  "theme_color": "#eef0ec",
+  "background_color": "#eef0ec",
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/logo192.png",
+      "src": "/icons/guest-192.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any"
     },
     {
-      "src": "/logo192.png",
+      "src": "/icons/guest-192.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "maskable"
     },
     {
-      "src": "/logo512.png",
+      "src": "/icons/guest-512.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any"
     },
     {
-      "src": "/logo512.png",
+      "src": "/icons/guest-512.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "maskable"

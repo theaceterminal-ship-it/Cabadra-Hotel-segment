@@ -97,8 +97,8 @@ export function GuestCrmView({ propertyId, propertyName, currency, upiId, onRefr
         <div>
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-primary" />
-            <h1 className="text-lg font-bold text-on-surface">Guest CRM &amp; Check-In Directory</h1>
-            <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-bold">
+            <h1 className="text-lg font-semibold text-on-surface">Guest CRM &amp; Check-In Directory</h1>
+            <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
               {entries.length} Records
             </span>
           </div>
@@ -112,7 +112,7 @@ export function GuestCrmView({ propertyId, propertyName, currency, upiId, onRefr
             type="button"
             onClick={handleExportCsv}
             disabled={entries.length === 0}
-            className="h-9 px-3.5 rounded-xl bg-primary text-on-primary text-xs font-bold hover:bg-primary-hover disabled:opacity-50 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+            className="h-9 px-3.5 rounded-xl bg-primary text-on-primary text-xs font-semibold hover:bg-primary-hover disabled:opacity-50 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Export to CSV</span>
@@ -130,7 +130,7 @@ export function GuestCrmView({ propertyId, propertyName, currency, upiId, onRefr
       </div>
 
       {error && (
-        <div className="p-3 bg-red-100 border border-red-300 text-red-800 rounded-xl text-xs font-medium">
+        <div className="p-3 bg-error/10 border border-error/30 text-error rounded-xl text-xs font-medium">
           {error}
         </div>
       )}
@@ -177,7 +177,7 @@ export function GuestCrmView({ propertyId, propertyName, currency, upiId, onRefr
 
             <button
               type="submit"
-              className="h-10 px-4 rounded-xl bg-surface-container-high border border-outline-variant text-xs font-bold hover:bg-surface-container-highest cursor-pointer"
+              className="h-10 px-4 rounded-xl bg-surface-container-high border border-outline-variant text-xs font-semibold hover:bg-surface-container-highest cursor-pointer"
             >
               Filter
             </button>
@@ -194,7 +194,7 @@ export function GuestCrmView({ propertyId, propertyName, currency, upiId, onRefr
         ) : entries.length === 0 ? (
           <div className="text-center py-12">
             <Users className="w-8 h-8 text-on-surface-variant opacity-30 mx-auto mb-2" />
-            <p className="text-xs font-bold text-on-surface">No guest records found</p>
+            <p className="text-xs font-semibold text-on-surface">No guest records found</p>
             <p className="text-[11px] text-on-surface-variant mt-0.5">
               Try adjusting your search terms or date filters.
             </p>
@@ -203,7 +203,7 @@ export function GuestCrmView({ propertyId, propertyName, currency, upiId, onRefr
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-surface-container-low border-b border-outline-variant/60 text-on-surface-variant font-bold text-[11px] uppercase tracking-wider">
+                <tr className="bg-surface-container-low border-b border-outline-variant/60 text-on-surface-variant font-medium text-xs">
                   <th className="p-3.5 pl-5">Guest Name</th>
                   <th className="p-3.5">Room</th>
                   <th className="p-3.5">Contact Details</th>
@@ -217,12 +217,12 @@ export function GuestCrmView({ propertyId, propertyName, currency, upiId, onRefr
                 {entries.map(e => (
                   <tr key={e.reservationId} className="hover:bg-surface-container-low/50 transition-colors">
                     {/* Guest Name & VIP Badge */}
-                    <td className="p-3.5 pl-5 font-bold text-on-surface">
+                    <td className="p-3.5 pl-5 font-semibold text-on-surface">
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm">{e.guestName}</span>
                         {e.vip && (
-                          <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-extrabold text-[9px]">
-                            <Star className="w-2.5 h-2.5 fill-amber-500" /> VIP
+                          <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-warning/15 text-warning font-semibold text-[9px]">
+                            <Star className="w-2.5 h-2.5 fill-current" /> VIP
                           </span>
                         )}
                       </div>
@@ -230,7 +230,7 @@ export function GuestCrmView({ propertyId, propertyName, currency, upiId, onRefr
 
                     {/* Room & Category */}
                     <td className="p-3.5 font-semibold text-on-surface">
-                      <span className="text-xs font-extrabold block">Room {e.roomNumber}</span>
+                      <span className="text-xs font-semibold block">Room {e.roomNumber}</span>
                       <span className="text-[10px] text-primary block mt-0.5">{e.roomType}</span>
                     </td>
 
@@ -238,13 +238,13 @@ export function GuestCrmView({ propertyId, propertyName, currency, upiId, onRefr
                     <td className="p-3.5 space-y-0.5 text-on-surface-variant text-[11px]">
                       {e.guestPhone && (
                         <div className="flex items-center gap-1">
-                          <Phone className="w-3 h-3 text-gray-400" />
+                          <Phone className="w-3 h-3 text-on-surface-variant" />
                           <span>{e.guestPhone}</span>
                         </div>
                       )}
                       {e.guestEmail && (
                         <div className="flex items-center gap-1 truncate max-w-[180px]">
-                          <Mail className="w-3 h-3 text-gray-400 shrink-0" />
+                          <Mail className="w-3 h-3 text-on-surface-variant shrink-0" />
                           <span className="truncate">{e.guestEmail}</span>
                         </div>
                       )}
@@ -263,14 +263,14 @@ export function GuestCrmView({ propertyId, propertyName, currency, upiId, onRefr
                     {/* Status Pill */}
                     <td className="p-3.5">
                       <span
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold capitalize ${
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-semibold capitalize ${
                           e.status === 'checked_in'
-                            ? 'bg-emerald-100 text-emerald-800'
+                            ? 'bg-success/15 text-success'
                             : e.status === 'checked_out'
-                            ? 'bg-blue-100 text-blue-800'
+                            ? 'bg-surface-container-high text-on-surface'
                             : e.status === 'upcoming'
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-red-100 text-red-800'
+                            ? 'bg-warning/15 text-warning'
+                            : 'bg-error/10 text-error'
                         }`}
                       >
                         {e.status.replace('_', ' ')}
@@ -278,7 +278,7 @@ export function GuestCrmView({ propertyId, propertyName, currency, upiId, onRefr
                     </td>
 
                     {/* Total Spend */}
-                    <td className="p-3.5 font-extrabold text-primary text-sm">
+                    <td className="p-3.5 font-semibold text-primary text-sm">
                       {formatCurrency(e.totalSpend, currency)}
                     </td>
 
@@ -288,7 +288,7 @@ export function GuestCrmView({ propertyId, propertyName, currency, upiId, onRefr
                         <button
                           type="button"
                           onClick={() => setSelectedDocUrl(e.guestIdDocumentUrl ?? null)}
-                          className="px-2.5 py-1 rounded-lg border border-outline-variant text-[11px] font-bold text-on-surface hover:bg-surface-container-low cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg border border-outline-variant text-[11px] font-semibold text-on-surface hover:bg-surface-container-low cursor-pointer"
                           title="View Guest ID Photo"
                         >
                           ID Photo
@@ -298,7 +298,7 @@ export function GuestCrmView({ propertyId, propertyName, currency, upiId, onRefr
                       <button
                         type="button"
                         onClick={() => setSelectedFolioResId(e.reservationId)}
-                        className="px-2.5 py-1 rounded-lg border border-primary text-primary text-[11px] font-bold hover:bg-highlight cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg border border-primary text-primary text-[11px] font-semibold hover:bg-highlight cursor-pointer"
                         title="View Guest Folio & Bill"
                       >
                         Folio
@@ -308,7 +308,7 @@ export function GuestCrmView({ propertyId, propertyName, currency, upiId, onRefr
                         <button
                           type="button"
                           onClick={() => handleCopyLink(e.guestToken)}
-                          className="px-2.5 py-1 rounded-lg bg-surface-container-high border border-outline-variant text-[11px] font-bold text-on-surface hover:bg-surface-container-highest cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg bg-surface-container-high border border-outline-variant text-[11px] font-semibold text-on-surface hover:bg-surface-container-highest cursor-pointer"
                           title="Copy Guest App Link"
                         >
                           {copiedToken === e.guestToken ? 'Copied ✓' : 'Copy Link'}
@@ -328,14 +328,14 @@ export function GuestCrmView({ propertyId, propertyName, currency, upiId, onRefr
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150" onClick={() => setSelectedDocUrl(null)}>
           <div className="bg-surface-container-lowest rounded-2xl max-w-lg w-full p-5 shadow-2xl border border-outline-variant space-y-3" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center pb-2 border-b border-outline-variant">
-              <h3 className="text-sm font-bold text-on-surface">Guest ID Document / Passport</h3>
-              <button type="button" onClick={() => setSelectedDocUrl(null)} className="text-gray-400 hover:text-gray-600 text-lg font-bold cursor-pointer">&times;</button>
+              <h3 className="text-sm font-semibold text-on-surface">Guest ID Document / Passport</h3>
+              <button type="button" onClick={() => setSelectedDocUrl(null)} className="text-on-surface-variant hover:text-on-surface text-lg font-semibold cursor-pointer">&times;</button>
             </div>
             <div className="max-h-[70vh] overflow-hidden rounded-xl border border-outline-variant bg-black">
               <img src={selectedDocUrl} alt="Guest ID Document" className="w-full h-full object-contain mx-auto" />
             </div>
             <div className="text-right">
-              <button type="button" onClick={() => setSelectedDocUrl(null)} className="h-8 px-4 rounded-lg bg-primary text-on-primary text-xs font-bold">Close</button>
+              <button type="button" onClick={() => setSelectedDocUrl(null)} className="h-8 px-4 rounded-lg bg-primary text-on-primary text-xs font-semibold">Close</button>
             </div>
           </div>
         </div>

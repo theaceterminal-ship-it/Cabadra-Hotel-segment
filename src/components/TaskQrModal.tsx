@@ -67,13 +67,13 @@ export function TaskQrModal({ task, onClose }: TaskQrModalProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <QrCode className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-bold text-on-surface">Task QR</h3>
+            <h3 className="text-lg font-semibold text-on-surface">Task QR</h3>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface p-1"><X className="w-5 h-5" /></button>
         </div>
 
         <div className="text-left bg-surface-container-low border border-outline-variant rounded-lg p-3">
-          <p className="text-sm font-bold text-on-surface">{task.title}</p>
+          <p className="text-sm font-semibold text-on-surface">{task.title}</p>
           <p className="text-xs text-on-surface-variant mt-0.5">
             {task.roomNumber && <>Room {task.roomNumber} · </>}
             Assigned to {task.assignedTo ?? 'no one yet'}
@@ -97,7 +97,7 @@ export function TaskQrModal({ task, onClose }: TaskQrModalProps) {
         <div className="flex gap-2">
           <button
             onClick={handleCopy}
-            className="flex-1 h-10 rounded-lg border border-outline-variant text-on-surface-variant text-xs font-bold hover:bg-surface-container-low flex items-center justify-center gap-1.5"
+            className="flex-1 h-10 rounded-lg border border-outline-variant text-on-surface-variant text-xs font-semibold hover:bg-surface-container-low flex items-center justify-center gap-1.5"
           >
             {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
             {copied ? 'Copied' : 'Copy Link'}
@@ -105,7 +105,7 @@ export function TaskQrModal({ task, onClose }: TaskQrModalProps) {
           <button
             onClick={handlePrint}
             disabled={!qrDataUrl}
-            className="flex-1 h-10 rounded-lg bg-primary text-on-primary text-xs font-bold hover:bg-primary-hover disabled:opacity-50 flex items-center justify-center gap-1.5"
+            className="flex-1 h-10 rounded-lg bg-primary text-on-primary text-xs font-semibold hover:bg-primary-hover disabled:opacity-50 flex items-center justify-center gap-1.5"
           >
             <Printer className="w-3.5 h-3.5" /> Print
           </button>

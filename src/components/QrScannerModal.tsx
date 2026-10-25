@@ -69,15 +69,15 @@ export function QrScannerModal({ title, instructions, onScan, onClose }: QrScann
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Camera className="w-5 h-5 text-primary" />
-            <h3 className="text-sm font-bold text-on-surface">{title}</h3>
+            <h3 className="text-sm font-semibold text-on-surface">{title}</h3>
           </div>
-          <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 p-1"><X className="w-5 h-5" /></button>
+          <button onClick={handleClose} className="text-on-surface-variant hover:text-on-surface p-1"><X className="w-5 h-5" /></button>
         </div>
 
         <p className="text-xs text-on-surface-variant">{instructions}</p>
 
         {error ? (
-          <p className="text-xs text-red-600 py-6 text-center">{error}</p>
+          <p className="text-xs text-error py-6 text-center">{error}</p>
         ) : (
           <div id={ELEMENT_ID} className="w-full rounded-xl overflow-hidden bg-black" />
         )}

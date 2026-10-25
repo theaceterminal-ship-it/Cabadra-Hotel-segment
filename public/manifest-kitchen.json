@@ -1,0 +1,39 @@
+{
+  "name": "Cabadra Kitchen",
+  "short_name": "Kitchen",
+  "description": "The kitchen screen: room-service orders as they come in.",
+  "id": "/kitchen",
+  "start_url": "/kitchen",
+  "scope": "/kitchen",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#eef0ec",
+  "background_color": "#eef0ec",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/icons/kitchen-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/kitchen-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/kitchen-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/kitchen-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ]
+}

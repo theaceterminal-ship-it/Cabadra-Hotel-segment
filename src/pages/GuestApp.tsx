@@ -12,6 +12,7 @@ import { useSiteTheme } from '../hooks/useTheme';
 import { SupabaseSetupNeeded } from '../components/SupabaseSetupNeeded';
 import { DynamicIslandStatusBar } from '../components/DynamicIslandStatusBar';
 import { GuestFolioChat } from '../components/GuestFolioChat';
+import { usePwaManifest } from '../hooks/usePwaManifest';
 
 /**
  * The guest page: `/guest/:token`. No login — the token in the URL (handed
@@ -25,6 +26,7 @@ import { GuestFolioChat } from '../components/GuestFolioChat';
  * is the only thing worth bookmarking.
  */
 export default function GuestApp() {
+  usePwaManifest('guest');
   const { token: urlToken } = useParams<{ token?: string }>();
   const [effectiveToken, setEffectiveToken] = useState<string | null>(() => {
     return urlToken || localStorage.getItem('cabadra_guest_token') || null;

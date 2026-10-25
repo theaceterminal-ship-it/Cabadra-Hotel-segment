@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { redeemAccessLink } from '../lib/staffApi';
 import { supabase } from '../lib/supabaseClient';
+import { useSiteTheme } from '../hooks/useTheme';
 
 /**
  * What a property's no-login reception link (/access/:token) actually
@@ -12,6 +13,7 @@ import { supabase } from '../lib/supabaseClient';
  * 0027_no_login_access_links.sql for the trade-off this makes on purpose.
  */
 export default function AccessLinkPage() {
+  useSiteTheme();
   const { token = '' } = useParams<{ token: string }>();
   const [status, setStatus] = useState<'working' | 'done' | 'error'>('working');
   const [error, setError] = useState('');
@@ -38,15 +40,15 @@ export default function AccessLinkPage() {
   if (status === 'done') return <Navigate to="/reception" replace />;
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#f6faff] p-6">
+    <div className="min-h-screen w-full flex items-center justify-center bg-surface text-on-surface p-6">
       <div className="max-w-sm text-center space-y-3">
         {status === 'working' ? (
-          <p className="text-sm text-[#4e463a]">Opening reception…</p>
+          <p className="text-sm text-on-surface-variant">Opening reception…</p>
         ) : (
           <>
-            <h1 className="text-lg font-bold text-[#141d23]">Can't open this link</h1>
-            <p className="text-sm text-[#4e463a]">{error}</p>
-            <p className="text-xs text-[#7f7668]">Ask this hotel's owner for a fresh link from their Staff tab.</p>
+            <h1 className="text-lg font-semibold text-on-surface">Can't open this link</h1>
+            <p className="text-sm text-on-surface-variant">{error}</p>
+            <p className="text-xs text-on-surface-variant">Ask this hotel's owner for a fresh link from their Staff tab.</p>
           </>
         )}
       </div>

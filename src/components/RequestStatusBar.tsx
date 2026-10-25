@@ -37,7 +37,7 @@ const RequestRow: React.FC<{ request: ActiveGuestRequest }> = ({ request }) => {
       <div className="min-w-0 flex-1">
         <p className="text-xs font-semibold text-on-surface truncate">{request.title}</p>
       </div>
-      <span className={`text-[10px] font-bold uppercase tracking-wide shrink-0 ${status === 'in_progress' ? 'text-primary' : 'text-on-surface-variant'}`}>
+      <span className={`text-xs font-medium shrink-0 ${status === 'in_progress' ? 'text-primary' : 'text-on-surface-variant'}`}>
         {STATUS_LABEL[status]}
       </span>
     </div>
@@ -79,14 +79,14 @@ export function RequestStatusBar({ token }: RequestStatusBarProps) {
       >
         <Bell className="w-4 h-4" />
         {!isEmpty && (
-          <span className="text-xs font-bold">{requests.length}</span>
+          <span className="text-xs font-semibold">{requests.length}</span>
         )}
       </button>
 
       {expanded && (
         <div className="absolute top-full right-0 mt-2 w-72 max-w-[85vw] bg-surface-container-lowest rounded-2xl shadow-xl border border-outline-variant overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
           <div className="px-4 py-2.5 border-b border-outline-variant bg-surface-container-low">
-            <span className="text-xs font-bold text-on-surface">My Requests</span>
+            <span className="text-xs font-semibold text-on-surface">My Requests</span>
           </div>
           <div className="px-4 py-1 divide-y divide-outline-variant max-h-72 overflow-y-auto">
             {isEmpty ? (

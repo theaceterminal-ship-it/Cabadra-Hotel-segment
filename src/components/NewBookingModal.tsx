@@ -20,7 +20,7 @@ interface NewBookingModalProps {
 type Step = 'search' | 'results' | 'details' | 'success';
 
 const inputCls = 'w-full h-10 px-3 text-sm border border-outline-variant rounded-lg focus:border-primary focus:outline-none';
-const labelCls = 'text-[11px] font-bold text-on-surface-variant block mb-1';
+const labelCls = 'text-[11px] font-semibold text-on-surface-variant block mb-1';
 
 /** YYYY-MM-DD in the desk's own timezone (toISOString would give UTC's date, yesterday before 5:30 am in India). */
 function localIso(d: Date): string {
@@ -151,15 +151,15 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
       <div className="bg-surface-container-lowest rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-outline-variant space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between pb-3 border-b border-outline-variant">
           <div>
-            <p className="text-[10px] font-bold text-primary uppercase tracking-wider">New Booking</p>
-            <h3 className="text-lg font-bold text-on-surface">
+            <p className="text-xs font-medium text-primary">New Booking</p>
+            <h3 className="text-lg font-semibold text-on-surface">
               {step === 'search' && 'What does the guest need?'}
               {step === 'results' && 'Available Rooms'}
               {step === 'details' && `Assign Room ${selectedRoom?.number}`}
               {step === 'success' && (isFutureBooking ? 'Booking Confirmed' : 'Checked In')}
             </h3>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface p-1"><X className="w-5 h-5" /></button>
         </div>
 
         {step === 'search' && (
@@ -202,7 +202,7 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
                 </select>
               </div>
             </div>
-            {searchError && <p className="text-xs text-red-600">{searchError}</p>}
+            {searchError && <p className="text-xs text-error">{searchError}</p>}
             <button type="submit" disabled={searching} className="w-full h-11 rounded-lg bg-primary text-on-primary font-semibold text-sm hover:bg-primary-hover disabled:opacity-60 flex items-center justify-center gap-2">
               <Search className="w-4 h-4" /> {searching ? 'Searching…' : 'Search Available Rooms'}
             </button>
@@ -230,11 +230,11 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
                     className="w-full flex items-center justify-between p-3 rounded-lg border border-outline-variant hover:border-primary hover:bg-highlight text-left transition-colors"
                   >
                     <div>
-                      <p className="text-sm font-bold text-on-surface">Room {room.number} · {room.type}</p>
+                      <p className="text-sm font-semibold text-on-surface">Room {room.number} · {room.type}</p>
                       <p className="text-[11px] text-on-surface-variant">Floor {room.floor} · Sleeps {room.maxOccupancy}</p>
                     </div>
                     <div className="text-right shrink-0 ml-3">
-                      <p className="text-sm font-bold text-success">{formatCurrency(room.pricePerNight, currency)}</p>
+                      <p className="text-sm font-semibold text-success">{formatCurrency(room.pricePerNight, currency)}</p>
                       <p className="text-[10px] text-on-surface-variant">/ night</p>
                     </div>
                   </button>
@@ -318,7 +318,7 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
               VIP guest
             </label>
 
-            {error && <p className="text-xs text-red-600">{error}</p>}
+            {error && <p className="text-xs text-error">{error}</p>}
 
             <button type="submit" disabled={submitting || !name.trim()} className="w-full h-11 rounded-lg bg-primary text-on-primary font-semibold text-sm hover:bg-primary-hover disabled:opacity-60 flex items-center justify-center gap-2">
               <UserPlus className="w-4 h-4" />
@@ -332,7 +332,7 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
             <CheckCircle2 className="w-12 h-12 text-success mx-auto" />
             {isFutureBooking ? (
               <>
-                <p className="text-base font-bold text-on-surface">Room {selectedRoom.number} reserved for {name}</p>
+                <p className="text-base font-semibold text-on-surface">Room {selectedRoom.number} reserved for {name}</p>
                 <p className="text-xs text-on-surface-variant">
                   Arriving {checkIn}. It'll show in Upcoming Arrivals on the Dashboard — check them in from there when they arrive, or cancel it if plans change.
                 </p>
@@ -342,14 +342,14 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
               </>
             ) : (
               <>
-                <p className="text-base font-bold text-on-surface">Room {selectedRoom.number} assigned to {name}</p>
+                <p className="text-base font-semibold text-on-surface">Room {selectedRoom.number} assigned to {name}</p>
                 <p className="text-xs text-on-surface-variant">
                   Their folio starts now and runs through checkout — every order and request on this room belongs to them until then.
                 </p>
                 <div className="flex gap-2 pt-2">
                   <button
                     onClick={() => setShowQr(true)}
-                    className="flex-1 h-10 rounded-lg border border-primary text-primary text-xs font-bold hover:bg-highlight flex items-center justify-center gap-1.5"
+                    className="flex-1 h-10 rounded-lg border border-primary text-primary text-xs font-semibold hover:bg-highlight flex items-center justify-center gap-1.5"
                   >
                     <QrCode className="w-3.5 h-3.5" /> Room Key (QR)
                   </button>

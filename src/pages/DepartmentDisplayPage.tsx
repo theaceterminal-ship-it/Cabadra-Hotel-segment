@@ -13,6 +13,7 @@ import {
 import { QrScannerModal } from '../components/QrScannerModal';
 import { DisplayTaskQueue } from '../components/DisplayTaskQueue';
 import { DEPARTMENT_LABELS } from '../lib/departments';
+import { useSiteTheme } from '../hooks/useTheme';
 
 const DEPT_LABELS = DEPARTMENT_LABELS;
 
@@ -37,6 +38,7 @@ const REFRESH_MS = 8000;
  * manual entry for testing. Both end up at the same submitBadge call.
  */
 export default function DepartmentDisplayPage() {
+  useSiteTheme();
   const { token = '' } = useParams<{ token: string }>();
   const [display, setDisplay] = useState<DepartmentDisplay | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -161,7 +163,7 @@ export default function DepartmentDisplayPage() {
   if (error && !display) {
     return (
       <CenteredCard>
-        <p className="text-lg font-bold text-on-surface">Can't open this display</p>
+        <p className="text-lg font-semibold text-on-surface">Can't open this display</p>
         <p className="text-sm text-on-surface-variant mt-2">{error}</p>
       </CenteredCard>
     );
@@ -179,8 +181,8 @@ export default function DepartmentDisplayPage() {
     <div className="min-h-screen w-full bg-surface flex flex-col items-center p-4 sm:p-6 pb-24">
       <div className="w-full max-w-2xl space-y-4">
         <header className="bg-surface-container-lowest rounded-2xl border border-outline-variant p-4 sm:p-5 text-center">
-          <p className="text-[11px] font-bold text-primary uppercase tracking-wider">{display.propertyName}</p>
-          <h1 className="text-xl font-bold text-on-surface mt-0.5">{DEPT_LABELS[display.department]} — {display.label}</h1>
+          <p className="text-xs font-medium text-primary">{display.propertyName}</p>
+          <h1 className="text-xl font-semibold text-on-surface mt-0.5">{DEPT_LABELS[display.department]} — {display.label}</h1>
           {/* Who actually has this display claimed right now (0053) — the
               screen used to say nothing about this at all, badge scan or
               not. */}
@@ -226,7 +228,7 @@ export default function DepartmentDisplayPage() {
             <button
               onClick={() => submitBadge()}
               disabled={!badgeValue.trim()}
-              className="h-8 px-3 rounded-full bg-primary text-on-primary text-xs font-bold disabled:opacity-40 shrink-0"
+              className="h-8 px-3 rounded-full bg-primary text-on-primary text-xs font-semibold disabled:opacity-40 shrink-0"
             >
               Go
             </button>
@@ -235,7 +237,7 @@ export default function DepartmentDisplayPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowCameraScanner(true)}
-            className="h-10 px-4 rounded-full bg-primary text-on-primary text-xs font-bold shadow-lg flex items-center gap-1.5"
+            className="h-10 px-4 rounded-full bg-primary text-on-primary text-xs font-semibold shadow-lg flex items-center gap-1.5"
           >
             <Camera className="w-3.5 h-3.5" /> Scan Badge
           </button>

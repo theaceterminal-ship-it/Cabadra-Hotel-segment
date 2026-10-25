@@ -41,11 +41,11 @@ export function GuestLinkCard({ guestToken }: GuestLinkCardProps) {
     <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant flex items-center gap-3">
       {qrDataUrl && <img src={qrDataUrl} alt="Guest link QR code" className="w-16 h-16 rounded border border-outline-variant bg-surface-container-lowest shrink-0" />}
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Guest Link</p>
+        <p className="text-xs font-medium text-on-surface-variant mb-1">Guest Link</p>
         <p className="text-[11px] text-on-surface-variant truncate mb-1.5">{url}</p>
         <button
           onClick={handleCopy}
-          className="h-7 px-2.5 rounded bg-primary text-on-primary text-[11px] font-bold hover:bg-primary-hover flex items-center gap-1.5"
+          className="h-7 px-2.5 rounded bg-primary text-on-primary text-[11px] font-semibold hover:bg-primary-hover flex items-center gap-1.5"
         >
           {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
           {copied ? 'Copied' : 'Copy Link'}

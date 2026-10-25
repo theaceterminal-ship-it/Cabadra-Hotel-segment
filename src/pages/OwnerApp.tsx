@@ -16,6 +16,7 @@ import { usePortfolioNotifications } from '../hooks/useNotifications';
 import PropertyDetailPage from './PropertyDetailPage';
 import LoginPage from './LoginPage';
 import OwnerOnboarding from './OwnerOnboarding';
+import { usePwaManifest } from '../hooks/usePwaManifest';
 
 /**
  * The owner page: `/owner`. Supabase Auth-gated — see useAuth. Real nested
@@ -28,6 +29,7 @@ import OwnerOnboarding from './OwnerOnboarding';
  * its one-time setup fee.
  */
 export default function OwnerApp() {
+  usePwaManifest('owner');
   useSiteTheme();
   const { loading, session, assignments, refreshAssignments } = useAuth();
   const navigate = useNavigate();

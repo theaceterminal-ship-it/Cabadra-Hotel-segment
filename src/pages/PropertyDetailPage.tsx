@@ -22,14 +22,15 @@ import { MenuTab } from './property/MenuTab';
 import { ExperiencesTab } from './property/ExperiencesTab';
 import { ServicesTab } from './property/ServicesTab';
 import { StaffTab } from './property/StaffTab';
+import { ReportsView } from '../components/ReportsView';
 
 interface PropertyDetailPageProps {
   properties: Property[];
   onChanged: () => void | Promise<void>;
 }
 
-type TabId = 'overview' | 'rooms' | 'menu' | 'experiences' | 'services' | 'staff';
-const TAB_IDS: TabId[] = ['overview', 'rooms', 'menu', 'experiences', 'services', 'staff'];
+type TabId = 'overview' | 'reports' | 'rooms' | 'menu' | 'experiences' | 'services' | 'staff';
+const TAB_IDS: TabId[] = ['overview', 'reports', 'rooms', 'menu', 'experiences', 'services', 'staff'];
 
 /**
  * One property's console at /owner/properties/:propertyId: a header and
@@ -113,6 +114,7 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
 
   const tabs: { id: TabId; label: string; count?: number }[] = [
     { id: 'overview', label: 'Overview' },
+    { id: 'reports', label: 'Reports' },
     { id: 'rooms', label: 'Rooms', count: rooms.length },
     { id: 'menu', label: 'Menu', count: menu.length },
     { id: 'experiences', label: 'Experiences', count: experiences.length },
@@ -178,6 +180,9 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
             onChanged={handleReload}
             onGoToStaff={() => setTab('staff')}
           />
+        ) : tab === 'reports' ? (
+          // Same reports the front desk sees, including every day close and its cash difference.
+          <div className="-mx-4 sm:-mx-6"><ReportsView propertyId={propertyId} propertyName={property?.name ?? ''} currency={currency} /></div>
         ) : tab === 'rooms' ? (
           <RoomsTab propertyId={propertyId} currency={currency} rooms={rooms} hasExternalPms={property?.hasExternalPms ?? false} onChanged={handleReload} />
         ) : tab === 'menu' ? (

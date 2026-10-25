@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { LayoutDashboard, BedDouble, ListChecks, UtensilsCrossed, Truck, CalendarClock, CalendarDays, Sparkles, Users, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, BedDouble, ListChecks, UtensilsCrossed, Truck, CalendarClock, CalendarDays, Sparkles, Users, TrendingUp, ClipboardCheck } from 'lucide-react';
 import { StaffPwaInstallPrompt } from '../components/StaffPwaInstallPrompt';
 import { ReservedExperiencesView } from '../components/ReservedExperiencesView';
 import { GuestCrmView } from '../components/GuestCrmView';
-import { SalesReportView } from '../components/SalesReportView';
+import { ReportsView } from '../components/ReportsView';
+import { DayCloseView } from '../components/DayCloseView';
 import { AppView, KdsOrder, LiveOpsTask, Room, UpcomingArrival, UrgentRequest } from '../types';
 import { useAuth, signOut } from '../hooks/useAuth';
 import {
@@ -33,23 +34,25 @@ import {
   PropertyStats,
 } from '../lib/staffApi';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
-import { Sidebar, SidebarNavItem } from '../components/Sidebar';
+import { MobileNav, Sidebar, SidebarNavItem } from '../components/Sidebar';
 import { ShiftCoverageView } from '../components/ShiftCoverageView';
 import { ReceptionDashboard } from '../components/ReceptionDashboard';
 import { BookingsView } from '../components/bookings/BookingsView';
 import { RoomsFloorsView } from '../components/RoomsFloorsView';
 import { LiveOpsView } from '../components/LiveOpsView';
 import { KitchenKDS } from '../components/KitchenKDS';
+import { KitchenLinkBar } from '../components/KitchenLinkBar';
 import { ActiveDeliveries } from '../components/ActiveDeliveries';
 import { NewRequestModal } from '../components/NewRequestModal';
 import { SupabaseSetupNeeded } from '../components/SupabaseSetupNeeded';
 import { NotificationBell } from '../components/NotificationBell';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { useTheme } from '../hooks/useTheme';
+import { useSiteTheme, useTheme } from '../hooks/useTheme';
 import { useNotifications } from '../hooks/useNotifications';
 import LoginPage from './LoginPage';
+import { usePwaManifest } from '../hooks/usePwaManifest';
 
-type ReceptionTab = 'dashboard' | 'bookings' | 'rooms_floors' | 'live_ops' | 'reserved_experiences' | 'guest_crm' | 'sales_reports' | 'kitchen_kds' | 'active_deliveries' | 'shift_coverage';
+type ReceptionTab = 'dashboard' | 'bookings' | 'day_close' | 'rooms_floors' | 'live_ops' | 'reserved_experiences' | 'guest_crm' | 'sales_reports' | 'kitchen_kds' | 'active_deliveries' | 'shift_coverage';
 
 function supabaseOrderToKdsOrder(order: StaffOrder, previouslySeen?: KdsOrder): KdsOrder {
   const roomNumber = order.roomId.split('-').pop() ?? order.roomId;
@@ -80,9 +83,12 @@ function supabaseOrderToKdsOrder(order: StaffOrder, previouslySeen?: KdsOrder): 
 
 /** The reception page: `/reception`. Supabase Auth-gated, receptionist role. Every screen is wired to real Supabase data — no mock/local-only state left. */
 export default function ReceptionApp() {
+  usePwaManifest('staff');
   const { loading, session, assignments } = useAuth();
   const [view, setView] = useState<ReceptionTab>('dashboard');
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  // The website's palette and shapes, the same as the owner side; the toggle still switches it to dark.
+  useSiteTheme();
   const [theme, setTheme] = useTheme();
 
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -333,7 +339,7 @@ export default function ReceptionApp() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface p-6">
         <div className="max-w-md text-center space-y-3">
-          <h1 className="text-lg font-bold text-on-surface">No property assigned yet</h1>
+          <h1 className="text-lg font-semibold text-on-surface">No property assigned yet</h1>
           <p className="text-sm text-on-surface-variant">
             You're signed in, but this account isn't linked to a hotel yet. Reception access isn't self-serve —
             ask your hotel's owner to invite this email from their property's Staff tab, and you'll land here
@@ -352,14 +358,15 @@ export default function ReceptionApp() {
   const navItems: SidebarNavItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: openRequestsCount },
     { id: 'bookings', label: 'Bookings', icon: CalendarDays },
-    { id: 'rooms_floors', label: 'Rooms & Floors', icon: BedDouble },
-    { id: 'live_ops', label: 'Live Ops & Tasks', icon: ListChecks, badge: openTasksCount },
-    { id: 'reserved_experiences', label: 'Reserved Experiences', icon: Sparkles },
-    { id: 'guest_crm', label: 'Guest CRM', icon: Users },
-    { id: 'sales_reports', label: 'Sales Reports', icon: TrendingUp },
-    { id: 'shift_coverage', label: 'Shift Coverage', icon: CalendarClock },
-    { id: 'kitchen_kds', label: 'Kitchen KDS', icon: UtensilsCrossed, badge: activeOrdersCount },
-    { id: 'active_deliveries', label: 'Active Deliveries', icon: Truck },
+    { id: 'rooms_floors', label: 'Rooms', icon: BedDouble },
+    { id: 'live_ops', label: 'Tasks', icon: ListChecks, badge: openTasksCount },
+    { id: 'reserved_experiences', label: 'Experiences', icon: Sparkles },
+    { id: 'guest_crm', label: 'Guests', icon: Users },
+    { id: 'day_close', label: 'Day close', icon: ClipboardCheck },
+    { id: 'sales_reports', label: 'Reports', icon: TrendingUp },
+    { id: 'shift_coverage', label: 'Shifts', icon: CalendarClock },
+    { id: 'kitchen_kds', label: 'Kitchen', icon: UtensilsCrossed, badge: activeOrdersCount },
+    { id: 'active_deliveries', label: 'Deliveries', icon: Truck },
   ];
 
   return (
@@ -372,13 +379,15 @@ export default function ReceptionApp() {
       />
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <div className="h-14 flex items-center justify-end gap-3 px-4 sm:px-6 shrink-0">
-          <ThemeToggle theme={theme} onChange={setTheme} />
+        <div className="h-14 flex items-center justify-end gap-3 px-4 sm:px-6 shrink-0 sticky top-0 z-30 bg-surface/90 backdrop-blur-xl md:static md:bg-transparent md:backdrop-blur-0">
+          <span className="md:hidden size-8 rounded-full bg-primary text-on-primary flex items-center justify-center text-sm font-semibold shrink-0">C</span>
+          <p className="mr-auto text-sm font-medium text-on-surface-variant truncate">{propertyName}</p>
+          <div className="hidden md:block"><ThemeToggle theme={theme} onChange={setTheme} /></div>
           <NotificationBell notifications={notifications} unreadCount={unreadCount} onMarkRead={markRead} onMarkAllRead={markAllRead} date={notificationsDate} onDateChange={setNotificationsDate} />
         </div>
         <StaffPwaInstallPrompt />
 
-        <div className="flex-1 overflow-y-auto pt-0">
+        <div className="flex-1 overflow-y-auto pt-0 pb-24 md:pb-0">
           {view === 'dashboard' && (
             <ReceptionDashboard
               propertyId={propertyId}
@@ -445,7 +454,10 @@ export default function ReceptionApp() {
             />
           )}
           {view === 'kitchen_kds' && (
-            <KitchenKDS orders={kdsOrders} onUpdateOrder={handleUpdateKdsOrder} onRejectOrder={handleRejectOrder} onNavigate={(v: AppView) => setView(v as ReceptionTab)} />
+            <div className="h-full flex flex-col">
+              {propertyId && <KitchenLinkBar propertyId={propertyId} />}
+              <KitchenKDS orders={kdsOrders} subtitle={propertyName} onUpdateOrder={handleUpdateKdsOrder} onRejectOrder={handleRejectOrder} onNavigate={(v: AppView) => setView(v as ReceptionTab)} />
+            </div>
           )}
           {view === 'reserved_experiences' && (
             <ReservedExperiencesView propertyId={propertyId ?? ''} currency={currency} />
@@ -459,17 +471,21 @@ export default function ReceptionApp() {
               onRefreshRooms={() => propertyId && reloadRoomsAndArrivals(propertyId)}
             />
           )}
-          {view === 'sales_reports' && (
-            <SalesReportView
-              propertyId={propertyId ?? ''}
-              propertyName={propertyName}
-              currency={currency}
-            />
-          )}
+          {view === 'day_close' && propertyId && <DayCloseView propertyId={propertyId} propertyName={propertyName} currency={currency} />}
+          {view === 'sales_reports' && propertyId && <ReportsView propertyId={propertyId} propertyName={propertyName} currency={currency} />}
           {view === 'active_deliveries' && <ActiveDeliveries propertyId={propertyId} onNavigate={(v: AppView) => setView(v as ReceptionTab)} />}
           {view === 'shift_coverage' && <ShiftCoverageView propertyId={propertyId ?? ''} onNavigate={(v: AppView) => setView(v as ReceptionTab)} />}
         </div>
       </div>
+
+      <MobileNav
+        navItems={navItems}
+        primaryIds={['dashboard', 'bookings', 'rooms_floors', 'kitchen_kds']}
+        activeId={view}
+        onNavigate={(id) => setView(id as ReceptionTab)}
+        onSignOut={() => signOut()}
+        extra={<ThemeToggle theme={theme} onChange={setTheme} />}
+      />
 
       <NewRequestModal
         isOpen={isRequestModalOpen}

@@ -124,9 +124,9 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
         <div>
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
-            <h1 className="text-lg font-bold text-on-surface">Reserved Experiences</h1>
+            <h1 className="text-lg font-semibold text-on-surface">Reserved Experiences</h1>
             {pendingBookings.length > 0 && (
-              <span className="px-2.5 py-0.5 rounded-full bg-primary text-on-primary text-xs font-extrabold animate-pulse">
+              <span className="px-2.5 py-0.5 rounded-full bg-primary text-on-primary text-xs font-semibold animate-pulse">
                 {pendingBookings.length} Pending
               </span>
             )}
@@ -149,7 +149,7 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
       </div>
 
       {error && (
-        <div className="p-3 bg-red-100 border border-red-300 text-red-800 rounded-xl text-xs font-medium">
+        <div className="p-3 bg-error/10 border border-error/30 text-error rounded-xl text-xs font-medium">
           {error}
         </div>
       )}
@@ -158,7 +158,7 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
       <div className="flex items-center gap-2 border-b border-outline-variant pb-2">
         <button
           onClick={() => setActiveTab('pending')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
             activeTab === 'pending'
               ? 'bg-primary text-on-primary shadow-2xs'
               : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high'
@@ -168,7 +168,7 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
         </button>
         <button
           onClick={() => setActiveTab('confirmed')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
             activeTab === 'confirmed'
               ? 'bg-primary text-on-primary shadow-2xs'
               : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high'
@@ -178,7 +178,7 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
         </button>
         <button
           onClick={() => setActiveTab('all')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
             activeTab === 'all'
               ? 'bg-primary text-on-primary shadow-2xs'
               : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high'
@@ -196,7 +196,7 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
       ) : filteredBookings.length === 0 ? (
         <div className="text-center py-12 bg-surface-container-lowest rounded-2xl border border-outline-variant">
           <Sparkles className="w-8 h-8 text-on-surface-variant opacity-30 mx-auto mb-2" />
-          <p className="text-xs font-bold text-on-surface">No reservations in this tab</p>
+          <p className="text-xs font-semibold text-on-surface">No reservations in this tab</p>
           <p className="text-[11px] text-on-surface-variant mt-0.5">
             When guests reserve curated experiences from their room app, requests appear here.
           </p>
@@ -210,25 +210,25 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
                 b.status === 'pending' || b.status === 'requested'
                   ? 'border-primary/40 bg-highlight shadow-sm'
                   : b.status === 'confirmed'
-                  ? 'border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/10'
+                  ? 'border-success/30 bg-success/5'
                   : 'border-outline-variant bg-surface-container-lowest'
               }`}
             >
               <div className="space-y-2">
                 {/* Guest & Room Badge */}
                 <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-1 rounded-full bg-primary text-on-primary text-[10px] font-extrabold tracking-wide">
+                  <span className="px-2.5 py-1 rounded-full bg-primary text-on-primary text-[10px] font-semibold tracking-wide">
                     Room {b.roomNumber}
                   </span>
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize ${
                       b.status === 'pending' || b.status === 'requested'
-                        ? 'bg-amber-100 text-amber-800'
+                        ? 'bg-warning/15 text-warning'
                         : b.status === 'confirmed'
-                        ? 'bg-emerald-100 text-emerald-800'
+                        ? 'bg-success/15 text-success'
                         : b.status === 'completed'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-red-100 text-red-800'
+                        ? 'bg-surface-container-high text-on-surface'
+                        : 'bg-error/10 text-error'
                     }`}
                   >
                     {b.status}
@@ -236,7 +236,7 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-bold text-on-surface">{b.experienceName}</h3>
+                  <h3 className="text-sm font-semibold text-on-surface">{b.experienceName}</h3>
                   <p className="text-[11px] text-on-surface-variant font-semibold">Guest: {b.guestName}</p>
                 </div>
 
@@ -249,13 +249,13 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
 
                   {b.preferredTime && (
                     <div className="flex items-center gap-1.5 text-on-surface">
-                      <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      <Clock className="w-3.5 h-3.5 text-warning shrink-0" />
                       <span>Preferred Time: <strong>{b.preferredTime}</strong></span>
                     </div>
                   )}
 
                   {b.scheduledTime && (
-                    <div className="flex items-center gap-1.5 text-emerald-700 font-bold">
+                    <div className="flex items-center gap-1.5 text-success font-semibold">
                       <Calendar className="w-3.5 h-3.5 shrink-0" />
                       <span>Confirmed Slot: {b.scheduledTime}</span>
                     </div>
@@ -263,7 +263,7 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
 
                   {b.notes && (
                     <div className="flex items-start gap-1.5 text-on-surface-variant bg-surface-container-low p-2 rounded-lg mt-1">
-                      <MessageSquare className="w-3.5 h-3.5 shrink-0 mt-0.5 text-gray-400" />
+                      <MessageSquare className="w-3.5 h-3.5 shrink-0 mt-0.5 text-on-surface-variant" />
                       <p className="italic">"{b.notes}"</p>
                     </div>
                   )}
@@ -273,8 +273,8 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
               {/* Footer Total & Actions */}
               <div className="pt-3 border-t border-outline-variant flex items-center justify-between gap-2">
                 <div>
-                  <span className="text-[10px] text-on-surface-variant block uppercase font-bold">Total Amount</span>
-                  <span className="text-sm font-extrabold text-primary">
+                  <span className="text-[10px] text-on-surface-variant block uppercase font-semibold">Total Amount</span>
+                  <span className="text-sm font-semibold text-primary">
                     {formatCurrency(b.totalPrice, currency)}
                   </span>
                 </div>
@@ -284,14 +284,14 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
                     <button
                       type="button"
                       onClick={() => setCancellingBooking(b)}
-                      className="px-2.5 py-1.5 rounded-lg border border-outline-variant text-error text-[11px] font-bold hover:bg-error/10 transition-colors cursor-pointer"
+                      className="px-2.5 py-1.5 rounded-lg border border-outline-variant text-error text-[11px] font-semibold hover:bg-error/10 transition-colors cursor-pointer"
                     >
                       Decline
                     </button>
                     <button
                       type="button"
                       onClick={() => openScheduler(b)}
-                      className="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-[11px] font-bold hover:bg-primary-hover transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
+                      className="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-[11px] font-semibold hover:bg-primary-hover transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" /> Confirm &amp; Schedule
                     </button>
@@ -318,31 +318,31 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
           <form onSubmit={handleConfirmSubmit} className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant space-y-4">
             <div className="flex justify-between items-center pb-3 border-b border-outline-variant">
-              <h3 className="text-base font-bold text-on-surface flex items-center gap-2">
+              <h3 className="text-base font-semibold text-on-surface flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-primary" />
                 <span>Confirm &amp; Schedule Experience</span>
               </h3>
               <button
                 type="button"
                 onClick={() => setSchedulingBooking(null)}
-                className="text-gray-400 hover:text-gray-600 text-lg font-bold cursor-pointer"
+                className="text-on-surface-variant hover:text-on-surface text-lg font-semibold cursor-pointer"
               >
                 &times;
               </button>
             </div>
 
             <div className="p-3 bg-surface-container-low rounded-xl text-xs space-y-1">
-              <p className="font-bold text-on-surface">{schedulingBooking.experienceName}</p>
+              <p className="font-semibold text-on-surface">{schedulingBooking.experienceName}</p>
               <p className="text-on-surface-variant">
                 Room {schedulingBooking.roomNumber} · {schedulingBooking.guestName} ({schedulingBooking.guestCount} guests)
               </p>
-              <p className="text-primary font-bold">Total: {formatCurrency(schedulingBooking.totalPrice, currency)}</p>
+              <p className="text-primary font-semibold">Total: {formatCurrency(schedulingBooking.totalPrice, currency)}</p>
             </div>
 
             {/* Date & Time Picker Scheduler */}
             <div className="space-y-3">
               <div>
-                <label className="text-xs font-bold text-on-surface block mb-1">
+                <label className="text-xs font-semibold text-on-surface block mb-1">
                   Select Scheduled Date *
                 </label>
                 <input
@@ -358,7 +358,7 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
               </div>
 
               <div>
-                <label className="text-xs font-bold text-on-surface block mb-1">
+                <label className="text-xs font-semibold text-on-surface block mb-1">
                   Select Time Slot *
                 </label>
                 <div className="grid grid-cols-3 gap-1.5 mb-2">
@@ -370,7 +370,7 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
                         setScheduleTimeSlot(slot);
                         updateFormattedTime(scheduleDate, slot);
                       }}
-                      className={`h-8 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
+                      className={`h-8 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
                         scheduleTimeSlot === slot
                           ? 'bg-primary text-on-primary border-primary'
                           : 'bg-surface-container-low border-outline-variant text-on-surface hover:bg-surface-container-high'
@@ -392,14 +392,14 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
               </div>
 
               <div>
-                <label className="text-xs font-bold text-on-surface block mb-1">
+                <label className="text-xs font-semibold text-on-surface block mb-1">
                   Confirmed Slot Label (Sent to Guest) *
                 </label>
                 <input
                   value={scheduledTime}
                   onChange={e => setScheduledTime(e.target.value)}
                   placeholder="e.g. Today at 4:30 PM"
-                  className="w-full h-10 px-3 text-xs border border-outline-variant rounded-xl font-bold text-primary focus:border-primary focus:outline-none bg-surface-container-lowest"
+                  className="w-full h-10 px-3 text-xs border border-outline-variant rounded-xl font-semibold text-primary focus:border-primary focus:outline-none bg-surface-container-lowest"
                   required
                 />
               </div>
@@ -426,7 +426,7 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
               <button
                 type="submit"
                 disabled={submitting}
-                className="flex-1 h-9 rounded-xl bg-primary text-on-primary text-xs font-bold hover:bg-primary-hover disabled:opacity-50 shadow-2xs"
+                className="flex-1 h-9 rounded-xl bg-primary text-on-primary text-xs font-semibold hover:bg-primary-hover disabled:opacity-50 shadow-2xs"
               >
                 {submitting ? 'Confirming…' : 'Confirm & Schedule'}
               </button>
@@ -440,11 +440,11 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
           <form onSubmit={handleCancelSubmit} className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant space-y-4">
             <div className="flex justify-between items-center pb-3 border-b border-outline-variant">
-              <h3 className="text-base font-bold text-on-surface">Decline Experience Request</h3>
+              <h3 className="text-base font-semibold text-on-surface">Decline Experience Request</h3>
               <button
                 type="button"
                 onClick={() => setCancellingBooking(null)}
-                className="text-gray-400 hover:text-gray-600 text-lg font-bold cursor-pointer"
+                className="text-on-surface-variant hover:text-on-surface text-lg font-semibold cursor-pointer"
               >
                 &times;
               </button>
@@ -455,7 +455,7 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
             </p>
 
             <div>
-              <label className="text-xs font-bold text-on-surface block mb-1">Reason (Optional)</label>
+              <label className="text-xs font-semibold text-on-surface block mb-1">Reason (Optional)</label>
               <input
                 value={cancelReason}
                 onChange={e => setCancelReason(e.target.value)}
@@ -475,7 +475,7 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
               <button
                 type="submit"
                 disabled={submitting}
-                className="flex-1 h-9 rounded-xl bg-error text-on-error text-xs font-bold hover:bg-red-700 disabled:opacity-50 shadow-2xs"
+                className="flex-1 h-9 rounded-xl bg-error text-on-error text-xs font-semibold hover:brightness-95 disabled:opacity-50 shadow-2xs"
               >
                 {submitting ? 'Declining…' : 'Decline Request'}
               </button>

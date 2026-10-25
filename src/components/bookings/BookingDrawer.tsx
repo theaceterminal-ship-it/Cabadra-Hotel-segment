@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Ban, CalendarX, Crown, LogIn, Pencil, Phone, Mail, Receipt, StickyNote, X, FileCheck2 } from 'lucide-react';
 import type { Room } from '../../types';
 import {
-  BOOKING_CHANNELS, Booking, BookingChanges, cancelReservation, checkInReservation, issueBookingBill, markNoShow, updateBooking,
+  BOOKING_CHANNELS, GUEST_ID_TYPES, Booking, BookingChanges, GuestIdType, cancelReservation, checkInReservation, issueBookingBill, markNoShow, updateBooking, updateGuestRegister,
 } from '../../lib/staffApi';
 import { formatCurrency } from '../../lib/currency';
 import { STATUS_CHIP, STATUS_LABEL, addDays, fmtDay, todayIso } from './bookingUtils';
@@ -91,6 +91,20 @@ export function BookingDrawer({ booking, rooms, currency, onClose, onChanged, on
               )}
               {b.cancelReason && <p className="text-sm text-on-surface-variant">Reason: {b.cancelReason}</p>}
 
+              {(b.status === 'checked_in' || b.status === 'checked_out' || b.status === 'upcoming') && (
+                <div className="rounded-[20px] border border-outline-variant p-4 text-sm space-y-1">
+                  <p className="text-xs text-on-surface-variant">Guest register</p>
+                  {b.guest.nationality || b.guest.address || b.guest.idNumber ? (
+                    <>
+                      <p>{b.guest.nationality ?? <span className="text-warning">Nationality missing</span>}{b.guest.idNumber && ` · ${GUEST_ID_TYPES.find(t => t.id === b.guest.idType)?.label ?? 'ID'} ${b.guest.idNumber}`}</p>
+                      {b.guest.address ? <p className="text-on-surface-variant">{b.guest.address}</p> : <p className="text-warning">Address missing</p>}
+                    </>
+                  ) : (
+                    <p className="text-warning">Not filled in yet. Add nationality, address and ID under Edit.</p>
+                  )}
+                </div>
+              )}
+
               <div className="rounded-[20px] bg-surface-container-low p-4 grid grid-cols-3 gap-2 text-sm">
                 <div><p className="text-xs text-on-surface-variant">Billed</p><p className="font-semibold">{c(b.totals.total)}</p></div>
                 <div><p className="text-xs text-on-surface-variant">Paid</p><p className="font-semibold">{c(b.totals.paid - b.totals.refunded)}</p></div>
@@ -104,7 +118,20 @@ export function BookingDrawer({ booking, rooms, currency, onClose, onChanged, on
             </>
           )}
 
-          {mode === 'edit' && <EditForm booking={b} rooms={rooms} busy={busy} onCancel={() => setMode('view')} onSave={changes => run(() => updateBooking(b.id, changes))} />}
+          {mode === 'edit' && (
+            <EditForm
+              booking={b}
+              rooms={rooms}
+              busy={busy}
+              onCancel={() => setMode('view')}
+              registerOnly={!open}
+              onSave={(changes, register) => run(async () => {
+                if (Object.keys(register).length) await updateGuestRegister(b.id, register);
+                // A closed stay only takes register details; the list reload then shows them.
+                if (Object.keys(changes).length) return updateBooking(b.id, changes);
+              })}
+            />
+          )}
           {mode === 'cancel' && (
             <FeeForm
               title="Cancel this booking"
@@ -143,6 +170,7 @@ export function BookingDrawer({ booking, rooms, currency, onClose, onChanged, on
             )}
             <button onClick={() => onOpenBill(b)} className={b.status === 'checked_in' ? btnPrimary : btnQuiet}><Receipt className="size-4" /> {b.status === 'checked_in' ? 'Bill & check out' : 'Bill'}</button>
             {open && <button onClick={() => setMode('edit')} className={btnQuiet}><Pencil className="size-4" /> Edit</button>}
+            {b.status === 'checked_out' && <button onClick={() => setMode('edit')} className={btnQuiet}><Pencil className="size-4" /> Register details</button>}
             {b.status === 'upcoming' && <button onClick={() => setMode('cancel')} className={btnQuiet}><Ban className="size-4" /> Cancel</button>}
             {b.status === 'upcoming' && b.checkInDate <= today && <button onClick={() => setMode('no_show')} className={btnQuiet}><CalendarX className="size-4" /> No-show</button>}
             {closedUnbilled && (
@@ -171,8 +199,10 @@ function Fact({ label: l, value }: { label: string; value: string }) {
   );
 }
 
-function EditForm({ booking: b, rooms, busy, onSave, onCancel }: {
-  booking: Booking; rooms: Room[]; busy: boolean; onSave: (c: BookingChanges) => void; onCancel: () => void;
+type RegisterChanges = { address?: string; nationality?: string; idType?: GuestIdType | ''; idNumber?: string };
+
+function EditForm({ booking: b, rooms, busy, registerOnly, onSave, onCancel }: {
+  booking: Booking; rooms: Room[]; busy: boolean; registerOnly?: boolean; onSave: (c: BookingChanges, register: RegisterChanges) => void; onCancel: () => void;
 }) {
   const inHouse = b.status === 'checked_in';
   const [f, setF] = useState({
@@ -180,6 +210,7 @@ function EditForm({ booking: b, rooms, busy, onSave, onCancel }: {
     ratePerNight: b.ratePerNight != null ? String(b.ratePerNight) : '', partySize: String(b.partySize),
     channel: b.channel, channelDetail: b.channelDetail ?? '', notes: b.notes ?? '',
     guestName: b.guest.name, guestPhone: b.guest.phone ?? '', guestEmail: b.guest.email ?? '', vip: b.guest.vip,
+    nationality: b.guest.nationality ?? '', address: b.guest.address ?? '', idType: (b.guest.idType ?? '') as GuestIdType | '', idNumber: b.guest.idNumber ?? '',
   });
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF(x => ({ ...x, [k]: v }));
   const sortedRooms = [...rooms].sort((a, z) => a.number.localeCompare(z.number, undefined, { numeric: true }));
@@ -200,12 +231,18 @@ function EditForm({ booking: b, rooms, busy, onSave, onCancel }: {
     if (f.guestPhone !== (b.guest.phone ?? '')) changes.guestPhone = f.guestPhone;
     if (f.guestEmail !== (b.guest.email ?? '')) changes.guestEmail = f.guestEmail;
     if (f.vip !== b.guest.vip) changes.vip = f.vip;
-    if (Object.keys(changes).length === 0) { onCancel(); return; }
-    onSave(changes);
+    const register: RegisterChanges = {};
+    if (f.nationality !== (b.guest.nationality ?? '')) register.nationality = f.nationality;
+    if (f.address !== (b.guest.address ?? '')) register.address = f.address;
+    if (f.idType !== (b.guest.idType ?? '')) register.idType = f.idType;
+    if (f.idNumber !== (b.guest.idNumber ?? '')) register.idNumber = f.idNumber;
+    if (Object.keys(changes).length === 0 && Object.keys(register).length === 0) { onCancel(); return; }
+    onSave(changes, register);
   };
 
   return (
     <form onSubmit={save} className="space-y-4">
+      {!registerOnly && <>
       <div className="grid grid-cols-2 gap-3">
         <label><span className={label}>Arrives</span><input type="date" disabled={inHouse} value={f.checkInDate} onChange={e => set('checkInDate', e.target.value)} className={`${input} disabled:opacity-60`} /></label>
         <label><span className={label}>Leaves</span><input type="date" min={addDays(f.checkInDate, 1)} value={f.checkOutDate} onChange={e => set('checkOutDate', e.target.value)} className={input} /></label>
@@ -226,8 +263,27 @@ function EditForm({ booking: b, rooms, busy, onSave, onCancel }: {
         <label><span className={label}>Email</span><input type="email" value={f.guestEmail} onChange={e => set('guestEmail', e.target.value)} className={input} /></label>
       </div>
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.vip} onChange={e => set('vip', e.target.checked)} className="accent-primary" /> VIP guest</label>
+      </>}
 
-      <div>
+      <fieldset className="rounded-[20px] border border-outline-variant p-4 space-y-3">
+        <legend className="px-1 text-xs text-on-surface-variant">For the guest register</legend>
+        <div className="grid grid-cols-2 gap-3">
+          <label><span className={label}>Nationality</span><input list="nationalities" value={f.nationality} onChange={e => set('nationality', e.target.value)} maxLength={60} placeholder="Indian" className={input} /></label>
+          <label>
+            <span className={label}>ID type</span>
+            <select value={f.idType} onChange={e => set('idType', e.target.value as GuestIdType | '')} className={input}>
+              <option value="">—</option>
+              {GUEST_ID_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+            </select>
+          </label>
+          <label className="col-span-2"><span className={label}>ID number</span><input value={f.idNumber} onChange={e => set('idNumber', e.target.value.toUpperCase())} maxLength={40} className={`${input} font-mono`} /></label>
+          <label className="col-span-2"><span className={label}>Address</span><input value={f.address} onChange={e => set('address', e.target.value)} maxLength={300} placeholder="Home address" className={input} /></label>
+        </div>
+        <datalist id="nationalities">{['Indian', 'Nepalese', 'Bangladeshi', 'British', 'American', 'German', 'French', 'Israeli', 'Australian'].map(n => <option key={n} value={n} />)}</datalist>
+        {f.nationality && !['india', 'indian', 'in', 'bharat'].includes(f.nationality.trim().toLowerCase()) && <p className="text-xs text-warning">Foreign guest: Form C is due within 24 hours of arrival. Use passport details.</p>}
+      </fieldset>
+
+      {!registerOnly && <div>
         <span className={label}>Booked via</span>
         <div className="flex flex-wrap gap-1.5">
           {BOOKING_CHANNELS.map(ch => (
@@ -237,8 +293,8 @@ function EditForm({ booking: b, rooms, busy, onSave, onCancel }: {
         {(f.channel === 'ota' || f.channel === 'agent' || f.channel === 'other') && (
           <input value={f.channelDetail} onChange={e => set('channelDetail', e.target.value)} maxLength={60} placeholder="Booking.com, agent name…" className={`${input} mt-2`} />
         )}
-      </div>
-      <label className="block"><span className={label}>Notes</span><textarea value={f.notes} onChange={e => set('notes', e.target.value)} maxLength={1000} rows={3} className={`${input} h-auto py-2`} /></label>
+      </div>}
+      {!registerOnly && <label className="block"><span className={label}>Notes</span><textarea value={f.notes} onChange={e => set('notes', e.target.value)} maxLength={1000} rows={3} className={`${input} h-auto py-2`} /></label>}
 
       <div className="flex justify-end gap-2">
         <button type="button" onClick={onCancel} className={btnQuiet}>Back</button>

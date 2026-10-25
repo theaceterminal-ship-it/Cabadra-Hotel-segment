@@ -21,6 +21,7 @@ import RefundPage from './pages/site/RefundPage';
 import ContactPage from './pages/site/ContactPage';
 import NotFoundPage from './pages/site/NotFoundPage';
 import BillPage from './pages/BillPage';
+import KitchenPage from './pages/KitchenPage';
 
 /**
  * Three separate pages, not one role-switcher: an owner and a receptionist
@@ -48,6 +49,8 @@ export default function App() {
       <Route path="/display/:token" element={<DepartmentDisplayPage />} />
       <Route path="/access/:token" element={<AccessLinkPage />} />
       <Route path="/bill/:token" element={<BillPage />} />
+      <Route path="/kitchen/:token" element={<KitchenPage />} />
+      <Route path="/kitchen" element={<KitchenPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
