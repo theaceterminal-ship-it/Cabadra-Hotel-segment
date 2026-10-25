@@ -1596,6 +1596,23 @@ export async function fetchPartnerSettings(propertyId: string): Promise<PartnerS
   return data as PartnerSettings;
 }
 
+export interface PartnerCommission {
+  /** This hotel's share of partner payments, in %; null when none is set. */
+  pct: number | null;
+  /** Commission switched on platform-wide (in Cabadra Pulse). */
+  enabled: boolean;
+  earned: number;
+  paid: number;
+}
+
+/** owner_partner_commission (0084): what this hotel has earned from local partners' payments. */
+export async function fetchPartnerCommission(propertyId: string): Promise<PartnerCommission | null> {
+  const { data, error } = await supabase.rpc('owner_partner_commission', { p_property_id: propertyId });
+  if (error || !data) return null;
+  const d = data as PartnerCommission;
+  return { pct: d.pct == null ? null : Number(d.pct), enabled: !!d.enabled, earned: Number(d.earned), paid: Number(d.paid) };
+}
+
 export async function savePartnerSettings(propertyId: string, enabled: boolean, blocked: string[]): Promise<void> {
   const { error } = await supabase.rpc('owner_set_partner_settings', { p_property_id: propertyId, p_enabled: enabled, p_blocked: blocked });
   if (error) throw new Error(error.message);

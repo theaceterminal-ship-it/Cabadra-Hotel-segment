@@ -19,6 +19,8 @@ import PrivacyPage from './pages/site/PrivacyPage';
 import TermsPage from './pages/site/TermsPage';
 import RefundPage from './pages/site/RefundPage';
 import ContactPage from './pages/site/ContactPage';
+import PartnersPage from './pages/site/PartnersPage';
+import PartnerPortalPage from './pages/PartnerPortalPage';
 import NotFoundPage from './pages/site/NotFoundPage';
 import BillPage from './pages/BillPage';
 import KitchenPage from './pages/KitchenPage';
@@ -40,6 +42,8 @@ export default function App() {
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/refund-policy" element={<RefundPage />} />
       <Route path="/contact" element={<ContactPage />} />
+      <Route path="/partners" element={<PartnersPage />} />
+      <Route path="/partner/:token" element={<PartnerPortalPage />} />
       <Route path="/owner/*" element={<OwnerApp />} />
       <Route path="/reception/*" element={<ReceptionApp />} />
       <Route path="/guest/room/:roomId" element={<RoomRedirect />} />

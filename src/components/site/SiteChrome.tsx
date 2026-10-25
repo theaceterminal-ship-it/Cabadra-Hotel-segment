@@ -77,6 +77,9 @@ export function SiteNav() {
               {link.label}
             </a>
           ))}
+          <Link to="/partners" className={`relative hover:text-black transition-colors after:absolute after:left-0 after:-bottom-1 after:h-px after:w-full after:origin-left after:bg-current after:transition-transform after:duration-300 hover:after:scale-x-100 ${pathname === '/partners' ? 'text-black after:scale-x-100' : 'after:scale-x-0'}`}>
+            Partners
+          </Link>
         </nav>
         <div className="flex items-center gap-2">
           <Link
@@ -122,6 +125,9 @@ export function SiteNav() {
                 {link.label}
               </a>
             ))}
+            <Link to="/partners" className="block rounded-2xl px-4 py-3 text-[15px] font-medium hover:bg-[#f2f2f0]">
+              Partners · for local businesses
+            </Link>
             <Link to="/contact" className="block rounded-2xl px-4 py-3 text-[15px] font-medium hover:bg-[#f2f2f0]">
               Contact
             </Link>
@@ -188,6 +194,7 @@ export function SiteFooter({ showCta = true }: { showCta?: boolean }) {
 
           <FooterColumn title="Company">
             <FooterLink to="/contact">Contact us</FooterLink>
+            <FooterLink to="/partners">List your business</FooterLink>
             <FooterLink to="/signup">Create an account</FooterLink>
             <FooterLink to="/login">Sign in</FooterLink>
           </FooterColumn>

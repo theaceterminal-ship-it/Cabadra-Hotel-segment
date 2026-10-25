@@ -60,7 +60,7 @@ export function readWebsiteSetupDraft(): WebsiteSetupDraft {
   }
 }
 
-async function functionErrorMessage(error: unknown, fallback: string): Promise<string> {
+export async function functionErrorMessage(error: unknown, fallback: string): Promise<string> {
   const context = (error as { context?: Response })?.context;
   if (context && typeof context.json === 'function') {
     try {
@@ -124,7 +124,7 @@ declare global {
 
 let checkoutScript: Promise<void> | null = null;
 
-function loadRazorpayCheckout(): Promise<void> {
+export function loadRazorpayCheckout(): Promise<void> {
   if (window.Razorpay) return Promise.resolve();
   if (!checkoutScript) {
     checkoutScript = new Promise((resolve, reject) => {

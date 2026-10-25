@@ -2,9 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   Car, Check, Coffee, Copy, Flower2, MapPin, Map as MapIcon, MessageCircle, Mountain, Phone, ShoppingBag, Store, Tag,
-  UtensilsCrossed, X, Clock,
+  UtensilsCrossed, X, Clock, Send, Sparkles, Loader2,
 } from 'lucide-react';
-import { fetchPartnerListings, logPartnerEvents, PartnerListing, PartnerEventKind } from '../lib/guestApi';
+import {
+  fetchPartnerListings, fetchPartnerRequests, logPartnerEvents, sendPartnerRequest, PartnerListing, PartnerEventKind, PartnerRequest,
+} from '../lib/guestApi';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -99,7 +101,9 @@ export function LocalPartnersRow({ token, propertyName }: { token: string; prope
                 {p.photo
                   ? <img src={p.photo} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                   : <span className="absolute inset-0 flex items-center justify-center text-on-surface-variant"><Icon className="size-8 opacity-40" /></span>}
-                <span className="absolute top-3 left-3 rounded-full bg-white/85 backdrop-blur px-2.5 py-1 text-[11px] font-medium text-[#111]">Partner</span>
+                <span className="absolute top-3 left-3 rounded-full bg-white/85 backdrop-blur px-2.5 py-1 text-[11px] font-medium text-[#111] inline-flex items-center gap-1">
+                  {p.featured ? <><Sparkles className="size-3" /> Featured</> : 'Partner'}
+                </span>
               </div>
               <div className="p-4">
                 <p className="text-[12px] text-on-surface-variant flex items-center gap-1"><Icon className="size-3.5" /> {CATEGORY[p.category]?.label ?? 'Local'}</p>
@@ -120,6 +124,7 @@ export function LocalPartnersRow({ token, propertyName }: { token: string; prope
         {open && (
           <PartnerSheet
             key={open.id}
+            token={token}
             partner={open}
             propertyName={propertyName}
             onClose={() => setOpen(null)}
@@ -131,7 +136,8 @@ export function LocalPartnersRow({ token, propertyName }: { token: string; prope
   );
 }
 
-function PartnerSheet({ partner, propertyName, onClose, onAction }: {
+function PartnerSheet({ token, partner, propertyName, onClose, onAction }: {
+  token: string;
   partner: PartnerListing;
   propertyName: string;
   onClose: () => void;
@@ -215,8 +221,10 @@ function PartnerSheet({ partner, propertyName, onClose, onAction }: {
             </div>
           )}
 
+          {partner.takesRequests && <RequestBox token={token} partner={partner} propertyName={propertyName} />}
+
           <p className="text-[12px] text-on-surface-variant">
-            A local business Cabadra partners with. You deal with them directly; {propertyName} isn’t involved and nothing about you is shared.
+            A local business Cabadra partners with. You deal with them directly; {propertyName} isn’t involved, and nothing about you is shared unless you send them a request.
           </p>
         </div>
 
@@ -236,5 +244,111 @@ function PartnerSheet({ partner, propertyName, onClose, onAction }: {
         </div>
       </motion.div>
     </motion.div>
+  );
+}
+
+const REQUEST_STATUS: Record<PartnerRequest['status'], string> = {
+  new: 'Sent, waiting for them',
+  accepted: 'Accepted',
+  declined: 'They can’t do it',
+  done: 'Done',
+};
+
+/**
+ * "Send a request": the guest writes what they want (a cab at 9, a table
+ * for four) and, only by ticking the box, shares their name, phone and
+ * hotel with this business, which replies on WhatsApp or by phone. Their
+ * earlier requests to this business show with its answer.
+ */
+function RequestBox({ token, partner, propertyName }: { token: string; partner: PartnerListing; propertyName: string }) {
+  const [mine, setMine] = useState<PartnerRequest[]>([]);
+  const [open, setOpen] = useState(false);
+  const [message, setMessage] = useState('');
+  const [when, setWhen] = useState('');
+  const [people, setPeople] = useState('');
+  const [phone, setPhone] = useState('');
+  const [consent, setConsent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
+
+  const load = () => fetchPartnerRequests(token).then(all => setMine(all.filter(r => r.partnerId === partner.id)));
+  useEffect(() => { load(); }, [token, partner.id]);
+
+  const send = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await sendPartnerRequest(token, {
+        partnerId: partner.id,
+        message: message.trim(),
+        preferredTime: when.trim() || undefined,
+        partySize: people ? Number(people) : undefined,
+        phone: phone.trim() || undefined,
+        consent,
+      });
+      setSent(true);
+      setOpen(false);
+      setMessage('');
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Couldn’t send it.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const field = 'w-full rounded-[16px] bg-surface-container-lowest border border-outline-variant px-3.5 text-sm focus:outline-none focus:border-on-surface/40';
+
+  return (
+    <div className="rounded-[20px] bg-surface p-4">
+      {mine.length > 0 && (
+        <div className="mb-3 space-y-2">
+          {mine.slice(0, 3).map(r => (
+            <div key={r.id} className="rounded-[14px] bg-surface-container-lowest px-3.5 py-2.5 text-sm">
+              <p className="line-clamp-1">“{r.message}”</p>
+              <p className={`mt-0.5 text-[12px] font-medium ${r.status === 'accepted' || r.status === 'done' ? 'text-on-surface' : 'text-on-surface-variant'}`}>
+                {REQUEST_STATUS[r.status]}{r.businessNote ? `: ${r.businessNote}` : ''}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+      <AnimatePresence initial={false} mode="wait">
+        {open ? (
+          <motion.form key="form" onSubmit={send} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25 }} className="space-y-2.5 overflow-hidden">
+            <p className="text-sm font-medium">What would you like?</p>
+            <textarea required minLength={2} maxLength={500} rows={3} value={message} onChange={e => setMessage(e.target.value)} placeholder={partner.category === 'taxi' ? 'A cab to Kasauli and back' : 'Tell them what you’d like'} className={`${field} py-2.5 resize-none`} />
+            <div className="grid grid-cols-[1fr_88px] gap-2">
+              <input maxLength={80} value={when} onChange={e => setWhen(e.target.value)} placeholder="When? e.g. tomorrow 9am" className={`${field} h-11`} />
+              <input type="number" min={1} max={50} value={people} onChange={e => setPeople(e.target.value)} placeholder="People" className={`${field} h-11`} />
+            </div>
+            <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="Your phone (if not the one on your booking)" className={`${field} h-11`} />
+            <label className="flex items-start gap-2.5 text-[13px] text-on-surface-variant pt-1">
+              <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="mt-0.5 size-4 accent-[#111]" />
+              <span>Share my name, phone and that I’m staying at {propertyName} with {partner.name} so they can reply.</span>
+            </label>
+            {error && <p className="text-[13px] text-error">{error}</p>}
+            <div className="flex gap-2 pt-1">
+              <button type="button" onClick={() => setOpen(false)} className="h-11 px-4 rounded-full text-sm font-medium bg-surface-container-lowest">Cancel</button>
+              <button disabled={busy || !consent || message.trim().length < 2} className="flex-1 h-11 rounded-full bg-primary text-on-primary text-sm font-medium inline-flex items-center justify-center gap-2 disabled:opacity-50">
+                {busy ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />} Send request
+              </button>
+            </div>
+          </motion.form>
+        ) : (
+          <motion.div key="cta" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">{sent ? 'Request sent' : 'Ask them to book you in'}</p>
+              <p className="text-[12px] text-on-surface-variant">{sent ? 'They’ll reply on WhatsApp or call you.' : 'They reply on WhatsApp or by phone.'}</p>
+            </div>
+            <button onClick={() => { setOpen(true); setSent(false); }} className="h-10 px-4 rounded-full bg-primary text-on-primary text-[13px] font-medium inline-flex items-center gap-1.5 shrink-0">
+              <Send className="size-3.5" /> {sent ? 'Another' : 'Request'}
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
