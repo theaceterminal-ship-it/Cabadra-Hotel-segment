@@ -149,27 +149,25 @@ function Hero() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.7, delay: 0.9, ease: EASE }}
             >
-              <a href="#how" className="group relative block size-[120px]" aria-label="See how it works">
-                <span className="absolute z-10 -top-9 -left-8 text-left text-[17px] leading-tight font-medium text-[#111]">
-                  See how
-                  <br />
-                  <span className="pl-8">it works</span>
+              <a href="#how" className="group flex flex-col items-center gap-3" aria-label="See how it works">
+                <span className="relative block size-[88px]">
+                  {/* Soft ripple so the circle reads as something to press. */}
+                  <motion.span
+                    aria-hidden="true"
+                    className="absolute inset-0 rounded-full border-2 border-[#111]/40"
+                    animate={{ scale: [1, 1.35], opacity: [0.6, 0] }}
+                    transition={{ duration: 2.4, repeat: Infinity, ease: 'easeOut' }}
+                  />
+                  <span className="absolute inset-0 rounded-full border-2 border-[#111]/80 bg-white/30 backdrop-blur-sm transition-transform duration-300 group-hover:scale-105" />
+                  <motion.span
+                    className="absolute inset-0 flex items-center justify-center text-[#111]"
+                    animate={{ y: [0, 4, 0] }}
+                    transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                  >
+                    <ArrowDown className="size-6" />
+                  </motion.span>
                 </span>
-                {/* Soft ripple so the circle reads as something to press. */}
-                <motion.span
-                  aria-hidden="true"
-                  className="absolute inset-0 rounded-full border-2 border-[#111]/40"
-                  animate={{ scale: [1, 1.35], opacity: [0.6, 0] }}
-                  transition={{ duration: 2.4, repeat: Infinity, ease: 'easeOut' }}
-                />
-                <span className="absolute inset-0 rounded-full border-2 border-[#111]/80 bg-white/15 backdrop-blur-sm transition-transform duration-300 group-hover:scale-105" />
-                <motion.span
-                  className="absolute inset-0 flex items-center justify-center text-[#111]"
-                  animate={{ y: [0, 5, 0] }}
-                  transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-                >
-                  <ArrowDown className="size-7" />
-                </motion.span>
+                <span className="rounded-full bg-white/60 backdrop-blur px-3.5 py-1 text-[14px] font-medium text-[#111]">See how it works</span>
               </a>
             </motion.div>
 
