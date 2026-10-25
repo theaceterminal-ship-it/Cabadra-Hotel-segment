@@ -67,6 +67,13 @@ export interface Property {
   hasExternalPms: boolean;
 }
 
+/** A size (pick one; its price replaces the dish's) or an add-on (pick any; adds its price). */
+export interface MenuOption {
+  id: string;
+  name: string;
+  price: number;
+}
+
 export interface MenuItem {
   id: string;
   name: string;
@@ -77,6 +84,9 @@ export interface MenuItem {
   isVeg: boolean;
   tags: string[];
   prepTime?: string;
+  /** Sizes. When there are any, the guest must pick one. See 0073_menu_options_and_server_pricing.sql. */
+  variations?: MenuOption[];
+  addons?: MenuOption[];
 }
 
 export interface CartItem {

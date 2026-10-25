@@ -345,6 +345,8 @@ export async function fetchMenuForProperty(propertyId: string): Promise<MenuItem
     isVeg: m.is_veg,
     tags: m.tags ?? [],
     prepTime: m.prep_time ?? undefined,
+    variations: m.variations ?? [],
+    addons: m.addons ?? [],
   }));
 }
 
@@ -361,6 +363,8 @@ export async function addMenuItem(propertyId: string, item: Omit<MenuItem, 'id'>
     is_veg: item.isVeg,
     tags: item.tags,
     prep_time: item.prepTime ?? null,
+    variations: item.variations ?? [],
+    addons: item.addons ?? [],
   });
   if (error) throw error;
 }
@@ -379,6 +383,8 @@ export async function bulkAddMenuItems(propertyId: string, items: Omit<MenuItem,
     is_veg: item.isVeg,
     tags: item.tags,
     prep_time: item.prepTime ?? null,
+    variations: item.variations ?? [],
+    addons: item.addons ?? [],
   }));
   const { error } = await supabase.from('menu_items').insert(rows);
   if (error) throw error;
@@ -399,6 +405,8 @@ export async function updateMenuItem(propertyId: string, itemId: string, patch: 
     ...(patch.isVeg !== undefined && { is_veg: patch.isVeg }),
     ...(patch.tags !== undefined && { tags: patch.tags }),
     ...(patch.prepTime !== undefined && { prep_time: patch.prepTime }),
+    ...(patch.variations !== undefined && { variations: patch.variations }),
+    ...(patch.addons !== undefined && { addons: patch.addons }),
   }).eq('property_id', propertyId).eq('id', itemId);
   if (error) throw error;
 }
