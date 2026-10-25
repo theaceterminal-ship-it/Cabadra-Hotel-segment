@@ -57,7 +57,6 @@ export function DayCloseView({ propertyId, propertyName, currency }: { propertyI
     <div className="px-4 sm:px-6 pb-10 space-y-5 max-w-5xl">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 print:hidden">
         <div>
-          <p className="text-sm font-medium text-on-surface-variant">{propertyName}</p>
           <h1 className="text-[28px] leading-tight font-semibold tracking-[-0.03em] text-on-surface">Day close</h1>
         </div>
         <div className="flex items-center gap-2">

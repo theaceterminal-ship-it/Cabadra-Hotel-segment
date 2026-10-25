@@ -1682,3 +1682,18 @@ export async function fetchGuestRegister(propertyId: string, from: string, to: s
   if (error) throw error;
   return (data ?? []) as RegisterEntry[];
 }
+
+// ============================================================================
+// KITCHEN LINK — the kitchen screen's no-login link (0082)
+// ============================================================================
+
+export interface KitchenLink { token: string; lastUsedAt?: string; createdAt: string }
+
+/** The current kitchen link, made on first ask. reset: the old link stops working at once (a lost or replaced tablet). */
+export async function fetchKitchenLink(propertyId: string, reset = false): Promise<KitchenLink> {
+  const { data, error } = await supabase.rpc('staff_kitchen_link', { p_property_id: propertyId, p_reset: reset });
+  if (error) throw error;
+  return data as KitchenLink;
+}
+
+export const kitchenUrl = (token: string) => `${window.location.origin}/kitchen/${token}`;

@@ -89,7 +89,6 @@ export function BookingsView({ propertyId, propertyName, currency, upiId, rooms,
     <div className="px-4 sm:px-6 pb-10 space-y-5">
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-on-surface-variant">{propertyName}</p>
           <h1 className="text-[28px] leading-tight font-semibold tracking-[-0.03em] text-on-surface">Bookings</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">

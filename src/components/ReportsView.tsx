@@ -71,7 +71,6 @@ export function ReportsView({ propertyId, propertyName, currency }: { propertyId
     <div className="px-4 sm:px-6 pb-10 space-y-5 max-w-6xl">
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 print:hidden">
         <div>
-          <p className="text-sm font-medium text-on-surface-variant">{propertyName}</p>
           <h1 className="text-[28px] leading-tight font-semibold tracking-[-0.03em] text-on-surface">Reports</h1>
         </div>
         <div className="flex rounded-full bg-surface-container-low p-1 self-start">

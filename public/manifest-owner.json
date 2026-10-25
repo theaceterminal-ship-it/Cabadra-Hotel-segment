@@ -1,0 +1,39 @@
+{
+  "name": "Cabadra Owner",
+  "short_name": "Cabadra Owner",
+  "description": "Your properties, reports and settings.",
+  "id": "/owner",
+  "start_url": "/owner",
+  "scope": "/owner",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#eef0ec",
+  "background_color": "#eef0ec",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/icons/owner-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/owner-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/owner-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/owner-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ]
+}

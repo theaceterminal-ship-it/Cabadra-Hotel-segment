@@ -109,10 +109,20 @@ interface KitchenKDSProps {
   onUpdateOrder: (order: KdsOrder) => void;
   /** The "can't make this" path — required note, voids the guest's charge and notifies them (staff_reject_order). */
   onRejectOrder: (orderId: string, note: string) => void;
-  onNavigate: (view: AppView) => void;
+  /** Reception passes this so "Ready" orders can jump to Active Deliveries; the kitchen's own screen (/kitchen/:token) has no deliveries view and leaves it out. */
+  onNavigate?: (view: AppView) => void;
+  /** Shown in the header: the hotel's name on the kitchen's own screen. */
+  subtitle?: string;
+  /** Extra controls in the header (the kitchen screen's sound switch). */
+  headerExtra?: React.ReactNode;
+  /** Undo for a ready order: back to preparing. */
+  onUnready?: (order: KdsOrder) => void;
 }
 
 export const KitchenKDS: React.FC<KitchenKDSProps> = ({
+  subtitle,
+  headerExtra,
+  onUnready,
   orders,
   onUpdateOrder,
   onRejectOrder,
@@ -175,7 +185,7 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
   // pickup/dispatch. Active Deliveries is where a runner actually confirms
   // hand-off, so the status only moves to 'delivered' there.
   const handleDispatchRunner = (order: KdsOrder) => {
-    onNavigate('active_deliveries');
+    onNavigate?.('active_deliveries');
   };
 
   return (
@@ -192,11 +202,12 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
 
           <span className="hidden sm:flex items-center gap-2 text-xs font-semibold text-on-surface-variant bg-surface-container-low px-3 py-1 rounded-full border border-outline-variant">
             <span className="w-2 h-2 rounded-full bg-success animate-pulse"></span>
-            <span>Room Dining • Online</span>
+            <span>{subtitle ?? 'Room Dining'} • Online</span>
           </span>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
+          {headerExtra}
           <div className="flex items-center gap-2 font-mono text-xl md:text-2xl font-semibold text-on-surface bg-surface-container-low px-3 py-1 rounded-lg border border-outline-variant">
             <Clock className="w-4 h-4 text-primary" />
             <span>{currentTime || '17:59:00'}</span>
@@ -439,13 +450,20 @@ export const KitchenKDS: React.FC<KitchenKDSProps> = ({
                     ))}
                   </div>
 
-                  <button
-                    onClick={() => handleDispatchRunner(order)}
-                    className="w-full h-11 bg-primary text-on-primary rounded-lg text-sm font-semibold hover:bg-primary-hover flex items-center justify-center gap-2 cursor-pointer shadow-sm"
-                  >
-                    <Truck className="w-4 h-4" />
-                    <span>Dispatch to Runner &rarr;</span>
-                  </button>
+                  {onNavigate ? (
+                    <button
+                      onClick={() => handleDispatchRunner(order)}
+                      className="w-full h-11 bg-primary text-on-primary rounded-lg text-sm font-semibold hover:bg-primary-hover flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                    >
+                      <Truck className="w-4 h-4" />
+                      <span>Dispatch to Runner &rarr;</span>
+                    </button>
+                  ) : (
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm text-on-surface-variant">Waiting for pickup</span>
+                      {onUnready && <button onClick={() => onUnready(order)} className="h-9 px-3 rounded-full bg-surface-container-low text-xs font-semibold">Not ready yet</button>}
+                    </div>
+                  )}
                 </article>
               ))
             )}

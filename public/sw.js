@@ -1,15 +1,24 @@
-const CACHE_NAME = 'cabadra-pwa-v3';
+const CACHE_NAME = 'cabadra-pwa-v4';
 
+// Four installable apps share this one worker: guest (/guest), staff
+// (/reception), kitchen (/kitchen) and owner (/owner), each with its own
+// manifest and scope so they install and open separately.
 const CORE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
   '/manifest-staff.json',
+  '/manifest-kitchen.json',
+  '/manifest-owner.json',
   '/favicon.ico',
-  '/logo192.png',
-  '/logo512.png',
-  '/logo192-staff.png',
-  '/logo512-staff.png'
+  '/icons/guest-192.png',
+  '/icons/guest-512.png',
+  '/icons/staff-192.png',
+  '/icons/staff-512.png',
+  '/icons/kitchen-192.png',
+  '/icons/kitchen-512.png',
+  '/icons/owner-192.png',
+  '/icons/owner-512.png'
 ];
 
 self.addEventListener('install', event => {

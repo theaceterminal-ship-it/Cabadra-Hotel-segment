@@ -6,7 +6,7 @@
     <title>Cabadra — Every extra charge, in one place</title>
     <meta name="description" content="Works with your PMS. Guests order room service, spa, laundry and experiences from their phone, and every extra charge adds up to one total at checkout." />
     <!-- Default before React mounts / GuestApp takes over the tag for its own device-theme following (src/pages/GuestApp.tsx). Matches light --color-surface in src/index.css. -->
-    <meta name="theme-color" content="#9992c9" />
+    <meta name="theme-color" content="#eef0ec" />
     <link rel="canonical" href="https://hotel.churmuri.com/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Cabadra" />
@@ -16,30 +16,41 @@
     <meta property="og:image" content="https://hotel.churmuri.com/landing/hero.jpg" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icons/guest-192.png" />
+    <meta name="apple-mobile-web-app-title" content="Cabadra" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
   <script>
-// Dynamically swap manifest based on route for staff vs guest PWA distinction
-function updateManifest() {
-  const manifestLink = document.querySelector('link[rel="manifest"]');
-  if (manifestLink) {
-    const path = window.location.pathname;
-    if (path.includes('/reception') || path.includes('/owner') || path === '/') {
-      manifestLink.href = '/manifest-staff.json';
-      manifestLink.setAttribute('title', 'Staff App Manifest');
-    } else if (path.includes('/guest')) {
-      manifestLink.href = '/manifest.json';
-      manifestLink.setAttribute('title', 'Guest App Manifest');
+// One manifest per app, picked from the path before React loads, so the
+// guest app, staff app, kitchen screen and owner dashboard install as
+// separate apps (each manifest is scoped to its own path). Elsewhere (the
+// website) there's nothing to install. src/hooks/usePwaManifest.ts keeps it
+// right after in-app navigation.
+(function () {
+  var apps = [
+    ['/guest', '/manifest.json', '/icons/guest-192.png', 'Cabadra Guest'],
+    ['/reception', '/manifest-staff.json', '/icons/staff-192.png', 'Cabadra Staff'],
+    ['/kitchen', '/manifest-kitchen.json', '/icons/kitchen-192.png', 'Kitchen'],
+    ['/owner', '/manifest-owner.json', '/icons/owner-192.png', 'Cabadra Owner']
+  ];
+  var path = window.location.pathname;
+  var link = document.querySelector('link[rel="manifest"]');
+  for (var i = 0; i < apps.length; i++) {
+    if (path === apps[i][0] || path.indexOf(apps[i][0] + '/') === 0) {
+      link.href = apps[i][1];
+      document.querySelector('link[rel="apple-touch-icon"]').href = apps[i][2];
+      document.querySelector('meta[name="apple-mobile-web-app-title"]').content = apps[i][3];
+      return;
     }
   }
-}
-updateManifest();
-window.addEventListener('popstate', updateManifest);
+  link.parentNode.removeChild(link);
+})();
 </script>
 </head>
-  <body class="bg-surface text-on-surface antialiased selection:bg-[#bd9b60] selection:text-white">
+  <body class="bg-surface text-on-surface antialiased selection:bg-[#b5d96a] selection:text-[#111]">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
