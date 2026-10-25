@@ -1,25 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AnimatePresence, motion } from 'motion/react';
-import {
-  ArrowRight, BarChart3, BellRing, Car, Check, CheckCircle2, ImagePlus, Loader2, MapPin, MessageCircle, Phone, Plus, Sparkles, Tag, X,
-} from 'lucide-react';
+import { motion } from 'motion/react';
+import { ArrowRight, BarChart3, BellRing, Car, Check, MapPin, MessageCircle, Phone, Sparkles, Star, Tag } from 'lucide-react';
 import { SiteFooter, SiteNav, SiteShell } from '../../components/site/SiteChrome';
 import { Reveal, RevealGroup, RevealItem, fadeUp, stagger } from '../../components/site/motion';
 import { usePageTitle } from './usePageTitle';
-import { HIMACHAL_PLACES } from '../../lib/himachalPlaces';
-import { uploadImageToCloudinary } from '../../lib/cloudinary';
-import { PARTNER_CATEGORIES, PartnerApplication, PartnerPricing, fetchPartnerPricing, inr, submitPartnerApplication } from '../../lib/partnersApi';
+import { PartnerPricing, fetchPartnerPricing, inr } from '../../lib/partnersApi';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
-const EMPTY: PartnerApplication = {
-  name: '', category: '', ownerName: '', phone: '', whatsapp: '', email: '', areas: [], address: '', mapsUrl: '',
-  openingHours: '', tagline: '', description: '', offerText: '', photo: '',
-};
-
 const STEPS = [
-  { title: 'Apply', body: 'Tell us about your business and the places you serve. It takes five minutes.' },
+  { title: 'Sign up', body: 'Create your partner account with Google and tell us about your business. It takes five minutes.' },
   { title: 'We check it', body: 'Every listing is checked by a person, usually within two working days.' },
   { title: 'Pay and go live', body: 'Pay online from your partner page. Guests nearby see you straight away.' },
 ];
@@ -29,6 +20,7 @@ const PERKS = [
   { icon: MessageCircle, title: 'Booking requests', body: 'Guests can send a request (“cab to Kasauli at 9”) with their name, phone and hotel. You get it by email.' },
   { icon: BarChart3, title: 'A report every month', body: 'How many guests saw you, opened your listing, called, messaged and asked for directions.' },
   { icon: BellRing, title: 'Reminders before it runs out', body: 'We email you before your listing ends, so you never drop off by accident.' },
+  { icon: Star, title: 'Ratings and front-desk bookings', body: 'Guests rate you after a booking, and hotel front desks can book you for their guests. A GST invoice for every payment.' },
 ];
 
 /**
@@ -65,9 +57,10 @@ export default function PartnersPage() {
                 Guests at hotels and homestays across Himachal open the Cabadra app on their phone. List your taxi, tours, spa or shop in it, and they call you, not someone else.
               </motion.p>
               <motion.div variants={fadeUp} className="mt-8 flex flex-wrap gap-2">
-                <a href="#apply" className="group h-12 px-7 inline-flex items-center gap-2 rounded-full bg-[#111] text-white text-[15px] font-medium hover:bg-black transition-colors">
+                <Link to="/partner?new" className="group h-12 px-7 inline-flex items-center gap-2 rounded-full bg-[#111] text-white text-[15px] font-medium hover:bg-black transition-colors">
                   Apply now <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-                </a>
+                </Link>
+                <Link to="/partner" className="h-12 px-6 inline-flex items-center rounded-full border border-black/15 bg-white/50 text-[15px] font-medium hover:bg-white/80 transition-colors">Partner sign in</Link>
                 <a href="#pricing" className="h-12 px-6 inline-flex items-center rounded-full border border-black/15 bg-white/50 text-[15px] font-medium hover:bg-white/80 transition-colors">
                   {pricing ? `From ${inr(pricing.listingFeeMonthly)} a month` : 'See pricing'}
                 </a>
@@ -179,226 +172,25 @@ function PhonePreview() {
   );
 }
 
-const input = 'w-full h-12 px-4 rounded-2xl bg-[#f4f5f2] border border-transparent text-[15px] placeholder:text-[#111]/35 focus:outline-none focus:border-[#111]/30 focus:bg-white transition-colors';
-
-function Field({ label, hint, children, wide }: { label: string; hint?: string; children: React.ReactNode; wide?: boolean }) {
-  return (
-    <label className={`block ${wide ? 'sm:col-span-2' : ''}`}>
-      <span className="block text-sm font-medium mb-1.5">{label}</span>
-      {children}
-      {hint && <span className="mt-1.5 block text-xs text-[#111]/50">{hint}</span>}
-    </label>
-  );
-}
-
+/** Applying needs an account now (0085): sign up with Google, then the form on /partner. */
 function ApplySection() {
-  const [form, setForm] = useState<PartnerApplication>(EMPTY);
-  const [sameWhatsapp, setSameWhatsapp] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<string | null>(null);
-  const set = <K extends keyof PartnerApplication>(k: K, v: PartnerApplication[K]) => setForm(f => ({ ...f, [k]: v }));
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    if (!form.category) { setError('Pick what kind of business it is.'); return; }
-    if (form.areas.length === 0) { setError('Pick at least one place you serve.'); return; }
-    setBusy(true);
-    try {
-      const token = await submitPartnerApplication({ ...form, whatsapp: sameWhatsapp ? form.phone : form.whatsapp });
-      setDone(token);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Couldn’t send your application.');
-    } finally {
-      setBusy(false);
-    }
-  };
-
   return (
     <section id="apply" className="scroll-mt-6 mx-auto max-w-6xl px-5 sm:px-8 pt-24 sm:pt-32">
-      <Reveal>
-        <p className="text-sm font-medium text-[#111]/50">Apply</p>
-        <h2 className="mt-3 text-[32px] sm:text-5xl leading-[1.05] font-semibold tracking-[-0.03em] max-w-2xl">List your business</h2>
-        <p className="mt-4 max-w-xl text-[15px] text-[#111]/60">No account needed. We’ll email you a private link to your partner page, where you follow the review and pay once approved.</p>
-      </Reveal>
-
-      <AnimatePresence mode="wait">
-        {done ? (
-          <motion.div key="done" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, ease: EASE }} className="mt-10 rounded-[28px] bg-white p-8 sm:p-12 text-center">
-            <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.15, type: 'spring', stiffness: 260, damping: 18 }} className="mx-auto size-16 rounded-full bg-[#d4ff5a] flex items-center justify-center">
-              <CheckCircle2 className="size-8" />
-            </motion.span>
-            <h3 className="mt-6 text-2xl sm:text-3xl font-semibold tracking-[-0.02em]">Thanks, we’ve got it</h3>
-            <p className="mt-3 mx-auto max-w-md text-[15px] text-[#111]/60">We’ve emailed you a link to your partner page. We’ll check your listing, usually within two working days, and email you when it’s approved.</p>
-            <Link to={`/partner/${done}`} className="group mt-8 h-12 px-7 inline-flex items-center gap-2 rounded-full bg-[#111] text-white text-[15px] font-medium hover:bg-black transition-colors">
-              Open your partner page <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-            </Link>
-          </motion.div>
-        ) : (
-          <motion.form key="form" onSubmit={submit} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -10 }} className="mt-10 grid gap-3 lg:grid-cols-[1fr_1fr]">
-            <div className="rounded-[28px] bg-white p-6 sm:p-8 space-y-5">
-              <p className="text-lg font-semibold tracking-[-0.01em]">Your business</p>
-              <Field label="Business name">
-                <input required maxLength={80} value={form.name} onChange={e => set('name', e.target.value)} className={input} placeholder="Himalayan Cabs" />
-              </Field>
-              <div>
-                <span className="block text-sm font-medium mb-1.5">What do you do?</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {PARTNER_CATEGORIES.map(c => (
-                    <button type="button" key={c.id} onClick={() => set('category', c.id)} className={`h-10 px-4 rounded-full text-sm font-medium transition-colors ${form.category === c.id ? 'bg-[#111] text-white' : 'bg-[#f4f5f2] hover:bg-[#e9ebe6]'}`}>
-                      {c.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <Field label="One line guests will see" hint="Up to 120 characters.">
-                <input maxLength={120} value={form.tagline} onChange={e => set('tagline', e.target.value)} className={input} placeholder="Airport transfers and day trips" />
-              </Field>
-              <Field label="About you" hint="Optional. Up to 600 characters.">
-                <textarea maxLength={600} rows={4} value={form.description} onChange={e => set('description', e.target.value)} className={`${input} h-auto py-3 resize-none`} placeholder="Clean cars, local drivers who know every road." />
-              </Field>
-              <Field label="An offer for hotel guests" hint="Optional, but listings with an offer get more calls.">
-                <input maxLength={120} value={form.offerText} onChange={e => set('offerText', e.target.value)} className={input} placeholder="10% off for hotel guests" />
-              </Field>
-              <PhotoField value={form.photo} onChange={v => set('photo', v)} />
-            </div>
-
-            <div className="space-y-3">
-              <div className="rounded-[28px] bg-white p-6 sm:p-8 grid gap-5 sm:grid-cols-2">
-                <p className="sm:col-span-2 text-lg font-semibold tracking-[-0.01em]">How to reach you</p>
-                <Field label="Your name">
-                  <input required maxLength={80} value={form.ownerName} onChange={e => set('ownerName', e.target.value)} className={input} placeholder="Ravi Thakur" autoComplete="name" />
-                </Field>
-                <Field label="Email" hint="Your partner page link and guest requests come here.">
-                  <input required type="email" value={form.email} onChange={e => set('email', e.target.value)} className={input} placeholder="you@example.com" autoComplete="email" />
-                </Field>
-                <Field label="Phone guests call">
-                  <input required type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} className={input} placeholder="98765 43210" autoComplete="tel" />
-                </Field>
-                <div>
-                  <span className="block text-sm font-medium mb-1.5">WhatsApp</span>
-                  {sameWhatsapp ? (
-                    <button type="button" onClick={() => setSameWhatsapp(false)} className="w-full h-12 px-4 rounded-2xl bg-[#f4f5f2] text-left text-[15px] text-[#111]/60 inline-flex items-center gap-2">
-                      <Check className="size-4" /> Same as phone · change
-                    </button>
-                  ) : (
-                    <input type="tel" value={form.whatsapp} onChange={e => set('whatsapp', e.target.value)} className={input} placeholder="WhatsApp number" />
-                  )}
-                </div>
-                <Field label="Address" wide>
-                  <input maxLength={200} value={form.address} onChange={e => set('address', e.target.value)} className={input} placeholder="Upper Mall, Kasauli" />
-                </Field>
-                <Field label="Google Maps link" hint="Optional. Share → Copy link in Google Maps.">
-                  <input type="url" value={form.mapsUrl} onChange={e => set('mapsUrl', e.target.value)} className={input} placeholder="https://maps.app.goo.gl/…" />
-                </Field>
-                <Field label="Opening hours">
-                  <input maxLength={80} value={form.openingHours} onChange={e => set('openingHours', e.target.value)} className={input} placeholder="7am – 10pm, every day" />
-                </Field>
-              </div>
-
-              <div className="rounded-[28px] bg-white p-6 sm:p-8">
-                <p className="text-lg font-semibold tracking-[-0.01em]">Where you serve</p>
-                <p className="mt-1 text-sm text-[#111]/55">You’ll show to guests at hotels in these places. Pick a district to cover all of it.</p>
-                <div className="mt-4"><AreaChips value={form.areas} onChange={v => set('areas', v)} /></div>
-              </div>
-
-              {error && <p className="rounded-2xl bg-[#ffe9e5] px-4 py-3 text-sm text-[#8a1c0a]">{error}</p>}
-              <div className="rounded-[28px] bg-[#111] text-white p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <p className="text-sm text-white/60 max-w-xs">Nothing to pay now. You pay after we approve your listing.</p>
-                <button disabled={busy} className="h-12 px-7 inline-flex items-center justify-center gap-2 rounded-full bg-white text-[#111] text-[15px] font-medium hover:bg-white/90 disabled:opacity-60 transition-colors">
-                  {busy ? <><Loader2 className="size-4 animate-spin" /> Sending…</> : <>Send application <ArrowRight className="size-4" /></>}
-                </button>
-              </div>
-            </div>
-          </motion.form>
-        )}
-      </AnimatePresence>
-    </section>
-  );
-}
-
-function PhotoField({ value, onChange }: { value: string; onChange: (url: string) => void }) {
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const pick = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    setUploading(true);
-    setError(null);
-    try {
-      onChange(await uploadImageToCloudinary(file));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed.');
-    } finally {
-      setUploading(false);
-    }
-  };
-  return (
-    <div>
-      <span className="block text-sm font-medium mb-1.5">A photo</span>
-      {value ? (
-        <div className="relative rounded-2xl overflow-hidden h-40">
-          <img src={value} alt="" className="w-full h-full object-cover" />
-          <button type="button" onClick={() => onChange('')} aria-label="Remove photo" className="absolute top-2 right-2 size-8 rounded-full bg-white/90 flex items-center justify-center"><X className="size-4" /></button>
+      <Reveal className="rounded-[32px] bg-[#111] text-white p-8 sm:p-12 grid gap-8 md:grid-cols-[1.3fr_1fr] md:items-end">
+        <div>
+          <p className="text-sm text-white/55">Apply</p>
+          <h2 className="mt-3 text-[32px] sm:text-5xl leading-[1.05] font-semibold tracking-[-0.03em]">List your business</h2>
+          <p className="mt-4 max-w-md text-[15px] text-white/65">Create your partner account with Google, tell us about your business, and we’ll check it within two working days. Nothing to pay until you’re approved.</p>
         </div>
-      ) : (
-        <label className="h-28 rounded-2xl border-2 border-dashed border-black/10 flex flex-col items-center justify-center gap-1.5 text-sm text-[#111]/55 cursor-pointer hover:bg-[#f4f5f2] transition-colors">
-          {uploading ? <Loader2 className="size-5 animate-spin" /> : <ImagePlus className="size-5" />}
-          {uploading ? 'Uploading…' : 'Your car, your shop, your view'}
-          <input type="file" accept="image/*" className="sr-only" onChange={pick} />
-        </label>
-      )}
-      {error && <p className="mt-1.5 text-xs text-[#8a1c0a]">{error}</p>}
-    </div>
-  );
-}
-
-const titleCase = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase());
-
-/** Districts and their places, the same list hotels pick their location from, so areas match hotels. */
-function AreaChips({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
-  const [other, setOther] = useState('');
-  const toggle = (a: string) => onChange(value.includes(a) ? value.filter(x => x !== a) : [...value, a]);
-  const known = new Set(HIMACHAL_PLACES.flatMap(g => [g.district.toLowerCase(), ...g.places.map(p => p.toLowerCase())]));
-  const extras = value.filter(v => !known.has(v));
-  const addOther = () => {
-    const v = other.trim().toLowerCase();
-    if (v && !value.includes(v)) onChange([...value, v]);
-    setOther('');
-  };
-  return (
-    <div className="space-y-3">
-      {HIMACHAL_PLACES.map(g => {
-        const d = g.district.toLowerCase();
-        const districtOn = value.includes(d);
-        return (
-          <div key={g.district} className="flex flex-wrap items-center gap-1.5">
-            <button type="button" onClick={() => toggle(d)} className={`h-9 px-3.5 rounded-full text-sm font-semibold transition-colors ${districtOn ? 'bg-[#111] text-white' : 'bg-[#f4f5f2] hover:bg-[#e9ebe6]'}`}>
-              {g.district} <span className={`font-normal ${districtOn ? 'text-white/65' : 'text-[#111]/45'}`}>district</span>
-            </button>
-            {g.places.filter(p => p.toLowerCase() !== d).map(p => {
-              const on = value.includes(p.toLowerCase());
-              return (
-                <button type="button" key={p} disabled={districtOn} onClick={() => toggle(p.toLowerCase())} className={`h-9 px-3.5 rounded-full text-sm transition-colors disabled:opacity-35 ${on ? 'bg-[#d4ff5a] font-medium' : 'border border-black/10 hover:bg-[#f4f5f2]'}`}>
-                  {p}
-                </button>
-              );
-            })}
-          </div>
-        );
-      })}
-      <div className="flex flex-wrap items-center gap-1.5 pt-1">
-        {extras.map(x => (
-          <span key={x} className="h-9 pl-3.5 pr-1 rounded-full bg-[#d4ff5a] text-sm inline-flex items-center gap-1">
-            {titleCase(x)}
-            <button type="button" onClick={() => toggle(x)} aria-label={`Remove ${x}`} className="size-7 rounded-full hover:bg-black/10 flex items-center justify-center"><X className="size-3.5" /></button>
-          </span>
-        ))}
-        <input value={other} onChange={e => setOther(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addOther(); } }} placeholder="Another place" className="h-9 w-40 px-3.5 rounded-full border border-black/10 text-sm focus:outline-none focus:border-[#111]/40" />
-        <button type="button" onClick={addOther} className="size-9 rounded-full bg-[#f4f5f2] flex items-center justify-center" aria-label="Add place"><Plus className="size-4" /></button>
-      </div>
-    </div>
+        <div className="flex flex-col gap-2 md:items-end">
+          <Link to="/partner?new" className="group md:w-64 h-12 px-7 inline-flex items-center justify-center gap-2 rounded-full bg-white text-[#111] text-[15px] font-medium hover:bg-white/90 transition-colors">
+            Sign up with Google <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+          </Link>
+          <Link to="/partner" className="md:w-64 h-12 px-7 inline-flex items-center justify-center rounded-full border border-white/25 text-[15px] font-medium hover:bg-white/10 transition-colors">
+            Already a partner? Sign in
+          </Link>
+        </div>
+      </Reveal>
+    </section>
   );
 }

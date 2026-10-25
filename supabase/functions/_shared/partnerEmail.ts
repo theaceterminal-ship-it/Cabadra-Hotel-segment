@@ -10,8 +10,14 @@ export function siteUrl(): string {
   return (Deno.env.get('SITE_URL') ?? 'https://hotel.churmuri.com').replace(/\/+$/, '');
 }
 
-export function partnerPageUrl(portalToken: string): string {
-  return `${siteUrl()}/partner/${portalToken}`;
+/** The business's partner page: its sign-in once it has an account, its private link until then. */
+export function partnerPageUrl(portalToken: string, hasAccount = false): string {
+  return hasAccount ? `${siteUrl()}/partner` : `${siteUrl()}/partner/${portalToken}`;
+}
+
+/** An invoice's printable page; it asks the business to sign in if it has an account. */
+export function invoiceUrl(invoiceId: string): string {
+  return `${siteUrl()}/partner/invoice/${invoiceId}`;
 }
 
 export function escapeHtml(s: string): string {
@@ -87,3 +93,4 @@ export function inBackground(p: Promise<unknown>) {
   if (runtime?.waitUntil) runtime.waitUntil(logged);
   return logged;
 }
+

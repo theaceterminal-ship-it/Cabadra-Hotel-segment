@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth, type StaffAssignment } from '../hooks/useAuth';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
 import MarketingPage from './MarketingPage';
+import { isPartnerAccount } from '../lib/partnersApi';
 
 /**
  * `/` — the public website for a signed-out visitor (MarketingPage), and a
@@ -45,8 +46,15 @@ export default function LandingPage() {
 export function SignedInRedirect({ assignments }: { assignments: StaffAssignment[] }) {
   const isOwner = assignments.some(a => a.role === 'owner');
   const isReceptionist = assignments.some(a => a.role === 'receptionist');
+  // No hotel access: a local business (partners, 0085) goes to its partner
+  // page rather than into new-owner onboarding.
+  const [partner, setPartner] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!isOwner && !isReceptionist) isPartnerAccount().then(setPartner);
+  }, [isOwner, isReceptionist]);
 
   if (isOwner) return <Navigate to="/owner" replace />;
   if (isReceptionist) return <Navigate to="/reception" replace />;
-  return <Navigate to="/owner" replace />;
+  if (partner === null) return <div className="min-h-screen bg-[#eef0ec]" />;
+  return <Navigate to={partner ? '/partner' : '/owner'} replace />;
 }

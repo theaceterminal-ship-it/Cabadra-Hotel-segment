@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { LayoutDashboard, BedDouble, ListChecks, UtensilsCrossed, Truck, CalendarClock, CalendarDays, Sparkles, Users, TrendingUp, ClipboardCheck } from 'lucide-react';
+import { LayoutDashboard, BedDouble, ListChecks, UtensilsCrossed, Truck, CalendarClock, CalendarDays, Sparkles, Users, TrendingUp, ClipboardCheck, ConciergeBell } from 'lucide-react';
 import { StaffPwaInstallPrompt } from '../components/StaffPwaInstallPrompt';
 import { ReservedExperiencesView } from '../components/ReservedExperiencesView';
 import { GuestCrmView } from '../components/GuestCrmView';
@@ -42,6 +42,7 @@ import { StaffWelcomeCard } from '../components/StaffWelcomeCard';
 import { BookingsView } from '../components/bookings/BookingsView';
 import { RoomsFloorsView } from '../components/RoomsFloorsView';
 import { LiveOpsView } from '../components/LiveOpsView';
+import { ConciergeView } from '../components/ConciergeView';
 import { KitchenKDS } from '../components/KitchenKDS';
 import { KitchenLinkBar } from '../components/KitchenLinkBar';
 import { ActiveDeliveries } from '../components/ActiveDeliveries';
@@ -54,7 +55,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import LoginPage from './LoginPage';
 import { usePwaManifest } from '../hooks/usePwaManifest';
 
-type ReceptionTab = 'dashboard' | 'bookings' | 'day_close' | 'rooms_floors' | 'live_ops' | 'reserved_experiences' | 'guest_crm' | 'sales_reports' | 'kitchen_kds' | 'active_deliveries' | 'shift_coverage';
+type ReceptionTab = 'dashboard' | 'concierge' | 'bookings' | 'day_close' | 'rooms_floors' | 'live_ops' | 'reserved_experiences' | 'guest_crm' | 'sales_reports' | 'kitchen_kds' | 'active_deliveries' | 'shift_coverage';
 
 function supabaseOrderToKdsOrder(order: StaffOrder, previouslySeen?: KdsOrder): KdsOrder {
   const roomNumber = order.roomId.split('-').pop() ?? order.roomId;
@@ -365,6 +366,7 @@ export default function ReceptionApp() {
     { id: 'rooms_floors', label: 'Rooms', icon: BedDouble },
     { id: 'live_ops', label: 'Tasks', icon: ListChecks, badge: openTasksCount },
     { id: 'reserved_experiences', label: 'Experiences', icon: Sparkles },
+    { id: 'concierge', label: 'Concierge', icon: ConciergeBell },
     { id: 'guest_crm', label: 'Guests', icon: Users },
     { id: 'day_close', label: 'Day close', icon: ClipboardCheck },
     { id: 'sales_reports', label: 'Reports', icon: TrendingUp },
@@ -496,6 +498,7 @@ export default function ReceptionApp() {
               onRefreshRooms={() => propertyId && reloadRoomsAndArrivals(propertyId)}
             />
           )}
+          {view === 'concierge' && propertyId && <ConciergeView propertyId={propertyId} />}
           {view === 'day_close' && propertyId && <DayCloseView propertyId={propertyId} propertyName={propertyName} currency={currency} />}
           {view === 'sales_reports' && propertyId && <ReportsView propertyId={propertyId} propertyName={propertyName} currency={currency} hasExternalPms={hasExternalPms} />}
           {view === 'active_deliveries' && <ActiveDeliveries propertyId={propertyId} onNavigate={(v: AppView) => setView(v as ReceptionTab)} />}

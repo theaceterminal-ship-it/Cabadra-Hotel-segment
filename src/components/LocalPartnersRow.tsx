@@ -2,10 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   Car, Check, Coffee, Copy, Flower2, MapPin, Map as MapIcon, MessageCircle, Mountain, Phone, ShoppingBag, Store, Tag,
-  UtensilsCrossed, X, Clock, Send, Sparkles, Loader2,
+  UtensilsCrossed, X, Clock, Send, Sparkles, Loader2, Star,
 } from 'lucide-react';
 import {
-  fetchPartnerListings, fetchPartnerRequests, logPartnerEvents, sendPartnerRequest, PartnerListing, PartnerEventKind, PartnerRequest,
+  fetchPartnerListings, fetchPartnerRequests, logPartnerEvents, ratePartner, sendPartnerRequest, PartnerListing, PartnerEventKind, PartnerRequest,
 } from '../lib/guestApi';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -108,6 +108,7 @@ export function LocalPartnersRow({ token, propertyName }: { token: string; prope
               <div className="p-4">
                 <p className="text-[12px] text-on-surface-variant flex items-center gap-1"><Icon className="size-3.5" /> {CATEGORY[p.category]?.label ?? 'Local'}</p>
                 <p className="mt-1 text-[15px] font-semibold tracking-[-0.01em] text-on-surface truncate">{p.name}</p>
+                {p.rating != null && <p className="mt-0.5 text-[12px] font-medium text-on-surface inline-flex items-center gap-1"><Star className="size-3 fill-current" /> {p.rating} <span className="font-normal text-on-surface-variant">({p.ratingCount})</span></p>}
                 {p.tagline && <p className="mt-0.5 text-[13px] text-on-surface-variant line-clamp-1">{p.tagline}</p>}
                 {p.offerText && (
                   <p className="mt-3 inline-flex max-w-full items-center gap-1.5 rounded-full bg-room-ready text-room-ready-on px-2.5 py-1 text-[12px] font-medium">
@@ -186,6 +187,7 @@ function PartnerSheet({ token, partner, propertyName, onClose, onAction }: {
             <p className="text-[13px] text-on-surface-variant flex items-center gap-1"><Icon className="size-4" /> {CATEGORY[partner.category]?.label ?? 'Local'}</p>
             <h3 className="mt-1 text-[26px] leading-tight font-semibold tracking-[-0.03em]">{partner.name}</h3>
             {partner.tagline && <p className="mt-1 text-[15px] text-on-surface-variant">{partner.tagline}</p>}
+            {partner.rating != null && <p className="mt-1.5 text-sm font-medium inline-flex items-center gap-1"><Star className="size-4 fill-current" /> {partner.rating} <span className="font-normal text-on-surface-variant">from {partner.ratingCount} guest{partner.ratingCount === 1 ? '' : 's'}</span></p>}
           </div>
 
           {partner.description && <p className="text-sm text-on-surface-variant leading-relaxed">{partner.description}</p>}
@@ -307,10 +309,12 @@ function RequestBox({ token, partner, propertyName }: { token: string; partner: 
         <div className="mb-3 space-y-2">
           {mine.slice(0, 3).map(r => (
             <div key={r.id} className="rounded-[14px] bg-surface-container-lowest px-3.5 py-2.5 text-sm">
+              {r.source === 'reception' && <p className="text-[11px] font-medium text-on-surface-variant">Booked for you by the front desk</p>}
               <p className="line-clamp-1">“{r.message}”</p>
               <p className={`mt-0.5 text-[12px] font-medium ${r.status === 'accepted' || r.status === 'done' ? 'text-on-surface' : 'text-on-surface-variant'}`}>
                 {REQUEST_STATUS[r.status]}{r.businessNote ? `: ${r.businessNote}` : ''}
               </p>
+              {(r.status === 'accepted' || r.status === 'done') && <RateRequest token={token} request={r} partnerName={partner.name} onRated={load} />}
             </div>
           ))}
         </div>
@@ -349,6 +353,53 @@ function RequestBox({ token, partner, propertyName }: { token: string; partner: 
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+/** Stars for a request the business took. Once only; a comment is optional. */
+function RateRequest({ token, request, partnerName, onRated }: { token: string; request: PartnerRequest; partnerName: string; onRated: () => void }) {
+  const [stars, setStars] = useState(0);
+  const [comment, setComment] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (request.rating) {
+    return <p className="mt-1.5 text-[12px] text-on-surface-variant inline-flex items-center gap-1">You rated them <Star className="size-3 fill-current text-on-surface" /> {request.rating}</p>;
+  }
+  const send = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await ratePartner(token, request.id, stars, comment.trim() || undefined);
+      onRated();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Couldn’t save that.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="mt-2 pt-2 border-t border-outline-variant">
+      <p className="text-[12px] text-on-surface-variant">How was {partnerName}?</p>
+      <div className="mt-1 flex items-center gap-0.5">
+        {[1, 2, 3, 4, 5].map(n => (
+          <motion.button key={n} whileTap={{ scale: 0.85 }} onClick={() => setStars(n)} aria-label={`${n} star${n === 1 ? '' : 's'}`} className="p-1">
+            <Star className={`size-6 transition-colors ${n <= stars ? 'fill-on-surface text-on-surface' : 'text-on-surface-variant/40'}`} />
+          </motion.button>
+        ))}
+      </div>
+      <AnimatePresence>
+        {stars > 0 && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="overflow-hidden">
+            <div className="mt-1.5 flex gap-1.5">
+              <input value={comment} onChange={e => setComment(e.target.value)} maxLength={300} placeholder="A few words (optional)" className="flex-1 min-w-0 h-9 px-3 rounded-full bg-surface border border-outline-variant text-[13px] focus:outline-none" />
+              <button onClick={send} disabled={busy} className="h-9 px-4 rounded-full bg-primary text-on-primary text-[13px] font-medium disabled:opacity-50">{busy ? '…' : 'Rate'}</button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {error && <p className="mt-1 text-[12px] text-error">{error}</p>}
     </div>
   );
 }

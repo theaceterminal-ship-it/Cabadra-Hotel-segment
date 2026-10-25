@@ -166,6 +166,9 @@ export interface PartnerListing {
   featured?: boolean;
   /** Has an email for booking requests to go to (0084). */
   takesRequests?: boolean;
+  /** Average guest rating, once there are at least 3 (0085). */
+  rating?: number | null;
+  ratingCount?: number;
 }
 
 export type PartnerEventKind = 'impression' | 'tap' | 'call' | 'whatsapp' | 'directions' | 'code';
@@ -194,6 +197,16 @@ export interface PartnerRequest {
   status: 'new' | 'accepted' | 'declined' | 'done';
   businessNote?: string;
   createdAt: string;
+  /** 'reception' when the front desk booked it for the guest (0085). */
+  source?: 'guest' | 'reception';
+  /** The guest's own stars, once they've rated it. */
+  rating?: number | null;
+}
+
+/** guest_rate_partner (0085): once per request, after the business took it. */
+export async function ratePartner(token: string, requestId: string, stars: number, comment?: string) {
+  const { error } = await supabase.rpc('guest_rate_partner', { p_token: token, p_request_id: requestId, p_stars: stars, p_comment: comment ?? null });
+  if (error) throw new Error(error.message);
 }
 
 /**
