@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  Search, Plus, Star, Clock, CheckCircle2, XCircle, ClipboardList, Megaphone, CalendarPlus, UserPlus, X, Users,
+  Search, Plus, Star, Clock, CheckCircle2, XCircle, ClipboardList, Megaphone, CalendarPlus, UserPlus, X,
   Play, Check, Ban, UserCircle2,
 } from 'lucide-react';
 import { Room, RoomStatus, UrgentRequest, UpcomingArrival, LiveOpsTask, AppView } from '../types';
-import { updateArrivalEta, fetchActiveShiftSessions, ActiveShiftSession, DirectoryContact, PropertyStats } from '../lib/staffApi';
+import { updateArrivalEta, DirectoryContact, PropertyStats } from '../lib/staffApi';
 import { formatCurrency } from '../lib/currency';
 import { NewBookingModal } from './NewBookingModal';
 import { RoomDetailModal, CHECKINABLE_STATUSES } from './RoomDetailModal';
@@ -231,43 +231,6 @@ function ListCard({ title, count, icon: Icon, viewAllLabel, onViewAll, children,
   );
 }
 
-const DEPT_LABELS = DEPARTMENT_LABELS;
-
-/**
- * Found missing live-testing: once staff started clocking in via a badge
- * scan (department_display_scan_badge), nothing on Reception's own
- * dashboard reflected it — the only place that showed up was the display
- * itself. Self-fetching, same pattern as PropertyDetailPage's
- * OpenRequestsCard, and polled rather than wired through the parent's own
- * reload cycle since it's reading a table (display_sessions) nothing else
- * on this page touches.
- */
-function WhoIsOnShiftCard({ propertyId }: { propertyId: string }) {
-  const [sessions, setSessions] = useState<ActiveShiftSession[]>([]);
-
-  useEffect(() => {
-    const poll = () => fetchActiveShiftSessions(propertyId).then(setSessions).catch(() => {});
-    poll();
-    const interval = setInterval(poll, 8000);
-    return () => clearInterval(interval);
-  }, [propertyId]);
-
-  return (
-    <ListCard title="On Shift Now" count={sessions.length} icon={Users} empty="No one clocked in right now.">
-      {sessions.map(s => (
-        <div key={s.id} className="p-3 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold text-on-surface truncate">{s.staffName}</p>
-            <p className="text-[10px] text-on-surface-variant truncate">{DEPT_LABELS[s.department]}{s.displayLabel ? ` · ${s.displayLabel}` : ''}</p>
-          </div>
-          <span className="text-[10px] font-semibold text-success shrink-0">
-            since {new Date(s.claimedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </span>
-        </div>
-      ))}
-    </ListCard>
-  );
-}
 
 /**
  * The receptionist's front page — rebuilt around the TimeFrame reference:
@@ -364,9 +327,25 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-        {/* Left column — Live Operations (top), Guest Requests (top), Upcoming Arrivals (2nd last), On Shift (last) */}
+        {/* Left column — Guest Requests (top), Live Operations, Upcoming Arrivals. Who's on shift lives in the Departments tab. */}
         <div className="xl:col-span-4 flex flex-col gap-4">
-          {/* 1. Live Operations (Top) */}
+          {/* 1. Guest Requests (Top) */}
+          <ListCard title="Guest Requests" count={urgentRequests.length} icon={Megaphone} empty="Nothing outstanding — nice.">
+            {urgentRequests.map(req => (
+              <div key={req.id} onClick={() => setSelectedRequest(req)} className="p-3 hover:bg-surface-container-low transition-colors cursor-pointer group flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-on-surface group-hover:text-primary truncate">{req.title}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="bg-surface-container-low px-2 py-0.5 rounded text-[10px] font-semibold text-on-surface-variant">Room {req.roomNumber}</span>
+                    <span className={`text-[10px] font-semibold ${req.priority === 'High Priority' ? 'text-error' : 'text-primary'}`}>{req.priority}</span>
+                  </div>
+                </div>
+                <CheckCircle2 className="w-4 h-4 text-on-surface-variant opacity-0 group-hover:opacity-100 shrink-0" />
+              </div>
+            ))}
+          </ListCard>
+
+          {/* 2. Live Operations */}
           <ListCard title="Live Operations" count={openTasks.length} icon={ClipboardList} viewAllLabel="Open board" onViewAll={() => onNavigate('live_ops')} empty="Nothing open right now.">
             {openTasks.map(task => (
               <div key={task.id} className="p-3 flex items-center justify-between gap-3">
@@ -379,22 +358,6 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
                 }`}>
                   {task.status.replace('_', ' ')}
                 </span>
-              </div>
-            ))}
-          </ListCard>
-
-          {/* 2. Guest Requests (Top) */}
-          <ListCard title="Guest Requests" count={urgentRequests.length} icon={Megaphone} empty="Nothing outstanding — nice.">
-            {urgentRequests.map(req => (
-              <div key={req.id} onClick={() => setSelectedRequest(req)} className="p-3 hover:bg-surface-container-low transition-colors cursor-pointer group flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-on-surface group-hover:text-primary truncate">{req.title}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="bg-surface-container-low px-2 py-0.5 rounded text-[10px] font-semibold text-on-surface-variant">Room {req.roomNumber}</span>
-                    <span className={`text-[10px] font-semibold ${req.priority === 'High Priority' ? 'text-error' : 'text-primary'}`}>{req.priority}</span>
-                  </div>
-                </div>
-                <CheckCircle2 className="w-4 h-4 text-on-surface-variant opacity-0 group-hover:opacity-100 shrink-0" />
               </div>
             ))}
           </ListCard>
@@ -442,8 +405,6 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
             ))}
           </ListCard>}
 
-          {/* 4. On Shift Now (Last) */}
-          <WhoIsOnShiftCard propertyId={propertyId} />
         </div>
 
         {/* Right — date/search header + room grid, replacing the reference's calendar */}
