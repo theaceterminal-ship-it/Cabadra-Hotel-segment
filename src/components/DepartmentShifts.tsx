@@ -7,10 +7,7 @@ import {
   deleteShift,
   fetchShiftCoverage,
 } from '../lib/staffApi';
-import { AppView } from '../types';
 import {
-  ArrowLeft,
-  CalendarClock,
   CheckCircle2,
   Clock,
   AlertTriangle,
@@ -41,19 +38,13 @@ function formatTime(iso?: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-interface ShiftCoverageViewProps {
-  propertyId: string;
-  onNavigate: (view: AppView) => void;
-}
-
 /**
- * "Did someone actually show up" — a report reception/owner checks, not a
- * live push alert (staff_shift_coverage, 0047; this app has no scheduled
- * job anywhere, so a real-time alert the instant a shift goes uncovered is
- * a deliberate later step, not something half-built here).
+ * One department's shifts and whether each was covered on a day: "did
+ * someone actually show up" (staff_shift_coverage, 0047), from badge scans
+ * on the department screen. Lives inside that department on reception's
+ * Departments tab, next to its staff and its screen.
  */
-export const ShiftCoverageView: React.FC<ShiftCoverageViewProps> = ({ propertyId, onNavigate }) => {
-  const [department, setDepartment] = useState<Shift['department']>('housekeeping');
+export function DepartmentShifts({ propertyId, department }: { propertyId: string; department: Shift['department'] }) {
   const [date, setDate] = useState(todayLocal());
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [coverage, setCoverage] = useState<ShiftCoverage[]>([]);
@@ -97,33 +88,11 @@ export const ShiftCoverageView: React.FC<ShiftCoverageViewProps> = ({ propertyId
   const coverageByShift = new Map<string, ShiftCoverage>(coverage.map(c => [c.shiftId, c]));
 
   return (
-    <div className="w-full max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-      <div className="flex items-center gap-3 pb-2 border-b border-outline-variant">
-        <button onClick={() => onNavigate('live_ops')} className="p-2 rounded-full hover:bg-surface-container-low text-primary">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div className="p-2 bg-primary text-on-primary rounded-lg">
-          <CalendarClock className="w-5 h-5" />
-        </div>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl md:text-2xl font-semibold text-on-surface">Shift Coverage</h1>
-          <p className="text-xs text-on-surface-variant">Who scanned in, who didn't, and when</p>
-        </div>
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-1 text-xs bg-surface-container-low p-1 rounded-lg border border-outline-variant w-fit">
-          {(Object.keys(DEPT_LABELS) as Shift['department'][]).map(d => (
-            <button
-              key={d}
-              onClick={() => setDepartment(d)}
-              className={`px-3 py-1.5 rounded font-semibold transition-colors ${
-                department === d ? 'bg-surface-container-lowest text-primary shadow-xs' : 'text-on-surface-variant'
-              }`}
-            >
-              {DEPT_LABELS[d]}
-            </button>
-          ))}
+          <h3 className="text-base font-semibold text-on-surface">Shifts</h3>
+          <p className="text-xs text-on-surface-variant">Who scanned in for each shift, and when</p>
         </div>
         <input
           type="date"
@@ -136,7 +105,7 @@ export const ShiftCoverageView: React.FC<ShiftCoverageViewProps> = ({ propertyId
       {loading ? (
         <p className="text-xs text-on-surface-variant text-center py-8">Loading…</p>
       ) : shifts.length === 0 ? (
-        <div className="p-8 text-center bg-surface-container-lowest rounded-xl border border-outline-variant text-sm text-on-surface-variant">
+        <div className="p-6 text-center bg-surface-container-low rounded-2xl text-sm text-on-surface-variant">
           No shifts defined for {DEPT_LABELS[department]} yet — add one below.
         </div>
       ) : (
@@ -147,7 +116,7 @@ export const ShiftCoverageView: React.FC<ShiftCoverageViewProps> = ({ propertyId
             const style = STATUS_STYLE[status];
             const Icon = style.icon;
             return (
-              <article key={shift.id} className="bg-surface-container-lowest rounded-xl border border-outline-variant p-4 sm:p-5">
+              <article key={shift.id} className="bg-surface-container-low rounded-2xl p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                   <div>
                     <p className="font-semibold text-on-surface">{shift.name}</p>
@@ -177,7 +146,7 @@ export const ShiftCoverageView: React.FC<ShiftCoverageViewProps> = ({ propertyId
       )}
 
       {showNewShift ? (
-        <form onSubmit={handleAddShift} className="bg-surface-container-lowest rounded-xl border border-outline-variant p-4 grid grid-cols-2 sm:grid-cols-4 gap-2 items-end">
+        <form onSubmit={handleAddShift} className="bg-surface-container-low rounded-2xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-2 items-end">
           <div className="col-span-2 sm:col-span-1">
             <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Name</label>
             <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Morning" className="w-full h-9 px-2.5 text-xs border border-outline-variant rounded-lg bg-surface-container-lowest" />
@@ -199,9 +168,9 @@ export const ShiftCoverageView: React.FC<ShiftCoverageViewProps> = ({ propertyId
           onClick={() => setShowNewShift(true)}
           className="h-10 px-4 rounded-lg border border-outline-variant text-on-surface-variant text-xs font-semibold hover:bg-surface-container-low flex items-center gap-1.5"
         >
-          <Plus className="w-3.5 h-3.5" /> New Shift for {DEPT_LABELS[department]}
+          <Plus className="w-3.5 h-3.5" /> New shift for {DEPT_LABELS[department]}
         </button>
       )}
     </div>
   );
-};
+}

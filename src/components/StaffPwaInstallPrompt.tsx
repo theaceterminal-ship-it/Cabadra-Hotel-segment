@@ -13,7 +13,7 @@ if (typeof window !== 'undefined') {
  * Staff PWA Install Prompt component.
  * Provides native installation or clear step-by-step browser instructions.
  */
-export function StaffPwaInstallPrompt(): JSX.Element {
+export function StaffPwaInstallPrompt(): React.JSX.Element {
   const [showPrompt, setShowPrompt] = useState(false);
   const [showManualInstructions, setShowManualInstructions] = useState(false);
   const [isIos, setIsIos] = useState(false);

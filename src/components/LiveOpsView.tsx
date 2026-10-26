@@ -1,14 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { LiveOpsTask, AppView, Room } from '../types';
-import {
-  DirectoryContact,
-  DepartmentDisplayAdmin,
-  fetchDepartmentDisplays,
-  createDepartmentDisplay,
-  setDepartmentDisplayActive,
-} from '../lib/staffApi';
+import { DirectoryContact } from '../lib/staffApi';
 import { TaskQrModal } from './TaskQrModal';
-import { DisplayQrModal } from './DisplayQrModal';
 import Papa from 'papaparse';
 import {
   CheckCircle2,
@@ -19,11 +12,9 @@ import {
   Brush,
   RefreshCw,
   FileSpreadsheet,
-  Phone,
   QrCode,
   X,
-  Tablet,
-  Power,
+  Users,
   Calendar,
   Search,
 } from 'lucide-react';
@@ -72,43 +63,6 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
   const [qrTask, setQrTask] = useState<LiveOpsTask | null>(null);
   const [rejectingTask, setRejectingTask] = useState<LiveOpsTask | null>(null);
   const [rejectNote, setRejectNote] = useState('');
-
-  // Department Displays — generated here, since Reception is where the
-  // physical tablets actually live, not Owner (where staff_directory badges
-  // are issued instead, PropertyDetailPage's Staff tab). One QR per
-  // department is the whole idea — staff scans it before their shift and
-  // it opens straight into that department's queue, so this auto-creates
-  // (or reuses) exactly one active display per department instead of
-  // asking anyone to name/configure one first.
-  const [displays, setDisplays] = useState<DepartmentDisplayAdmin[]>([]);
-  const [qrDisplay, setQrDisplay] = useState<DepartmentDisplayAdmin | null>(null);
-  const [gettingQrFor, setGettingQrFor] = useState<DirectoryContact['department'] | null>(null);
-
-  const reloadDisplays = () => fetchDepartmentDisplays(propertyId).then(setDisplays).catch(() => {});
-  useEffect(() => { reloadDisplays(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [propertyId]);
-
-  const handleShowDepartmentQr = async (department: DepartmentDisplayAdmin['department']) => {
-    const existing = displays.find(d => d.department === department && d.active);
-    if (existing) {
-      setQrDisplay(existing);
-      return;
-    }
-    setGettingQrFor(department);
-    try {
-      const created = await createDepartmentDisplay(propertyId, department, `${DEPT_LABELS[department]} QR`);
-      setDisplays(prev => [...prev, created]);
-      setQrDisplay(created);
-    } catch {
-      // Nothing created, nothing to show — the button just stays clickable to retry.
-    } finally {
-      setGettingQrFor(null);
-    }
-  };
-
-  const handleToggleDisplay = async (display: DepartmentDisplayAdmin) => {
-    await setDepartmentDisplayActive(display.id, !display.active).catch(() => {});
-    reloadDisplays();
-  };
 
   const handleConfirmReject = () => {
     if (!rejectingTask || !rejectNote.trim()) return;
@@ -245,6 +199,14 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Department contacts, their screens' QR codes and shifts live on the Departments tab. */}
+          <button
+            onClick={() => onNavigate('departments')}
+            className="h-9 px-3 rounded-lg bg-surface-container-lowest border border-outline-variant text-on-surface text-xs font-semibold hover:bg-surface-container-low transition-colors flex items-center gap-1.5 shadow-xs"
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>Departments</span>
+          </button>
           <button
             id="btn-refresh-tasks"
             onClick={handleRefresh}
@@ -515,84 +477,9 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
           </div>
         </div>
 
-        {/* Department Contacts — right column, uses the space this page used to leave empty */}
-        <aside className="grid md:grid-cols-2 xl:grid-cols-3 gap-3 items-start">
-          <h3 className="md:col-span-2 xl:col-span-3 text-sm font-semibold text-on-surface px-1">Department contacts and QR codes</h3>
-          {(Object.keys(DEPT_LABELS) as DirectoryContact['department'][]).map(dept => {
-            const contacts = directoryByDept(dept);
-            const openCount = tasks.filter(t => t.category === dept && t.status !== 'completed').length;
-            return (
-              <div key={dept} className="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
-                <div className="px-4 py-2.5 border-b border-outline-variant bg-surface-container-low flex items-center justify-between">
-                  <h4 className="text-xs font-semibold text-on-surface">{DEPT_LABELS[dept]}</h4>
-                  {openCount > 0 && <span className="text-[10px] font-semibold text-primary bg-highlight px-2 py-0.5 rounded-full">{openCount} open</span>}
-                </div>
-                {contacts.length === 0 ? (
-                  <p className="text-[11px] text-on-surface-variant text-center py-4 px-3">No contacts added yet — Owner &gt; Staff tab.</p>
-                ) : (
-                  <div className="divide-y divide-outline-variant">
-                    {contacts.map(c => (
-                      <a
-                        key={c.id}
-                        href={`tel:${c.phone.replace(/\s+/g, '')}`}
-                        className="flex items-center justify-between px-4 py-2.5 text-xs hover:bg-surface-container-low transition-colors"
-                      >
-                        <span className="font-semibold text-on-surface">{c.name}</span>
-                        <span className="flex items-center gap-1 text-primary font-semibold">
-                          <Phone className="w-3 h-3" /> {c.phone}
-                        </span>
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-
-          {/* One QR per department — scan it before your shift, it opens
-              straight into that department's queue. Auto-created the first
-              time anyone taps "Show QR" for a department, nothing to name
-              or configure first. */}
-          <div className="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
-            <div className="px-4 py-2.5 border-b border-outline-variant bg-surface-container-low">
-              <h4 className="text-xs font-semibold text-on-surface">Department QR Codes</h4>
-              <p className="text-[10px] text-on-surface-variant mt-0.5">Scan before a shift — opens that department's queue.</p>
-            </div>
-            <div className="divide-y divide-outline-variant">
-              {/* The kitchen has its own screen and link (Kitchen tab), not a task queue QR. */}
-              {(Object.keys(DEPT_LABELS) as DepartmentDisplayAdmin['department'][]).filter(dept => dept !== 'kitchen').map(dept => {
-                const existing = displays.find(d => d.department === dept && d.active);
-                return (
-                  <div key={dept} className="flex items-center justify-between px-4 py-2.5 text-xs">
-                    <span className="font-semibold text-on-surface">{DEPT_LABELS[dept]}</span>
-                    <div className="flex items-center gap-1 shrink-0">
-                      {existing && (
-                        <button
-                          onClick={() => handleToggleDisplay(existing)}
-                          className="text-error hover:bg-surface-container-low p-1.5 rounded"
-                          title="Revoke this QR — a fresh one is made next time you tap Show QR"
-                        >
-                          <Power className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleShowDepartmentQr(dept)}
-                        disabled={gettingQrFor === dept}
-                        className="h-8 px-3 rounded-lg bg-primary text-on-primary text-[11px] font-semibold hover:bg-primary-hover disabled:opacity-50 flex items-center gap-1.5"
-                      >
-                        <Tablet className="w-3.5 h-3.5" /> {gettingQrFor === dept ? 'Getting QR…' : 'Show QR'}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </aside>
       </div>
 
       {qrTask && <TaskQrModal task={qrTask} onClose={() => setQrTask(null)} />}
-      {qrDisplay && <DisplayQrModal display={qrDisplay} onClose={() => setQrDisplay(null)} />}
 
       {rejectingTask && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
