@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { LayoutDashboard, BedDouble, ListChecks, UtensilsCrossed, Truck, CalendarClock, CalendarDays, Sparkles, Users, TrendingUp, ClipboardCheck, ConciergeBell } from 'lucide-react';
+import { LayoutDashboard, BedDouble, ListChecks, UtensilsCrossed, Truck, CalendarClock, CalendarDays, Sparkles, Users, TrendingUp, ClipboardCheck, ConciergeBell, MessageCircle } from 'lucide-react';
 import { StaffPwaInstallPrompt } from '../components/StaffPwaInstallPrompt';
 import { ReservedExperiencesView } from '../components/ReservedExperiencesView';
 import { GuestCrmView } from '../components/GuestCrmView';
@@ -43,6 +43,8 @@ import { BookingsView } from '../components/bookings/BookingsView';
 import { RoomsFloorsView } from '../components/RoomsFloorsView';
 import { LiveOpsView } from '../components/LiveOpsView';
 import { ConciergeView } from '../components/ConciergeView';
+import { ChatInboxView } from '../components/ChatInboxView';
+import { fetchChatInbox } from '../lib/staffApi';
 import { KitchenKDS } from '../components/KitchenKDS';
 import { KitchenLinkBar } from '../components/KitchenLinkBar';
 import { ActiveDeliveries } from '../components/ActiveDeliveries';
@@ -55,7 +57,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import LoginPage from './LoginPage';
 import { usePwaManifest } from '../hooks/usePwaManifest';
 
-type ReceptionTab = 'dashboard' | 'concierge' | 'bookings' | 'day_close' | 'rooms_floors' | 'live_ops' | 'reserved_experiences' | 'guest_crm' | 'sales_reports' | 'kitchen_kds' | 'active_deliveries' | 'shift_coverage';
+type ReceptionTab = 'dashboard' | 'messages' | 'concierge' | 'bookings' | 'day_close' | 'rooms_floors' | 'live_ops' | 'reserved_experiences' | 'guest_crm' | 'sales_reports' | 'kitchen_kds' | 'active_deliveries' | 'shift_coverage';
 
 function supabaseOrderToKdsOrder(order: StaffOrder, previouslySeen?: KdsOrder): KdsOrder {
   const roomNumber = order.roomId.split('-').pop() ?? order.roomId;
@@ -89,6 +91,8 @@ export default function ReceptionApp() {
   usePwaManifest('staff');
   const { loading, session, assignments } = useAuth();
   const [view, setView] = useState<ReceptionTab>('dashboard');
+  // Guest messages nobody at the desk has read yet, for the Messages badge.
+  const [unreadChats, setUnreadChats] = useState(0);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   // The website's palette and shapes, the same as the owner side; the toggle still switches it to dark.
   useSiteTheme();
@@ -335,6 +339,15 @@ export default function ReceptionApp() {
     return () => clearInterval(interval);
   }, [propertyId]);
 
+  // The Messages badge, kept fresh on every tab (the inbox itself refreshes faster while open).
+  useEffect(() => {
+    if (!propertyId || view === 'messages') return;
+    const poll = () => fetchChatInbox(propertyId).then(rows => setUnreadChats(rows.reduce((n, r) => n + r.unread, 0))).catch(() => {});
+    poll();
+    const interval = setInterval(poll, 15000);
+    return () => clearInterval(interval);
+  }, [propertyId, view]);
+
   if (!isSupabaseConfigured) return <SupabaseSetupNeeded />;
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-surface text-sm text-on-surface-strong">Loading…</div>;
   if (!session) return <LoginPage roleLabel="Reception" />;
@@ -361,6 +374,7 @@ export default function ReceptionApp() {
 
   const navItems: SidebarNavItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: openRequestsCount },
+    { id: 'messages', label: 'Messages', icon: MessageCircle, badge: unreadChats },
     // Bookings are the built-in PMS's; a hotel on its own PMS books there.
     ...(hasExternalPms ? [] : [{ id: 'bookings', label: 'Bookings', icon: CalendarDays }]),
     { id: 'rooms_floors', label: 'Rooms', icon: BedDouble },
@@ -389,7 +403,7 @@ export default function ReceptionApp() {
           <span className="md:hidden size-8 rounded-full bg-primary text-on-primary flex items-center justify-center text-sm font-semibold shrink-0">C</span>
           <p className="mr-auto text-sm font-medium text-on-surface-variant truncate">{propertyName}</p>
           <div className="hidden md:block"><ThemeToggle theme={theme} onChange={setTheme} /></div>
-          <NotificationBell notifications={notifications} unreadCount={unreadCount} onMarkRead={markRead} onMarkAllRead={markAllRead} date={notificationsDate} onDateChange={setNotificationsDate} />
+          <NotificationBell notifications={notifications} unreadCount={unreadCount} onMarkRead={markRead} onMarkAllRead={markAllRead} date={notificationsDate} onDateChange={setNotificationsDate} onOpen={n => { if (n.type === 'folio_chat_message') setView('messages'); }} />
         </div>
         <StaffPwaInstallPrompt />
 
@@ -499,6 +513,7 @@ export default function ReceptionApp() {
             />
           )}
           {view === 'concierge' && propertyId && <ConciergeView propertyId={propertyId} />}
+          {view === 'messages' && propertyId && <ChatInboxView propertyId={propertyId} onUnreadChange={setUnreadChats} />}
           {view === 'day_close' && propertyId && <DayCloseView propertyId={propertyId} propertyName={propertyName} currency={currency} />}
           {view === 'sales_reports' && propertyId && <ReportsView propertyId={propertyId} propertyName={propertyName} currency={currency} hasExternalPms={hasExternalPms} />}
           {view === 'active_deliveries' && <ActiveDeliveries propertyId={propertyId} onNavigate={(v: AppView) => setView(v as ReceptionTab)} />}

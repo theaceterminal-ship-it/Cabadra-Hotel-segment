@@ -365,6 +365,17 @@ export async function fetchChatMessages(token: string): Promise<FolioChatMessage
   return (data ?? []) as FolioChatMessage[];
 }
 
+/** The guest opened the chat: reception's messages so far show as seen (0086). */
+export function markChatSeen(token: string): void {
+  supabase.rpc('guest_mark_chat_seen', { p_token: token }).then(({ error }) => { if (error) console.warn('Failed to mark chat seen:', error.message); });
+}
+
+/** The realtime channel for this stay's typing indicator (0086); null if unavailable. */
+export async function fetchChatChannel(token: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc('guest_chat_channel', { p_token: token });
+  return error ? null : (data as string);
+}
+
 export async function sendChatMessage(token: string, body: string): Promise<FolioChatMessage> {
   const { data, error } = await supabase.rpc('guest_send_chat_message', { p_token: token, p_body: body });
   if (error) throw new Error(`Failed to send message: ${error.message}`);

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { useBackToClose } from '../hooks/useBackToClose';
 import {
   Car, Check, Coffee, Copy, Flower2, MapPin, Map as MapIcon, MessageCircle, Mountain, Phone, ShoppingBag, Store, Tag,
   UtensilsCrossed, X, Clock, Send, Sparkles, Loader2, Star, Search,
@@ -49,6 +50,7 @@ export function LocalPartnersRow({ token, propertyName }: { token: string; prope
   const [open, setOpen] = useState<PartnerListing | null>(null);
   const [query, setQuery] = useState('');
   const seen = useRef(false);
+  useBackToClose(!!open, () => setOpen(null));
 
   useEffect(() => {
     let cancelled = false;

@@ -6,6 +6,7 @@ import {
 } from '../lib/guestApi';
 import type { GuestExperienceBooking } from '../types';
 import { computeOrderEta } from '../lib/eta';
+import { useBackToClose } from '../hooks/useBackToClose';
 import { formatCurrency } from '../lib/currency';
 import { ChefHat, Check, X, AlertTriangle, Clock, Play, BellOff, ChevronRight, Calendar } from 'lucide-react';
 
@@ -57,6 +58,7 @@ export function DynamicIslandStatusBar({ token, currency, className }: DynamicIs
   const [clearedOrder, setClearedOrder] = useState<string | null>(readClearedOrder);
   const [clearedRequests, setClearedRequests] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
+  useBackToClose(open, () => setOpen(false));
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -139,18 +141,20 @@ export function DynamicIslandStatusBar({ token, currency, className }: DynamicIs
       <AnimatePresence>
         {open && (
           <motion.div
-            className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-[2px] flex items-end sm:items-center justify-center"
+            className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-[2px] flex items-start justify-center sm:pt-6"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onMouseDown={e => e.target === e.currentTarget && setOpen(false)}
           >
+            {/* Drops down from the top, where the status pill is, like a notification. */}
             <motion.div
-              className="w-full sm:max-w-md max-h-[85svh] flex flex-col bg-surface-container-lowest text-on-surface rounded-t-[28px] sm:rounded-[28px] shadow-2xl"
-              initial={{ y: 60, opacity: 0 }}
+              className="w-full sm:max-w-md max-h-[85svh] flex flex-col bg-surface-container-lowest text-on-surface rounded-b-[28px] sm:rounded-[28px] shadow-2xl origin-top"
+              style={{ paddingTop: 'env(safe-area-inset-top)' }}
+              initial={{ y: '-100%', opacity: 0.6 }}
               animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 60, opacity: 0 }}
-              transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+              exit={{ y: '-100%', opacity: 0.6 }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             >
               <div className="flex items-center justify-between px-6 pt-6 pb-4">
                 <div>
