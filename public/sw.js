@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cabadra-pwa-v4';
+const CACHE_NAME = 'cabadra-pwa-v5';
 
 // Four installable apps share this one worker: guest (/guest), staff
 // (/reception), kitchen (/kitchen) and owner (/owner), each with its own
@@ -69,6 +69,25 @@ self.addEventListener('fetch', event => {
           const indexFallback = await caches.match('/index.html') || await caches.match('/');
           return indexFallback || new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
         })
+    );
+    return;
+  }
+
+  // App manifests and icons: always from the network (cache only when
+  // offline), so an installed app picks up new colours and icons the next
+  // time the phone checks, instead of being served an old cached copy.
+  const url = new URL(event.request.url);
+  if (/^\/manifest[^/]*\.json$/.test(url.pathname) || url.pathname.startsWith('/icons/')) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
     );
     return;
   }

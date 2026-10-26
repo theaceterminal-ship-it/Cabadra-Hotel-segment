@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 
 let deferredGuestPrompt: any = null;
 
+/** The guest gets ten seconds with the app before being asked to add it to their home screen. */
+const SHOW_AFTER_MS = 10_000;
+
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -12,6 +15,8 @@ if (typeof window !== 'undefined') {
 /**
  * Guest PWA Install Prompt component.
  * Provides native installation or clear step-by-step browser instructions.
+ * Appears ten seconds after the app opens (after the welcome), so the
+ * first thing a guest sees is their stay, not a request to install.
  */
 export function GuestPwaInstallPrompt(): JSX.Element {
   const [showPrompt, setShowPrompt] = useState(false);
@@ -54,19 +59,19 @@ export function GuestPwaInstallPrompt(): JSX.Element {
       setPromptEvent(deferredGuestPrompt);
     }
 
-    // Show prompt banner
-    setShowPrompt(true);
+    // Show the banner only after the guest has had a moment with the app.
+    const timer = setTimeout(() => setShowPrompt(true), SHOW_AFTER_MS);
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       deferredGuestPrompt = e;
       setPromptEvent(e);
-      setShowPrompt(true);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
     return () => {
+      clearTimeout(timer);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
   }, []);

@@ -8,6 +8,7 @@ import { DynamicIslandStatusBar } from './DynamicIslandStatusBar';
 import { ServiceRequestSheet } from './ServiceRequestSheet';
 import { ExperienceBookingSheet } from './ExperienceBookingSheet';
 import { LocalPartnersRow } from './LocalPartnersRow';
+import { useBackToClose } from '../hooks/useBackToClose';
 import {
   ArrowRight, ArrowUpRight, BedDouble, Calendar, Car, ChefHat, Check, Clock, Compass, ConciergeBell,
   Flower2, Shirt, Sparkles, UtensilsCrossed, Wrench,
@@ -84,6 +85,8 @@ export const GuestHome: React.FC<GuestHomeProps> = ({
 }) => {
   const [activeService, setActiveService] = useState<GuestServiceCategory | null>(null);
   const [booking, setBooking] = useState<GuestExperience | null>(null);
+  useBackToClose(!!activeService, () => setActiveService(null));
+  useBackToClose(!!booking, () => setBooking(null));
   const [toast, setToast] = useState<string | null>(null);
   const [reserved, setReserved] = useState<GuestExperienceBooking[]>([]);
   const firstName = guestName.trim().split(/\s+/)[0] || guestName;

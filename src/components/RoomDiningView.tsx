@@ -6,6 +6,7 @@ import {
   GuestRecommendation, CheckoutSuggestion,
 } from '../lib/guestApi';
 import { formatCurrency } from '../lib/currency';
+import { useBackToClose } from '../hooks/useBackToClose';
 import { DynamicIslandStatusBar } from './DynamicIslandStatusBar';
 import {
   ArrowLeft, Search, ShoppingBag, Plus, Minus, Check, Utensils, Clock, X, Sparkles, ChevronUp, PencilLine, BedDouble,
@@ -74,6 +75,10 @@ export const RoomDiningView: React.FC<RoomDiningViewProps> = ({
   // The prompt is asked once per cart: a guest who says "no thanks" and then
   // edits the cart isn't asked again on the way out.
   const promptedThisCart = useRef(false);
+  // Back closes the innermost thing open: the prompt, a dish, then the cart.
+  useBackToClose(showCartSheet, () => setShowCartSheet(false));
+  useBackToClose(!!dishSheet, () => setDishSheet(null));
+  useBackToClose(!!suggestion && !placingOrder, () => setSuggestion(null));
 
   // Recommendations come from the live rule-based engine in
   // supabase/migrations/0001_init.sql's guest_get_recommendations(), scoped

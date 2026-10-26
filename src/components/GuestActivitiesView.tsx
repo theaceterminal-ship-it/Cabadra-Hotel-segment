@@ -4,6 +4,7 @@ import { ArrowLeft, Check, Search, Sparkles } from 'lucide-react';
 import type { AppView } from '../types';
 import type { GuestExperience } from '../lib/guestApi';
 import { formatCurrency } from '../lib/currency';
+import { useBackToClose } from '../hooks/useBackToClose';
 import { ExperienceBookingSheet } from './ExperienceBookingSheet';
 
 const FALLBACK_EXPERIENCE_IMAGE = 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80';
@@ -22,6 +23,7 @@ export function GuestActivitiesView({ propertyName, experiences, currency, onNav
 }) {
   const [query, setQuery] = useState('');
   const [booking, setBooking] = useState<GuestExperience | null>(null);
+  useBackToClose(!!booking, () => setBooking(null));
   const [toast, setToast] = useState<string | null>(null);
 
   const shown = useMemo(() => {

@@ -183,6 +183,8 @@ export interface FolioChatMessage {
   sender: 'guest' | 'staff';
   body: string;
   createdAt: string;
+  /** The other side has opened the chat since it was sent (0086). */
+  seen?: boolean;
 }
 
 export type PaymentMethod = 'cash' | 'card' | 'upi' | 'bank' | 'other';

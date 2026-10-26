@@ -13,6 +13,8 @@ import { SupabaseSetupNeeded } from '../components/SupabaseSetupNeeded';
 import { DynamicIslandStatusBar } from '../components/DynamicIslandStatusBar';
 import { GuestFolioChat } from '../components/GuestFolioChat';
 import { usePwaManifest } from '../hooks/usePwaManifest';
+import { LaunchMark } from '../components/LaunchMark';
+import { useBackToClose } from '../hooks/useBackToClose';
 
 /**
  * The guest page: `/guest/:token`. No login — the token in the URL (handed
@@ -41,6 +43,8 @@ export default function GuestApp() {
   useSiteTheme();
   // Decided once, when the stay first loads: the welcome plays on the first visit of a session only.
   const [showWelcome, setShowWelcome] = useState<boolean | null>(null);
+  // Back from the food menu or things to do returns home instead of leaving the app.
+  useBackToClose(view !== 'guest_home', () => { setView('guest_home'); window.scrollTo({ top: 0 }); });
 
   useEffect(() => {
     const media = window.matchMedia('(prefers-color-scheme: dark)');
@@ -105,9 +109,9 @@ export default function GuestApp() {
 
   if (!isSupabaseConfigured) return <SupabaseSetupNeeded />;
 
-  if (loading && !context) {
-    return <CenteredMessage title="Opening your room…" body="Restoring your stay session..." />;
-  }
+  // Straight from the phone's launch screen to the mark, then the welcome:
+  // no "loading" message in between.
+  if (loading && !context) return <LaunchMark />;
 
   if (!effectiveToken) {
     return (
@@ -185,7 +189,7 @@ export default function GuestApp() {
         />
       )}
       {/* Folio Chat across views */}
-      <GuestFolioChat token={effectiveToken} />
+      <GuestFolioChat token={effectiveToken} propertyName={context.property.name} />
     </>
   );
 }

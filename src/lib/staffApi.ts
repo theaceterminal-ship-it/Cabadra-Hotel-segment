@@ -1547,6 +1547,32 @@ export async function fetchChatMessages(reservationId: string): Promise<FolioCha
   return (data ?? []).map(m => ({ id: m.id, sender: m.sender, body: m.body, createdAt: m.created_at }));
 }
 
+export interface ChatInboxRow {
+  reservationId: string;
+  roomNumber: string | null;
+  guestName: string;
+  status: string;
+  lastBody: string | null;
+  lastSender: 'guest' | 'staff' | null;
+  lastAt: string | null;
+  unread: number;
+  /** Realtime channel for typing indicators with this guest. */
+  chatChannel: string;
+}
+
+/** staff_chat_inbox (0086): every conversation at the property, unread first. */
+export async function fetchChatInbox(propertyId: string): Promise<ChatInboxRow[]> {
+  const { data, error } = await supabase.rpc('staff_chat_inbox', { p_property_id: propertyId });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ChatInboxRow[];
+}
+
+/** Reception opened a thread: the guest's messages show as seen, and its bell notifications clear. */
+export async function markStaffChatSeen(reservationId: string): Promise<void> {
+  const { error } = await supabase.rpc('staff_mark_chat_seen', { p_reservation_id: reservationId });
+  if (error) console.warn('Failed to mark chat seen:', error.message);
+}
+
 export async function sendStaffChatMessage(propertyId: string, reservationId: string, body: string): Promise<void> {
   // First try the SECURITY DEFINER RPC (0058)
   const { error: rpcError } = await supabase.rpc('staff_send_chat_message', {

@@ -29,10 +29,12 @@ interface NotificationBellProps {
   /** Scopes the list to one calendar day — defaults to today in the hook, but a date here lets staff look back instead of being stuck with "all time." */
   date?: string;
   onDateChange?: (date: string) => void;
+  /** Opens what a notification is about (e.g. a guest message opens Messages). */
+  onOpen?: (n: AppNotification) => void;
 }
 
 /** A header bell + dropdown, fed by useNotifications/usePortfolioNotifications. Realtime-driven — no polling here, the hook's Supabase subscription pushes new rows in. */
-export const NotificationBell: React.FC<NotificationBellProps> = ({ notifications, unreadCount, onMarkRead, onMarkAllRead, date, onDateChange }) => {
+export const NotificationBell: React.FC<NotificationBellProps> = ({ notifications, unreadCount, onMarkRead, onMarkAllRead, date, onDateChange, onOpen }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -90,7 +92,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ notification
                 return (
                   <button
                     key={n.id}
-                    onClick={() => onMarkRead(n.id)}
+                    onClick={() => { onMarkRead(n.id); if (onOpen) { onOpen(n); setOpen(false); } }}
                     className={`w-full text-left px-4 py-3 flex gap-2.5 hover:bg-surface-container-low transition-colors ${n.read ? 'opacity-60' : ''}`}
                   >
                     <Icon className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${n.type === 'high_priority_request' ? 'text-error' : 'text-primary'}`} />
