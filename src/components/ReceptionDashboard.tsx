@@ -295,7 +295,6 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
   const occupiedCount = rooms.filter(r => r.status === 'occupied' || r.status === 'occupied_vip').length;
   const occupancyPct = rooms.length > 0 ? Math.round((occupiedCount / rooms.length) * 100) : 0;
   const openTasks = tasks.filter(t => t.status !== 'completed' && t.status !== 'rejected');
-  const notCheckedInArrivals = upcomingArrivals.filter(a => !a.checkedIn);
 
   const today = useMemo(() => new Date().toLocaleDateString(undefined, { month: 'long', day: '2-digit', year: 'numeric' }), []);
 
@@ -400,8 +399,8 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
             ))}
           </ListCard>
 
-          {/* 3. Upcoming Arrivals (Second to last) */}
-          <ListCard title="Upcoming Arrivals" count={upcomingArrivals.length} icon={Star} empty="No arrivals scheduled today.">
+          {/* 3. Upcoming Arrivals (Second to last). A hotel on its own PMS books and checks guests in there, so it has none. */}
+          {!hasExternalPms && <ListCard title="Upcoming Arrivals" count={upcomingArrivals.length} icon={Star} empty="No arrivals scheduled today.">
             {upcomingArrivals.map(arr => (
               <div key={arr.id} className="relative p-3 flex items-center gap-3">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-[11px] shrink-0 relative ${
@@ -441,7 +440,7 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
                 )}
               </div>
             ))}
-          </ListCard>
+          </ListCard>}
 
           {/* 4. On Shift Now (Last) */}
           <WhoIsOnShiftCard propertyId={propertyId} />

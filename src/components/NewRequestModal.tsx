@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Megaphone, X } from 'lucide-react';
 import { DEPARTMENT_LABELS, DEPARTMENT_VALUES, type Department } from '../lib/departments';
+import type { Room } from '../types';
 
 
 const DEPT_LABELS = DEPARTMENT_LABELS;
@@ -18,6 +19,8 @@ interface NewRequestModalProps {
   onClose: () => void;
   /** 'staff' (Reception, logging on a guest's behalf) shows the room-number field and department picker; 'guest' (the guest app) shows neither — the room and department come from the service category they tapped already. */
   mode: 'staff' | 'guest';
+  /** Staff mode: the property's rooms, so the room is picked from a list (rooms with a guest first) instead of typed. */
+  rooms?: Room[];
   onSubmit: (submission: NewRequestSubmission) => void | Promise<void>;
 }
 
@@ -25,6 +28,7 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
   isOpen,
   onClose,
   mode,
+  rooms = [],
   onSubmit,
 }) => {
   const [roomNumber, setRoomNumber] = useState('');
@@ -34,6 +38,10 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
 
   if (!isOpen) return null;
+
+  const byNumber = (a: Room, b: Room) => a.number.localeCompare(b.number, undefined, { numeric: true });
+  const withGuest = rooms.filter(r => r.guestName).sort(byNumber);
+  const emptyRooms = rooms.filter(r => !r.guestName).sort(byNumber);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,15 +83,25 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           {mode === 'staff' && (
             <div>
-              <label className="font-semibold text-on-surface block mb-1">Room Number</label>
-              <input
-                type="text"
+              <label className="font-semibold text-on-surface block mb-1">Room</label>
+              <select
                 required
                 value={roomNumber}
                 onChange={(e) => setRoomNumber(e.target.value)}
-                placeholder="e.g. 304"
-                className="w-full h-10 px-3 border border-outline-variant rounded-lg focus:border-primary focus:outline-none"
-              />
+                className="w-full h-10 px-3 border border-outline-variant rounded-lg bg-surface-container-lowest focus:border-primary focus:outline-none"
+              >
+                <option value="">Choose a room</option>
+                {withGuest.length > 0 && (
+                  <optgroup label="Guests staying now">
+                    {withGuest.map(r => <option key={r.id} value={r.number}>Room {r.number} · {r.guestName}</option>)}
+                  </optgroup>
+                )}
+                {emptyRooms.length > 0 && (
+                  <optgroup label={withGuest.length > 0 ? 'Other rooms' : 'Rooms'}>
+                    {emptyRooms.map(r => <option key={r.id} value={r.number}>Room {r.number}</option>)}
+                  </optgroup>
+                )}
+              </select>
             </div>
           )}
 
