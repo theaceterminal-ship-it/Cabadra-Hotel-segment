@@ -459,6 +459,7 @@ export default function ReceptionApp() {
         isOpen={isRequestModalOpen}
         onClose={() => setIsRequestModalOpen(false)}
         mode="staff"
+        rooms={rooms}
         onSubmit={handleSubmitStaffRequest}
       />
     </div>
