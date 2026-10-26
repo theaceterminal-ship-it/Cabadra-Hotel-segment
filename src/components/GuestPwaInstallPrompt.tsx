@@ -18,7 +18,7 @@ if (typeof window !== 'undefined') {
  * Appears ten seconds after the app opens (after the welcome), so the
  * first thing a guest sees is their stay, not a request to install.
  */
-export function GuestPwaInstallPrompt(): JSX.Element {
+export function GuestPwaInstallPrompt(): React.JSX.Element {
   const [showPrompt, setShowPrompt] = useState(false);
   const [showManualInstructions, setShowManualInstructions] = useState(false);
   const [isIos, setIsIos] = useState(false);

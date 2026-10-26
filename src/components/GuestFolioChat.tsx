@@ -17,7 +17,9 @@ const POLL_CLOSED_MS = 8000;
 
 /**
  * The guest's chat with the front desk: a floating button on every guest
- * screen that grows into a full chat sheet (springs up from the button).
+ * screen that opens a chat sheet sliding up from the bottom (a plain
+ * transform, no blur or shared-element morph, so it stays smooth on
+ * low-end phones).
  * Live "typing…" both ways and an instant refresh when the desk replies
  * (useChatLive), with polling underneath in case Realtime is unreachable.
  * Opening it marks the desk's messages seen; the guest sees ticks on
@@ -38,7 +40,8 @@ export function GuestFolioChat({ token, propertyName }: GuestFolioChatProps) {
   const poll = useCallback(() => {
     fetchChatMessages(token)
       .then(fresh => {
-        setMessages(fresh);
+        // Same thread as last time: keep the old array so nothing re-renders.
+        setMessages(prev => (fresh.length === prev.length && fresh.every((m, i) => m.id === prev[i]?.id && m.seen === prev[i]?.seen) ? prev : fresh));
         const fromDesk = fresh.filter(m => m.sender === 'staff' && !m.seen).length;
         if (openRef.current) {
           if (fromDesk > 0) markChatSeen(token);
@@ -79,13 +82,12 @@ export function GuestFolioChat({ token, propertyName }: GuestFolioChatProps) {
         {!open && (
           <motion.button
             key="fab"
-            layoutId="guest-chat"
             onClick={handleOpen}
             initial={{ scale: 0.6, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            exit={{ opacity: 0 }}
+            exit={{ scale: 0.6, opacity: 0, transition: { duration: 0.12 } }}
             whileTap={{ scale: 0.92 }}
-            transition={{ type: 'spring', stiffness: 380, damping: 28 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
             className="fixed bottom-20 right-4 sm:right-6 z-40 w-14 h-14 rounded-full bg-primary text-on-primary shadow-xl flex items-center justify-center"
             title="Message the front desk"
             aria-label={unseen ? `Message the front desk, ${unseen} new` : 'Message the front desk'}
@@ -111,23 +113,21 @@ export function GuestFolioChat({ token, propertyName }: GuestFolioChatProps) {
         {open && (
           <motion.div
             key="backdrop"
-            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-end justify-center sm:items-center"
+            className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center sm:items-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
             onMouseDown={e => e.target === e.currentTarget && setOpen(false)}
           >
             <motion.div
-              layoutId="guest-chat"
-              className="w-full sm:max-w-md h-[86svh] sm:h-[36rem] bg-surface-container-lowest rounded-t-[28px] sm:rounded-[28px] shadow-2xl flex flex-col overflow-hidden"
-              transition={{ type: 'spring', stiffness: 300, damping: 32 }}
+              className="w-full sm:max-w-md h-[86svh] sm:h-[36rem] bg-surface-container-lowest rounded-t-[28px] sm:rounded-[28px] shadow-2xl flex flex-col overflow-hidden will-change-transform"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             >
-              <motion.div
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.12 }}
-                className="flex items-center gap-3 px-4 py-3 border-b border-outline-variant shrink-0"
-              >
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-outline-variant shrink-0">
                 <span className="relative size-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-semibold shrink-0">
                   {propertyName.trim().charAt(0).toUpperCase() || 'R'}
                   <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full bg-room-ready border-2 border-surface-container-lowest" />
@@ -149,7 +149,7 @@ export function GuestFolioChat({ token, propertyName }: GuestFolioChatProps) {
                 <button onClick={() => setOpen(false)} aria-label="Close chat" className="size-10 rounded-full hover:bg-surface-container-low flex items-center justify-center text-on-surface-variant">
                   <ChevronDown className="w-5 h-5" />
                 </button>
-              </motion.div>
+              </div>
               <ChatThread
                 messages={messages}
                 viewerRole="guest"

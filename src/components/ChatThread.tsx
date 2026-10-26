@@ -40,6 +40,11 @@ export function ChatThread({ messages, viewerRole, onSend, loading, otherTyping,
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const firstScroll = useRef(true);
+  // Messages already there when the thread opens appear at once; only ones
+  // that arrive while it's open slide in (animating a whole history on open
+  // is what made it stutter on phones).
+  const initialIds = useRef<Set<string> | null>(null);
+  if (initialIds.current === null && !loading) initialIds.current = new Set(messages.map(m => m.id));
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: firstScroll.current ? 'auto' : 'smooth', block: 'end' });
@@ -80,12 +85,7 @@ export function ChatThread({ messages, viewerRole, onSend, loading, otherTyping,
                     <span className="rounded-full bg-surface-container-lowest px-3 py-1 text-[11px] font-medium text-on-surface-variant shadow-sm">{dayLabel(m.createdAt)}</span>
                   </div>
                 )}
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 420, damping: 30 }}
-                  className={`flex ${mine ? 'justify-end' : 'justify-start'} ${grouped ? '' : 'pt-1.5'}`}
-                >
+                <div className={`flex ${mine ? 'justify-end' : 'justify-start'} ${grouped ? '' : 'pt-1.5'} ${initialIds.current?.has(m.id) ? '' : 'chat-bubble-in'}`}>
                   <div
                     className={`max-w-[78%] px-3.5 pt-2 pb-1.5 text-[15px] leading-snug shadow-sm rounded-[20px] ${mine
                       ? `bg-primary text-on-primary ${grouped ? '' : 'rounded-br-md'}`
@@ -99,7 +99,7 @@ export function ChatThread({ messages, viewerRole, onSend, loading, otherTyping,
                         : m.seen ? <CheckCheck className="size-3.5 text-[#b5d96a]" aria-label="Seen" /> : <CheckCheck className="size-3.5" aria-label="Sent" />)}
                     </p>
                   </div>
-                </motion.div>
+                </div>
               </React.Fragment>
             );
           })

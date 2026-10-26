@@ -16,7 +16,8 @@ export type AppView =
   | 'guest_home'
   | 'room_dining'
   | 'guest_activities'
-  | 'shift_coverage';
+  | 'shift_coverage'
+  | 'departments';
 
 export type RoomStatus = 'ready' | 'occupied' | 'cleaning' | 'dirty' | 'occupied_vip' | 'maintenance';
 

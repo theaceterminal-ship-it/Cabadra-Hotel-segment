@@ -9,7 +9,7 @@ import { KitchenLink, fetchKitchenLink, kitchenUrl } from '../lib/staffApi';
  * that screen was last open, and a reset for a lost or replaced device,
  * which switches the old link off at once.
  */
-export function KitchenLinkBar({ propertyId }: { propertyId: string }) {
+export function KitchenLinkBar({ propertyId, embedded = false }: { propertyId: string; /** Inside another card (Departments): no page padding around it. */ embedded?: boolean }) {
   const [link, setLink] = useState<KitchenLink | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -48,7 +48,7 @@ export function KitchenLinkBar({ propertyId }: { propertyId: string }) {
     : 'Not opened on any device yet';
 
   return (
-    <div className="shrink-0 px-4 md:px-6 pt-1 pb-3">
+    <div className={embedded ? '' : 'shrink-0 px-4 md:px-6 pt-1 pb-3'}>
       <div className="rounded-[24px] bg-surface-container-lowest border border-outline-variant p-3 pl-4 flex flex-wrap items-center gap-3">
         <span className="size-10 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0"><ChefHat className="size-5" /></span>
         <div className="flex-1 min-w-[180px]">

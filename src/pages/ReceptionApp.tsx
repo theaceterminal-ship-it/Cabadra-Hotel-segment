@@ -1,18 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { LayoutDashboard, BedDouble, ListChecks, UtensilsCrossed, Truck, CalendarClock, CalendarDays, Sparkles, Users, TrendingUp, ClipboardCheck, ConciergeBell, MessageCircle } from 'lucide-react';
+import { LayoutDashboard, BedDouble, ListChecks, CalendarDays, Sparkles, Users, TrendingUp, ClipboardCheck, ConciergeBell, MessageCircle, Building2, ArrowLeft } from 'lucide-react';
 import { StaffPwaInstallPrompt } from '../components/StaffPwaInstallPrompt';
 import { ReservedExperiencesView } from '../components/ReservedExperiencesView';
 import { GuestCrmView } from '../components/GuestCrmView';
 import { ReportsView } from '../components/ReportsView';
 import { DayCloseView } from '../components/DayCloseView';
-import { AppView, KdsOrder, LiveOpsTask, Room, UpcomingArrival, UrgentRequest } from '../types';
+import { AppView, LiveOpsTask, Room, UpcomingArrival, UrgentRequest } from '../types';
 import { useAuth, signOut } from '../hooks/useAuth';
 import {
-  fetchOrdersForProperty,
-  updateOrderStatus,
-  rejectOrder,
-  StaffOrder,
   fetchRoomsForProperty,
   updateRoom,
   fetchArrivals,
@@ -36,7 +32,6 @@ import {
 } from '../lib/staffApi';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { MobileNav, Sidebar, SidebarNavItem } from '../components/Sidebar';
-import { ShiftCoverageView } from '../components/ShiftCoverageView';
 import { ReceptionDashboard } from '../components/ReceptionDashboard';
 import { StaffWelcomeCard } from '../components/StaffWelcomeCard';
 import { BookingsView } from '../components/bookings/BookingsView';
@@ -45,9 +40,8 @@ import { LiveOpsView } from '../components/LiveOpsView';
 import { ConciergeView } from '../components/ConciergeView';
 import { ChatInboxView } from '../components/ChatInboxView';
 import { fetchChatInbox } from '../lib/staffApi';
-import { KitchenKDS } from '../components/KitchenKDS';
-import { KitchenLinkBar } from '../components/KitchenLinkBar';
-import { ActiveDeliveries } from '../components/ActiveDeliveries';
+import { DepartmentsView } from '../components/DepartmentsView';
+import { ReadyToDeliver } from '../components/ReadyToDeliver';
 import { NewRequestModal } from '../components/NewRequestModal';
 import { SupabaseSetupNeeded } from '../components/SupabaseSetupNeeded';
 import { NotificationBell } from '../components/NotificationBell';
@@ -57,34 +51,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import LoginPage from './LoginPage';
 import { usePwaManifest } from '../hooks/usePwaManifest';
 
-type ReceptionTab = 'dashboard' | 'messages' | 'concierge' | 'bookings' | 'day_close' | 'rooms_floors' | 'live_ops' | 'reserved_experiences' | 'guest_crm' | 'sales_reports' | 'kitchen_kds' | 'active_deliveries' | 'shift_coverage';
-
-function supabaseOrderToKdsOrder(order: StaffOrder, previouslySeen?: KdsOrder): KdsOrder {
-  const roomNumber = order.roomId.split('-').pop() ?? order.roomId;
-  const elapsedSeconds = Math.max(0, Math.round((Date.now() - new Date(order.createdAt).getTime()) / 1000));
-  const minutes = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0');
-  const seconds = (elapsedSeconds % 60).toString().padStart(2, '0');
-  return {
-    id: order.id,
-    orderNumber: `#${order.id.slice(0, 4)}`,
-    roomNumber: `Room ${roomNumber}`,
-    status: order.status,
-    timeElapsed: `${minutes}:${seconds}`,
-    timerSeconds: elapsedSeconds,
-    isOverdue: elapsedSeconds > 900,
-    items: order.items.map((i, idx) => ({
-      name: i.name,
-      quantity: i.quantity,
-      modifier: i.fromRecommendation ? 'Guest picked from recommendations' : undefined,
-      // The order model has no per-item "completed" checklist field — that's
-      // local kitchen-checklist state, carried over from what's already on
-      // screen instead of resetting every poll.
-      completed: previouslySeen?.items[idx]?.completed,
-    })),
-    notes: order.notes,
-    rejectionNote: order.rejectionNote,
-  };
-}
+type ReceptionTab = 'dashboard' | 'messages' | 'concierge' | 'bookings' | 'day_close' | 'rooms_floors' | 'live_ops' | 'departments' | 'reserved_experiences' | 'guest_crm' | 'sales_reports';
 
 /** The reception page: `/reception`. Supabase Auth-gated, receptionist role. Every screen is wired to real Supabase data — no mock/local-only state left. */
 export default function ReceptionApp() {
@@ -103,14 +70,12 @@ export default function ReceptionApp() {
   const [upcomingArrivals, setUpcomingArrivals] = useState<UpcomingArrival[]>([]);
   const [tasks, setTasks] = useState<LiveOpsTask[]>([]);
   const [directory, setDirectory] = useState<DirectoryContact[]>([]);
-  const [kdsOrders, setKdsOrders] = useState<KdsOrder[]>([]);
   const [currency, setCurrency] = useState('USD');
   const [propertyName, setPropertyName] = useState('');
   const [upiId, setUpiId] = useState<string | undefined>(undefined);
   const [hasExternalPms, setHasExternalPms] = useState(false);
   const [propertyImage, setPropertyImage] = useState<string | undefined>();
   const [stats, setStats] = useState<PropertyStats | null>(null);
-  const syncInFlight = useRef(false);
 
   const propertyId = assignments.find(a => a.role === 'receptionist')?.propertyId;
   const { notifications, unreadCount, markRead, markAllRead, date: notificationsDate, setDate: setNotificationsDate } = useNotifications(propertyId);
@@ -278,54 +243,6 @@ export default function ReceptionApp() {
     }
   };
 
-  const handleUpdateKdsOrder = (updatedOrder: KdsOrder) => {
-    const prevStatus = kdsOrders.find(o => o.id === updatedOrder.id)?.status;
-    setKdsOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
-    if (updatedOrder.status !== prevStatus) {
-      syncInFlight.current = true;
-      updateOrderStatus(updatedOrder.id, updatedOrder.status)
-        .catch(err => console.warn(`Failed to sync order ${updatedOrder.id} status to Supabase:`, err))
-        .finally(() => { syncInFlight.current = false; });
-    }
-  };
-
-  const handleRejectOrder = async (orderId: string, note: string) => {
-    setKdsOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'rejected', rejectionNote: note } : o));
-    try {
-      syncInFlight.current = true;
-      await rejectOrder(orderId, note);
-    } catch (err) {
-      console.warn(`Failed to reject order ${orderId}:`, err);
-      if (propertyId) {
-        const orders = await fetchOrdersForProperty(propertyId).catch(() => null);
-        if (orders) setKdsOrders(orders.map(o => supabaseOrderToKdsOrder(o, undefined)));
-      }
-    } finally {
-      syncInFlight.current = false;
-    }
-  };
-
-  // Polls real orders for the KDS board — this is the one screen that needs
-  // live push-like behavior, since a guest can place an order at any moment
-  // from a page this tab has no other way to hear from.
-  useEffect(() => {
-    if (!propertyId) return;
-    let cancelled = false;
-    const poll = async () => {
-      if (syncInFlight.current) return;
-      try {
-        const orders = await fetchOrdersForProperty(propertyId);
-        if (cancelled) return;
-        setKdsOrders(prev => orders.map(o => supabaseOrderToKdsOrder(o, prev.find(p => p.id === o.id))));
-      } catch (err) {
-        console.warn('Failed to poll orders from Supabase:', err);
-      }
-    };
-    poll();
-    const interval = setInterval(poll, 4000);
-    return () => { cancelled = true; clearInterval(interval); };
-  }, [propertyId]);
-
   // Live Realtime Polling for Rooms, Guest Requests & Live Ops Tasks
   useEffect(() => {
     if (!propertyId) return;
@@ -370,7 +287,6 @@ export default function ReceptionApp() {
 
   const openRequestsCount = urgentRequests.filter(r => r.status === 'open').length;
   const openTasksCount = tasks.filter(t => t.status !== 'completed' && t.status !== 'rejected').length;
-  const activeOrdersCount = kdsOrders.filter(o => o.status !== 'delivered' && o.status !== 'rejected').length;
 
   const navItems: SidebarNavItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: openRequestsCount },
@@ -379,14 +295,11 @@ export default function ReceptionApp() {
     ...(hasExternalPms ? [] : [{ id: 'bookings', label: 'Bookings', icon: CalendarDays }]),
     { id: 'rooms_floors', label: 'Rooms', icon: BedDouble },
     { id: 'live_ops', label: 'Tasks', icon: ListChecks, badge: openTasksCount },
+    // Each team's screen QR, staff, shifts, and the kitchen link.
+    { id: 'departments', label: 'Departments', icon: Building2 },
     { id: 'reserved_experiences', label: 'Experiences', icon: Sparkles },
     { id: 'concierge', label: 'Concierge', icon: ConciergeBell },
     { id: 'guest_crm', label: 'Guests', icon: Users },
-    { id: 'day_close', label: 'Day close', icon: ClipboardCheck },
-    { id: 'sales_reports', label: 'Reports', icon: TrendingUp },
-    { id: 'shift_coverage', label: 'Shifts', icon: CalendarClock },
-    { id: 'kitchen_kds', label: 'Kitchen', icon: UtensilsCrossed, badge: activeOrdersCount },
-    { id: 'active_deliveries', label: 'Deliveries', icon: Truck },
   ];
 
   return (
@@ -428,6 +341,16 @@ export default function ReceptionApp() {
                 propertyName={propertyName}
                 propertyImage={propertyImage}
               />
+              {/* The day's paperwork, from the dashboard rather than the sidebar. */}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button onClick={() => setView('day_close')} className="h-10 px-4 rounded-full bg-surface-container-lowest border border-outline-variant text-sm font-medium text-on-surface inline-flex items-center gap-2 hover:bg-surface-container-low transition-colors">
+                  <ClipboardCheck className="size-4" /> Day close
+                </button>
+                <button onClick={() => setView('sales_reports')} className="h-10 px-4 rounded-full bg-surface-container-lowest border border-outline-variant text-sm font-medium text-on-surface inline-flex items-center gap-2 hover:bg-surface-container-low transition-colors">
+                  <TrendingUp className="size-4" /> Reports
+                </button>
+              </div>
+              {propertyId && <div className="mt-3"><ReadyToDeliver propertyId={propertyId} /></div>}
             </div>
             <ReceptionDashboard
               propertyId={propertyId}
@@ -494,12 +417,6 @@ export default function ReceptionApp() {
               onNavigate={(v: AppView) => setView(v as ReceptionTab)}
             />
           )}
-          {view === 'kitchen_kds' && (
-            <div className="h-full flex flex-col">
-              {propertyId && <KitchenLinkBar propertyId={propertyId} />}
-              <KitchenKDS orders={kdsOrders} subtitle={propertyName} onUpdateOrder={handleUpdateKdsOrder} onRejectOrder={handleRejectOrder} onNavigate={(v: AppView) => setView(v as ReceptionTab)} />
-            </div>
-          )}
           {view === 'reserved_experiences' && (
             <ReservedExperiencesView propertyId={propertyId ?? ''} currency={currency} />
           )}
@@ -514,10 +431,16 @@ export default function ReceptionApp() {
           )}
           {view === 'concierge' && propertyId && <ConciergeView propertyId={propertyId} />}
           {view === 'messages' && propertyId && <ChatInboxView propertyId={propertyId} onUnreadChange={setUnreadChats} />}
+          {(view === 'day_close' || view === 'sales_reports') && (
+            <div className="px-4 sm:px-6 pb-2">
+              <button onClick={() => setView('dashboard')} className="h-9 pl-2 pr-3.5 rounded-full text-sm font-medium text-on-surface-variant hover:bg-surface-container-low inline-flex items-center gap-1.5">
+                <ArrowLeft className="size-4" /> Dashboard
+              </button>
+            </div>
+          )}
+          {view === 'departments' && propertyId && <DepartmentsView propertyId={propertyId} directory={directory} tasks={tasks} onOpenTasks={() => setView('live_ops')} />}
           {view === 'day_close' && propertyId && <DayCloseView propertyId={propertyId} propertyName={propertyName} currency={currency} />}
           {view === 'sales_reports' && propertyId && <ReportsView propertyId={propertyId} propertyName={propertyName} currency={currency} hasExternalPms={hasExternalPms} />}
-          {view === 'active_deliveries' && <ActiveDeliveries propertyId={propertyId} onNavigate={(v: AppView) => setView(v as ReceptionTab)} />}
-          {view === 'shift_coverage' && <ShiftCoverageView propertyId={propertyId ?? ''} onNavigate={(v: AppView) => setView(v as ReceptionTab)} />}
           </motion.div>
           </AnimatePresence>
         </div>
@@ -525,7 +448,7 @@ export default function ReceptionApp() {
 
       <MobileNav
         navItems={navItems}
-        primaryIds={hasExternalPms ? ['dashboard', 'rooms_floors', 'live_ops', 'kitchen_kds'] : ['dashboard', 'bookings', 'rooms_floors', 'kitchen_kds']}
+        primaryIds={hasExternalPms ? ['dashboard', 'messages', 'live_ops', 'departments'] : ['dashboard', 'bookings', 'messages', 'live_ops']}
         activeId={view}
         onNavigate={(id) => setView(id as ReceptionTab)}
         onSignOut={() => signOut()}

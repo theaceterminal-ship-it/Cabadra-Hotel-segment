@@ -13,7 +13,6 @@ import { SupabaseSetupNeeded } from '../components/SupabaseSetupNeeded';
 import { DynamicIslandStatusBar } from '../components/DynamicIslandStatusBar';
 import { GuestFolioChat } from '../components/GuestFolioChat';
 import { usePwaManifest } from '../hooks/usePwaManifest';
-import { LaunchMark } from '../components/LaunchMark';
 import { useBackToClose } from '../hooks/useBackToClose';
 
 /**
@@ -109,9 +108,9 @@ export default function GuestApp() {
 
   if (!isSupabaseConfigured) return <SupabaseSetupNeeded />;
 
-  // Straight from the phone's launch screen to the mark, then the welcome:
-  // no "loading" message in between.
-  if (loading && !context) return <LaunchMark />;
+  // Straight from the phone's launch screen to the welcome: just the app's
+  // background while the stay loads, no logo or message in between.
+  if (loading && !context) return <div className="fixed inset-0 bg-surface" aria-busy="true" />;
 
   if (!effectiveToken) {
     return (

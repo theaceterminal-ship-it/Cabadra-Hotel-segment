@@ -52,8 +52,8 @@
 // The apps use the website's palette (.theme-site), switched on here before
 // React loads so the first frames, and the phone's status and navigation
 // bars, are never the old lavender. The guest app follows the phone's dark
-// mode; it and the staff apps show the Cabadra mark until React is up, so
-// the phone's launch screen flows straight into the welcome.
+// mode. No logo of our own here: the phone's launch screen already shows
+// one, and a second one at a different height read as a jump.
 (function () {
   var path = window.location.pathname;
   var isApp = /^\/(guest|reception|kitchen|owner|display|task|access|bill|partner)(\/|$)/.test(path);
@@ -65,21 +65,11 @@
   var bg = dark ? '#0e100e' : '#eef0ec';
   root.style.background = bg;
   document.querySelector('meta[name="theme-color"]').content = bg;
-  window.__cabadraBoot = { bg: bg, ink: dark ? '#f2f3ef' : '#111111' };
 })();
 </script>
 </head>
   <body class="bg-surface text-on-surface antialiased selection:bg-[#b5d96a] selection:text-[#111]">
-    <div id="root"><script>
-// The Cabadra mark while the app loads (replaced as soon as React renders).
-(function () {
-  var b = window.__cabadraBoot;
-  if (!b || !/^\/(guest|reception|kitchen|owner)(\/|$)/.test(window.location.pathname)) return;
-  document.write('<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:' + b.bg + '">'
-    + '<span style="position:relative;font:300 112px/1 Geist,-apple-system,Segoe UI,Roboto,sans-serif;color:' + b.ink + ';letter-spacing:-0.04em">C'
-    + '<span style="position:absolute;right:-6px;bottom:14px;width:22px;height:22px;border-radius:50%;background:#b5d96a"></span></span></div>');
-})();
-</script></div>
+    <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
