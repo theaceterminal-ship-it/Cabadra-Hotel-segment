@@ -1,6 +1,6 @@
--- 0092 (PENDING, not applied): phone-number (SMS) stay codes. See README.md in this folder.
+-- NNNN (PENDING, not applied): phone-number (SMS) stay codes. See README.md in this folder.
 -- Move into supabase/migrations/ and apply when the Twilio sender is being switched on.
--- Apply after 0091.
+-- Apply after 0091 and every later migration.
 
 create or replace function system_issue_stay_code(p_reservation_id uuid, p_channel text default 'email')
 returns jsonb

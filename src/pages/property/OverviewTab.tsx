@@ -5,6 +5,7 @@ import { fetchGuestRequests, resolveGuestRequest, StaffMember, TicketSizeAnalyti
 import { formatCurrency } from '../../lib/currency';
 import { ErrorNote, Field, Modal, Panel, PhotoField, Switch, btnPrimary, btnSecondary, inputCls } from './ui';
 import { BillingPanel } from './BillingPanel';
+import { GuestEmailsPanel } from './GuestEmailsPanel';
 
 const ROOM_STATUSES: { key: Room['status']; label: string; dot: string }[] = [
   { key: 'ready', label: 'Ready', dot: 'bg-room-ready' },
@@ -84,6 +85,8 @@ export function OverviewTab({ property, rooms, staff, ticketAnalytics, onChanged
       <PropertySettings property={property} onChanged={onChanged} />
 
       <BillingPanel propertyId={property.id} />
+
+      <GuestEmailsPanel propertyId={property.id} />
     </div>
   );
 }

@@ -32,7 +32,7 @@ function formatDay(iso?: string | null): string | null {
 }
 
 /** "Hotel Name via Cabadra" <address from RESEND_FROM>, with anything that could break the header removed. */
-function fromHeader(propertyName: string, resendFrom: string): string {
+export function fromHeader(propertyName: string, resendFrom: string): string {
   const address = resendFrom.match(/<([^>]+)>/)?.[1] ?? resendFrom;
   const display = `${propertyName} via Cabadra`.replace(/[^\p{L}\p{N} .,'&()-]/gu, '').slice(0, 70).trim() || 'Cabadra';
   return `${display} <${address}>`;

@@ -1383,6 +1383,93 @@ export async function saveBillingSettings(propertyId: string, settings: BillingS
 }
 
 // ============================================================================
+// GUEST EMAILS (0092): booking confirmation + thank-you after check-out
+// ============================================================================
+
+export interface GuestEmailSettings {
+  enabled: boolean;
+  mapsUrl: string;
+  checkInTime: string;
+  checkOutTime: string;
+  welcomeNote: string;
+  thanksNote: string;
+  googleReviewUrl: string;
+  /** From Bills & GST: the address, phone and reply-to email the emails use. Read-only here. */
+  address: string;
+  phone: string;
+  replyTo: string;
+}
+
+export async function fetchGuestEmailSettings(propertyId: string): Promise<GuestEmailSettings> {
+  const { data, error } = await supabase
+    .from('properties')
+    .select('guest_emails_enabled, maps_url, check_in_time, check_out_time, welcome_note, thanks_note, google_review_url, billing_address, billing_phone, billing_email, location')
+    .eq('id', propertyId)
+    .single();
+  if (error) throw error;
+  return {
+    enabled: data.guest_emails_enabled ?? true,
+    mapsUrl: data.maps_url ?? '',
+    checkInTime: data.check_in_time ?? '',
+    checkOutTime: data.check_out_time ?? '',
+    welcomeNote: data.welcome_note ?? '',
+    thanksNote: data.thanks_note ?? '',
+    googleReviewUrl: data.google_review_url ?? '',
+    address: data.billing_address ?? data.location ?? '',
+    phone: data.billing_phone ?? '',
+    replyTo: data.billing_email ?? '',
+  };
+}
+
+export async function saveGuestEmailSettings(propertyId: string, s: GuestEmailSettings): Promise<void> {
+  const { error } = await supabase.rpc('owner_update_guest_email_settings', {
+    p_property_id: propertyId,
+    p_settings: { enabled: s.enabled, mapsUrl: s.mapsUrl, checkInTime: s.checkInTime, checkOutTime: s.checkOutTime, welcomeNote: s.welcomeNote, thanksNote: s.thanksNote, googleReviewUrl: s.googleReviewUrl },
+  });
+  if (error) throw new Error(error.message);
+}
+
+export interface EmailDomainRecord { record?: string; type: string; name: string; value: string; priority?: number | null; status?: string }
+export interface EmailDomain {
+  domain: string;
+  localPart: string;
+  status: 'not_started' | 'pending' | 'verified' | 'failed' | 'temporary_failure' | string;
+  records: EmailDomainRecord[];
+  lastError?: string;
+  verifiedAt?: string;
+}
+
+export async function fetchEmailDomain(propertyId: string): Promise<EmailDomain | null> {
+  const { data, error } = await supabase.from('property_email_domains').select('domain, local_part, status, records, last_error, verified_at').eq('property_id', propertyId).maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return { domain: data.domain, localPart: data.local_part, status: data.status, records: (data.records ?? []) as EmailDomainRecord[], lastError: data.last_error ?? undefined, verifiedAt: data.verified_at ?? undefined };
+}
+
+/** The owner tools behind the Guest emails panel (property-guest-email Edge Function). */
+export async function guestEmailAction(
+  action: 'test' | 'domain_start' | 'domain_verify' | 'domain_local' | 'domain_remove',
+  propertyId: string,
+  extra: { kind?: 'booking_confirmation' | 'checkout_thanks'; domain?: string; localPart?: string } = {},
+): Promise<{ ok: boolean; message?: string; sentTo?: string; via?: string; status?: string }> {
+  const { data, error } = await supabase.functions.invoke('property-guest-email', { body: { action, propertyId, ...extra } });
+  if (error) return { ok: false, message: 'Could not reach the server. Please try again.' };
+  const d = data as { success?: boolean; message?: string; sentTo?: string; via?: string; status?: string };
+  return { ok: d?.success === true, message: d?.message, sentTo: d?.sentTo, via: d?.via, status: d?.status };
+}
+
+export interface GuestEmailLogRow { id: number; kind: 'booking_confirmation' | 'checkout_thanks'; status: 'pending' | 'sending' | 'sent' | 'failed' | 'skipped'; guestName: string; dueAt: string; sentAt?: string; sentVia?: string; error?: string }
+
+export async function fetchGuestEmailLog(propertyId: string): Promise<GuestEmailLogRow[]> {
+  const { data, error } = await supabase.rpc('owner_guest_email_log', { p_property_id: propertyId });
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as Record<string, string>[]).map(r => ({
+    id: Number(r.id), kind: r.kind as GuestEmailLogRow['kind'], status: r.status as GuestEmailLogRow['status'], guestName: r.guest_name,
+    dueAt: r.due_at, sentAt: r.sent_at ?? undefined, sentVia: r.sent_via ?? undefined, error: r.error ?? undefined,
+  }));
+}
+
+// ============================================================================
 // NOTIFICATIONS — system-generated only; staff can read and mark-read, never post
 // ============================================================================
 
