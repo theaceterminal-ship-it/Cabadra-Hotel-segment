@@ -75,7 +75,7 @@ function summarise(r: AuditRow): string {
 
 const who = (r: AuditRow) => r.actor_email ?? (r.actor_kind === 'service' ? 'Cabadra system' : 'A guest or an automatic job');
 
-const PAGE = 60;
+const PAGE = 30;
 
 /**
  * Who did what (audit_log, 0087): every change to bookings, orders, bill
@@ -83,6 +83,9 @@ const PAGE = 60;
  * that made it and what it was before. It can't be edited or erased by
  * anyone, which is the point: a bill line or a price can't be changed
  * without leaving a record here. Only the owner sees this tab.
+ *
+ * Nothing is fetched until the owner asks (the button below), and then only
+ * 30 rows at a time, so opening the tab costs no database reads.
  */
 export function ActivityTab({ propertyId }: { propertyId: string }) {
   const [rows, setRows] = useState<AuditRow[]>([]);
@@ -91,6 +94,7 @@ export function ActivityTab({ propertyId }: { propertyId: string }) {
   const [more, setMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<number | null>(null);
+  const [started, setStarted] = useState(false);
 
   const load = useCallback(async (before?: number) => {
     setLoading(true);
@@ -107,7 +111,8 @@ export function ActivityTab({ propertyId }: { propertyId: string }) {
     setRows(prev => (before ? [...prev, ...page.slice(0, PAGE)] : page.slice(0, PAGE)));
   }, [propertyId, area]);
 
-  useEffect(() => { setRows([]); load(); }, [load]);
+  // Only once the owner has asked; after that, changing the filter reloads.
+  useEffect(() => { if (started) { setRows([]); load(); } }, [load, started]);
 
   return (
     <Panel>
@@ -123,7 +128,13 @@ export function ActivityTab({ propertyId }: { propertyId: string }) {
         ))}
       </div>
       {error && <ErrorNote>{error}</ErrorNote>}
-      {rows.length === 0 && !loading && !error ? (
+      {!started ? (
+        <div className="py-10 text-center">
+          <ShieldCheck className="size-7 mx-auto mb-2 text-on-surface-variant opacity-60" />
+          <p className="text-sm text-on-surface-variant mb-4">The latest 30 changes load when you ask, so this page stays light.</p>
+          <button onClick={() => setStarted(true)} className={btnSecondary}>Show activity</button>
+        </div>
+      ) : rows.length === 0 && !loading && !error ? (
         <div className="py-10 text-center text-sm text-on-surface-variant">
           <ShieldCheck className="size-7 mx-auto mb-2 opacity-50" />
           Nothing recorded here yet. New changes will show up as they happen.
@@ -159,9 +170,16 @@ export function ActivityTab({ propertyId }: { propertyId: string }) {
           ))}
         </div>
       )}
-      <div className="mt-4 flex justify-center">
-        {loading ? <Loader2 className="size-5 animate-spin text-on-surface-variant" /> : more && <button onClick={() => load(rows[rows.length - 1]?.id)} className={btnSecondary}>Show older</button>}
-      </div>
+      {started && (
+        <div className="mt-4 flex justify-center gap-2">
+          {loading ? <Loader2 className="size-5 animate-spin text-on-surface-variant" /> : (
+            <>
+              <button onClick={() => load()} className={btnSecondary}>Refresh</button>
+              {more && <button onClick={() => load(rows[rows.length - 1]?.id)} className={btnSecondary}>Show older</button>}
+            </>
+          )}
+        </div>
+      )}
     </Panel>
   );
 }
