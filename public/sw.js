@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cabadra-pwa-v5';
+const CACHE_NAME = 'cabadra-pwa-v6';
 
 // Four installable apps share this one worker: guest (/guest), staff
 // (/reception), kitchen (/kitchen) and owner (/owner), each with its own
@@ -6,6 +6,7 @@ const CACHE_NAME = 'cabadra-pwa-v5';
 const CORE_ASSETS = [
   '/',
   '/index.html',
+  '/boot.js',
   '/manifest.json',
   '/manifest-staff.json',
   '/manifest-kitchen.json',

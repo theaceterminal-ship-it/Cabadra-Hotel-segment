@@ -57,6 +57,19 @@ Deno.serve(async (req) => {
   if (rateErr) return json({ success: false, message: rateErr.message }, 500);
   if (!allowed) return json({ success: false, message: 'Too many attempts — wait a minute and try again' }, 429);
 
+  // The limit above is per token, which doesn't slow someone trying many different
+  // tokens. This one is per address: 30 tries a minute from one place.
+  const ip = (req.headers.get('cf-connecting-ip') ?? req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim();
+  if (ip) {
+    const { data: ipAllowed, error: ipErr } = await adminClient.rpc('check_rate_limit', {
+      p_bucket_key: `redeem_access_link_ip:${ip}`,
+      p_max_calls: 30,
+      p_window_seconds: 60,
+    });
+    if (ipErr) return json({ success: false, message: ipErr.message }, 500);
+    if (!ipAllowed) return json({ success: false, message: 'Too many attempts — wait a minute and try again' }, 429);
+  }
+
   const { data: link, error: linkErr } = await adminClient
     .from('property_access_links')
     .select('staff_user_id')

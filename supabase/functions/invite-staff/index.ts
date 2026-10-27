@@ -77,6 +77,15 @@ Deno.serve(async (req) => {
   // the whole app this key exists.
   const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
+  // An owner inviting people can't be used to flood an inbox: 20 invites an hour.
+  const { data: allowed, error: rateErr } = await adminClient.rpc('check_rate_limit', {
+    p_bucket_key: `invite_staff:${userData.user.id}`,
+    p_max_calls: 20,
+    p_window_seconds: 3600,
+  });
+  if (rateErr) return json({ success: false, message: rateErr.message }, 500);
+  if (!allowed) return json({ success: false, message: 'Too many invites just now. Please try again in an hour.' }, 429);
+
   // Does an account already exist for this email? admin.listUsers() has no
   // server-side email filter, so we page through — fine at staff-invite
   // volume (this is not a bulk-import path).
@@ -111,8 +120,10 @@ Deno.serve(async (req) => {
   });
   if (queueErr) return json({ success: false, message: queueErr.message }, 500);
 
-  const redirectTo = req.headers.get('Origin') ? `${req.headers.get('Origin')}/login` : undefined;
-  const { error: inviteErr } = await adminClient.auth.admin.inviteUserByEmail(email, redirectTo ? { redirectTo } : undefined);
+  // The link in the email always goes to our own site: the browser's Origin header is
+  // not trusted for this (anyone can send any Origin).
+  const siteUrl = (Deno.env.get('SITE_URL') ?? 'https://hotel.churmuri.com').replace(/\/+$/, '');
+  const { error: inviteErr } = await adminClient.auth.admin.inviteUserByEmail(email, { redirectTo: `${siteUrl}/login` });
   if (inviteErr) {
     // Roll back the queued invite so a failed email doesn't leave a dangling
     // grant waiting for an account that will never show up this way.

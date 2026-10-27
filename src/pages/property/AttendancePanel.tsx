@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { toCsv } from '../../lib/safeText';
 import { AnimatePresence, motion } from 'motion/react';
 import { AlertTriangle, ChevronDown, Clock, Download } from 'lucide-react';
 import { AttendanceRow, fetchStaffAttendance } from '../../lib/staffApi';
@@ -42,7 +43,7 @@ export function AttendancePanel({ propertyId }: { propertyId: string }) {
     if (!rows) return;
     const lines = [['Name', 'Department', 'Job title', 'Days present', 'Days absent', 'Hours', 'Late days', 'Missed clock-outs'],
       ...rows.map(r => [r.name, DEPARTMENT_LABELS[r.department], r.jobTitle ?? '', r.daysPresent, r.daysAbsent, (r.minutes / 60).toFixed(2), r.lateDays, r.missedClockOuts])];
-    const csv = lines.map(l => l.map(v => (/[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v))).join(',')).join('\n');
+    const csv = toCsv(lines);
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     Object.assign(document.createElement('a'), { href: url, download: `Attendance ${from} to ${to}.csv` }).click();
     URL.revokeObjectURL(url);

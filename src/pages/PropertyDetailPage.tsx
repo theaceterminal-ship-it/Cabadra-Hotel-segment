@@ -24,6 +24,7 @@ import { MenuTab } from './property/MenuTab';
 import { ExperiencesTab } from './property/ExperiencesTab';
 import { ServicesTab } from './property/ServicesTab';
 import { StaffTab } from './property/StaffTab';
+import { ActivityTab } from './property/ActivityTab';
 import { ReportsView } from '../components/ReportsView';
 
 interface PropertyDetailPageProps {
@@ -31,8 +32,8 @@ interface PropertyDetailPageProps {
   onChanged: () => void | Promise<void>;
 }
 
-type TabId = 'overview' | 'reports' | 'rooms' | 'menu' | 'experiences' | 'services' | 'staff';
-const TAB_IDS: TabId[] = ['overview', 'reports', 'rooms', 'menu', 'experiences', 'services', 'staff'];
+type TabId = 'overview' | 'reports' | 'rooms' | 'menu' | 'experiences' | 'services' | 'staff' | 'activity';
+const TAB_IDS: TabId[] = ['overview', 'reports', 'rooms', 'menu', 'experiences', 'services', 'staff', 'activity'];
 
 /**
  * One property's console at /owner/properties/:propertyId: a header and
@@ -123,6 +124,7 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
     { id: 'experiences', label: 'Experiences', count: experiences.length },
     { id: 'services', label: 'Services', count: services.length },
     { id: 'staff', label: 'Staff' },
+    { id: 'activity', label: 'Activity' },
   ];
 
   const currency = property?.currency ?? 'INR';
@@ -216,6 +218,8 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
           <ExperiencesTab propertyId={propertyId} currency={currency} experiences={experiences} onChanged={handleReload} />
         ) : tab === 'services' ? (
           <ServicesTab propertyId={propertyId} currency={currency} services={services} onChanged={handleReload} />
+        ) : tab === 'activity' ? (
+          <ActivityTab propertyId={propertyId} />
         ) : (
           <StaffTab propertyId={propertyId} staff={staff} pendingInvites={pendingInvites} onChanged={handleReload} />
         )}

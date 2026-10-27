@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { escapeHtml } from '../lib/safeText';
 import { KdsOrder, AppView } from '../types';
 import {
   Play,
@@ -14,13 +15,6 @@ import {
   X,
   Printer,
 } from 'lucide-react';
-
-// Escapes guest-typed text (item names, notes) before it goes into the
-// print window's HTML — otherwise a note containing `<` or `&` would
-// break the ticket layout.
-function escapeHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
 
 // Adapted from the sibling tableorder product's printKitchenTicket() — same
 // hidden-iframe + window.print() approach, so it works with zero extra
