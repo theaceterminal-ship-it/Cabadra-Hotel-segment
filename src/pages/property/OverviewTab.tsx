@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Building2, CheckCircle2, ChevronRight, IndianRupee, Megaphone, UserRoundX } from 'lucide-react';
+import { ArrowRight, Building2, CheckCircle2, ChevronDown, ChevronRight, IndianRupee, Mail, Megaphone, Receipt, UserRoundX } from 'lucide-react';
 import { Property, Room, UrgentRequest } from '../../types';
 import { fetchGuestRequests, resolveGuestRequest, StaffMember, TicketSizeAnalytics, updateProperty } from '../../lib/staffApi';
 import { formatCurrency } from '../../lib/currency';
@@ -84,9 +84,7 @@ export function OverviewTab({ property, rooms, staff, ticketAnalytics, onChanged
 
       <PropertySettings property={property} onChanged={onChanged} />
 
-      <BillingPanel propertyId={property.id} />
-
-      <GuestEmailsPanel propertyId={property.id} />
+      <MoreSettings propertyId={property.id} />
     </div>
   );
 }
@@ -287,5 +285,45 @@ function UpiDialog({ property, onClose, onSaved }: { property: Property; onClose
       <Field label="UPI ID"><input value={upiId} onChange={e => setUpiId(e.target.value)} placeholder="pineview@okhdfcbank" className={inputCls} autoFocus /></Field>
       <ErrorNote>{error}</ErrorNote>
     </Modal>
+  );
+}
+
+
+/**
+ * Bills & GST and Guest emails are long forms people open now and then, so they sit behind
+ * two buttons (one open at a time) instead of filling the page. Each loads only when opened.
+ */
+function MoreSettings({ propertyId }: { propertyId: string }) {
+  const [open, setOpen] = useState<'billing' | 'emails' | null>(null);
+  const items = [
+    { id: 'billing' as const, icon: Receipt, title: 'Bills & GST', body: 'Business details, GST rates and bill numbers' },
+    { id: 'emails' as const, icon: Mail, title: 'Guest emails', body: 'Booking confirmations, arrival offers and thank-yous' },
+  ];
+  return (
+    <div className="space-y-4">
+      <div className="grid sm:grid-cols-2 gap-3">
+        {items.map(({ id, icon: Icon, title, body }) => {
+          const active = open === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              aria-expanded={active}
+              onClick={() => setOpen(active ? null : id)}
+              className={`flex items-center gap-4 rounded-[20px] border px-5 py-4 text-left transition-colors ${active ? 'bg-surface-container-lowest border-primary' : 'bg-surface-container-lowest border-outline-variant hover:bg-surface-container-low'}`}
+            >
+              <span className="size-11 shrink-0 rounded-full bg-surface flex items-center justify-center text-on-surface"><Icon className="size-5" /></span>
+              <span className="flex-1 min-w-0">
+                <span className="block text-base font-semibold tracking-[-0.01em] text-on-surface">{title}</span>
+                <span className="block text-sm text-on-surface-variant mt-0.5">{body}</span>
+              </span>
+              <ChevronDown className={`size-5 shrink-0 text-on-surface-variant transition-transform ${active ? 'rotate-180' : ''}`} />
+            </button>
+          );
+        })}
+      </div>
+      {open === 'billing' && <BillingPanel propertyId={propertyId} />}
+      {open === 'emails' && <GuestEmailsPanel propertyId={propertyId} />}
+    </div>
   );
 }

@@ -8,6 +8,7 @@
 // Secrets: RESEND_API_KEY, RESEND_FROM (the Cabadra sender; see stayCodeEmail.ts).
 
 import { fromHeader } from './stayCodeEmail.ts';
+import { emailShell } from './emailLayout.ts';
 
 export type GuestEmailKind = 'booking_confirmation' | 'pre_arrival' | 'checkout_thanks';
 
@@ -68,28 +69,19 @@ const phoneDigits = (p?: string | null) => (p ?? '').replace(/[^\d+]/g, '');
 
 // ---- shared pieces ------------------------------------------------------------------
 const button = (href: string, label: string, primary = true) =>
-  `<a href="${esc(href)}" style="display:inline-block;margin:0 8px 8px 0;padding:12px 22px;border-radius:999px;font-size:14px;font-weight:600;text-decoration:none;${primary ? 'background:#111;color:#fff' : 'background:#f1f3ef;color:#111'}">${esc(label)}</a>`;
+  `<a class="btn" href="${esc(href)}" style="display:inline-block;margin:0 8px 8px 0;padding:13px 22px;border-radius:999px;font-size:14px;font-weight:600;line-height:1.2;text-decoration:none;${primary ? 'background:#111;color:#ffffff' : 'background:#f1f3ef;color:#111111'}">${esc(label)}</a>`;
 
-function shell(p: GuestEmailContext['property'], inner: string, footerNote: string): string {
-  const hero = httpsOnly(p.image);
-  return `<!doctype html><html><body style="margin:0;background:#eef0ec;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111">
-  <div style="max-width:520px;margin:0 auto;padding:28px 16px">
-    <div style="font-size:15px;font-weight:600;letter-spacing:-0.01em;margin-bottom:14px;color:#444">${esc(p.name)}</div>
-    <div style="background:#fff;border-radius:24px;overflow:hidden">
-      ${hero ? `<img src="${esc(hero)}" alt="" width="520" style="display:block;width:100%;max-height:220px;object-fit:cover">` : ''}
-      <div style="padding:28px">${inner}</div>
-    </div>
-    <p style="margin:16px 0 0;font-size:12px;line-height:1.5;color:#888;text-align:center">${footerNote}</p>
-  </div></body></html>`;
+function shell(p: GuestEmailContext['property'], inner: string, footerNote: string, title = ''): string {
+  return emailShell({ title: esc(title || p.name), hotelName: esc(p.name), heroUrl: httpsOnly(p.image) ? esc(httpsOnly(p.image)!) : null, inner, footer: footerNote });
 }
 
-const row = (k: string, v: string) => `<tr><td style="padding:7px 0;font-size:13px;color:#777;width:38%;vertical-align:top">${esc(k)}</td><td style="padding:7px 0;font-size:14px;color:#111;font-weight:500">${v}</td></tr>`;
+const row = (k: string, v: string) => `<tr><td class="lbl" style="padding:7px 0;font-size:13px;color:#777;width:38%;vertical-align:top">${esc(k)}</td><td class="val" style="padding:7px 0;font-size:14px;color:#111;font-weight:500">${v}</td></tr>`;
 
 // ---- booking confirmation ---------------------------------------------------------------
 function buildIcs(ctx: GuestEmailContext): string {
   const { reservation: r, property: p } = ctx;
   const ymd = (iso: string) => istDay(iso).replace(/-/g, '');
-  const esc2 = (s: string) => s.replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+  const esc2 = (s: string) => s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
   return [
     'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Cabadra//Booking//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
     `UID:${r.id}@cabadra`, `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')}`,
@@ -125,9 +117,9 @@ export function renderBookingConfirmation(ctx: GuestEmailContext): RenderedEmail
 
   const inner = `
       <p style="margin:0 0 6px;font-size:15px">${name ? `Hi ${esc(name)},` : 'Hello,'}</p>
-      <h1 style="margin:0 0 6px;font-size:24px;line-height:1.25;letter-spacing:-0.02em">You’re booked at ${esc(p.name)}</h1>
+      <h1 class="h1" style="margin:0 0 6px;font-size:24px;line-height:1.25;letter-spacing:-0.02em">You’re booked at ${esc(p.name)}</h1>
       <p style="margin:0 0 20px;font-size:15px;line-height:1.55;color:#444">We have your room ready for ${esc(fmtShortDay(r.check_in))}. Everything you need is below.</p>
-      <table role="presentation" style="border-collapse:collapse;width:100%;margin:0 0 18px;border-top:1px solid #eee">${rows}</table>
+      <table role="presentation" width="100%" style="border-collapse:collapse;width:100%;margin:0 0 18px;border-top:1px solid #eee">${rows}</table>
       <p style="margin:0 0 6px;font-size:13px;color:#777">Where to find us</p>
       <p style="margin:0 0 14px;font-size:14px;line-height:1.5">${esc(p.name)}${address ? `<br>${esc(address)}` : ''}</p>
       <div style="margin:0 0 6px">${buttons}</div>
@@ -164,7 +156,7 @@ export function renderCheckoutThanks(ctx: GuestEmailContext): RenderedEmail {
 
   const inner = `
       <p style="margin:0 0 6px;font-size:15px">${name ? `Dear ${esc(name)},` : 'Hello,'}</p>
-      <h1 style="margin:0 0 14px;font-size:26px;line-height:1.25;letter-spacing:-0.02em">Thank you for staying with us</h1>
+      <h1 class="h1" style="margin:0 0 14px;font-size:26px;line-height:1.25;letter-spacing:-0.02em">Thank you for staying with us</h1>
       <p style="margin:0 0 14px;font-size:15px;line-height:1.65;color:#333">${nights} night${nights === 1 ? '' : 's'} at ${esc(p.name)} went by quickly for us, and we hope they gave you the rest, the good food and the little moments you came looking for.</p>
       ${p.thanks_note ? `<div style="background:#f6f7f3;border-radius:16px;padding:14px 18px;margin:0 0 16px;font-size:14px;line-height:1.6;color:#333">${esc(p.thanks_note).replace(/\n/g, '<br>')}</div>` : ''}
       <p style="margin:0 0 20px;font-size:15px;line-height:1.65;color:#333">A few honest words from you mean the world to a small hotel like ours, and they help the next traveller choose well.</p>
@@ -214,44 +206,35 @@ export function renderPreArrival(ctx: GuestEmailContext, offers: ArrivalOffer[])
   const name = firstName(guest.name);
   const eta = r.updated_eta ?? r.check_in;
   const etaTime = new Date(eta).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: TZ }).toUpperCase();
-  const { ask } = periodWords(eta);
-  const address = p.address || p.location || '';
-  const tel = phoneDigits(p.phone);
+  const today = istDay(eta) === istDay(new Date().toISOString());
+  const dayWord = today ? 'today' : fmtShortDay(eta);
   const safeOffers = offers.filter(o => httpsOnly(o.url));
-  const offerButtons = safeOffers.map(o => {
+  const offerCards = safeOffers.map(o => {
     const photo = emailPhoto(o.image);
-    return `<a href="${esc(o.url)}" style="display:block;margin:0 0 12px;border-radius:18px;overflow:hidden;background:#fff;border:1px solid #e3e6df;text-decoration:none;color:#111">
+    return `<a href="${esc(o.url)}" style="display:block;margin:0 0 12px;border-radius:18px;overflow:hidden;background:#ffffff;border:1px solid #e3e6df;text-decoration:none;color:#111111">
           ${photo ? `<img src="${esc(photo)}" alt="${esc(o.name)}" width="520" style="display:block;width:100%;height:auto;max-height:170px;object-fit:cover">` : ''}
-          <table role="presentation" style="border-collapse:collapse;width:100%"><tr>
-            <td style="padding:12px 14px;font-size:15px;font-weight:600;line-height:1.35">${esc(o.name)}<br><span style="font-weight:400;font-size:13px;color:#666">${esc(money(o.price, p.currency))}</span></td>
-            <td style="padding:12px 14px;text-align:right;white-space:nowrap"><span style="display:inline-block;background:#111;color:#fff;border-radius:999px;padding:9px 16px;font-size:13px;font-weight:600">Have it ready</span></td>
+          <table role="presentation" width="100%" style="border-collapse:collapse;width:100%"><tr>
+            <td class="offer-name" style="padding:12px 14px;font-size:15px;font-weight:600;line-height:1.35">${esc(o.name)}<br><span style="font-weight:400;font-size:13px;color:#666666">${esc(money(o.price, p.currency))}</span></td>
+            <td class="offer-cta" align="right" style="padding:12px 14px;white-space:nowrap"><span style="display:inline-block;background:#111111;color:#ffffff;border-radius:999px;padding:9px 16px;font-size:13px;font-weight:600">Have it ready</span></td>
           </tr></table></a>`;
   }).join('');
 
   const inner = `
-      <p style="margin:0 0 6px;font-size:15px">${name ? `Hi ${esc(name)},` : 'Hello,'}</p>
-      <h1 style="margin:0 0 6px;font-size:24px;line-height:1.25;letter-spacing:-0.02em">See you ${esc(fmtShortDay(eta) === fmtShortDay(new Date().toISOString()) ? 'today' : fmtShortDay(eta))}</h1>
-      <p style="margin:0 0 20px;font-size:15px;line-height:1.55;color:#444">We are getting ready for you at ${esc(p.name)}. You are expected around <strong>${esc(etaTime)}</strong>${p.check_in_time ? `, and check-in is from ${esc(fmtTime(p.check_in_time) ?? '')}` : ''}.</p>
-      <div style="margin:0 0 4px">${button(mapsLink(p), 'Get directions')}${tel ? button(`tel:${tel}`, 'Call the hotel', false) : ''}</div>
-      ${address ? `<p style="margin:0 0 22px;font-size:13px;line-height:1.5;color:#666">${esc(address)}</p>` : ''}
-      <div style="background:#f6f7f3;border-radius:20px;padding:20px 20px 12px;margin:0 0 18px">
-        <p style="margin:0 0 4px;font-size:16px;font-weight:600">${esc(ask)}</p>
-        <p style="margin:0 0 14px;font-size:13px;line-height:1.5;color:#666">Tap one and the kitchen has it ready around the time you arrive. You pay at the hotel, and there is nothing else to do.</p>
-        ${offerButtons}
-        <p style="margin:6px 0 8px;font-size:12px;color:#888">Not hungry? Ignore this. Nothing happens unless you tap.</p>
-      </div>
-      <p style="margin:0;font-size:13px;line-height:1.55;color:#666">Running late or early? Reply to this email${tel ? ' or call us' : ''}.</p>`;
+      <h1 class="h1" style="margin:0 0 6px;font-size:24px;line-height:1.25;letter-spacing:-0.02em">${name ? `${esc(name)}, w` : 'W'}e’re expecting you ${esc(dayWord)}</h1>
+      <p style="margin:0 0 18px;font-size:15px;line-height:1.5;color:#444">Around ${esc(etaTime)} at ${esc(p.name)}. Want something ready when you walk in? Pay at the hotel.</p>
+      ${offerCards}
+      <div style="margin:18px 0 0">${button(mapsLink(p), 'Get directions')}</div>`;
 
   const text = [
-    name ? `Hi ${name},` : 'Hello,', '', `See you soon at ${p.name}. You are expected around ${etaTime}.`, '',
-    ask, 'Tap one and the kitchen has it ready around the time you arrive. You pay at the hotel.', '',
+    `${name ? `${name}, w` : 'W'}e're expecting you ${dayWord}, around ${etaTime} at ${p.name}.`, '',
+    'Want something ready when you walk in? Tap one. You pay at the hotel.',
     ...safeOffers.map(o => `${o.name} (${money(o.price, p.currency)}): ${o.url}`), '',
-    `Directions: ${mapsLink(p)}`, tel ? `Call: ${p.phone}` : '', '', 'Not hungry? Ignore this. Nothing happens unless you tap.',
-  ].filter((l, i, a) => !(l === '' && a[i - 1] === '')).join('\n');
+    `Directions: ${mapsLink(p)}`,
+  ].join('\n');
 
   return {
-    subject: `See you ${fmtShortDay(eta)} at ${p.name}: something ready when you arrive?`.replace(/[\r\n]/g, ' '),
-    html: shell(p, inner, `Sent by ${esc(p.name)} through Cabadra, because a booking was made with this email address.`),
+    subject: `We’re expecting you at ${p.name}`.replace(/[\r\n]/g, ' '),
+    html: shell(p, inner, `Sent by ${esc(p.name)} through Cabadra, because a booking was made with this email address.`, `We’re expecting you at ${p.name}`),
     text,
   };
 }

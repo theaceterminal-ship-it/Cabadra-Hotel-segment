@@ -63,8 +63,9 @@ Deno.serve(async (req) => {
     const to = userData.user.email;
     const resendFrom = Deno.env.get('RESEND_FROM');
     if (!to || !resendFrom) return json({ success: false, message: 'No email address to send the sample to.' });
-    const { data: ok } = await admin.rpc('system_rate_limit', { p_key: `guest_email_test:${propertyId}`, p_max: 6, p_window_seconds: 3600 });
-    if (ok === false) return json({ success: false, message: 'That is enough samples for now. Try again in an hour.' }, 429);
+    // At most 3 samples of each kind a day for each owner (across all their hotels), so the button can't be used to spam.
+    const { data: ok } = await admin.rpc('system_rate_limit', { p_key: `guest_email_test:${userData.user.id}:${kind}`, p_max: 3, p_window_seconds: 86400 });
+    if (ok === false) return json({ success: false, message: 'You have already sent yourself 3 samples of this email today. Try again tomorrow.' }, 429);
 
     const { data: p } = await admin.from('properties').select('id, name, location, image, currency, guest_emails_enabled, billing_address, billing_phone, billing_email, maps_url, check_in_time, check_out_time, welcome_note, thanks_note, google_review_url').eq('id', propertyId).single();
     if (!p) return json({ success: false, message: 'Property not found' }, 404);

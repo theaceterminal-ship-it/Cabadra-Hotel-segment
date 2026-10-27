@@ -7,7 +7,7 @@ import {
 } from '../../lib/staffApi';
 import { BadgeQrModal } from '../../components/BadgeQrModal';
 import { Chip, DeleteButton, ErrorNote, Field, Modal, Panel, SectionHeader, btnPrimary, btnSecondary, iconBtn, inputCls } from './ui';
-import { DEPARTMENT_LABELS } from '../../lib/departments';
+import { DEPARTMENTS, DEPARTMENT_LABELS } from '../../lib/departments';
 
 export function StaffTab({ propertyId, staff, pendingInvites, onChanged }: {
   propertyId: string; staff: StaffMember[]; pendingInvites: PendingInvite[]; onChanged: () => void;
@@ -257,8 +257,10 @@ function ContactsPanel({ propertyId }: { propertyId: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [badgeContact, setBadgeContact] = useState<DirectoryContact | null>(null);
+  // The department being looked at, as in Reception's Departments.
+  const [dept, setDept] = useState<DirectoryContact['department'] | null>(null);
 
-  const reload = () => fetchStaffDirectory(propertyId).then(setContacts).catch(() => {}).finally(() => setLoading(false));
+  const reload = () => fetchStaffDirectory(propertyId).then(list => { setContacts(list); setDept(d => d ?? DEPARTMENTS.find(x => list.some(c => c.department === x.value))?.value ?? null); }).catch(() => {}).finally(() => setLoading(false));
   useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [propertyId]);
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -296,36 +298,62 @@ function ContactsPanel({ propertyId }: { propertyId: string }) {
       <SectionHeader
         title="Department staff"
         description="Who gets each department's tasks. They start a shift by scanning their badge, with no login."
-        actions={<button onClick={() => { setEditing(null); setForm(f => ({ ...f, name: '', phone: '', jobTitle: '' })); setAdding(true); setError(null); }} className={btnSecondary}><Plus className="size-4" /> Add person</button>}
+        actions={<button onClick={() => { setEditing(null); setForm(f => ({ ...f, name: '', phone: '', jobTitle: '', department: dept ?? f.department })); setAdding(true); setError(null); }} className={btnSecondary}><Plus className="size-4" /> Add person</button>}
       />
       {!adding && error && <div className="mb-3"><ErrorNote>{error}</ErrorNote></div>}
-      {loading ? null : contacts.length === 0 ? (
-        <p className="text-sm text-on-surface-variant">No one added yet.</p>
-      ) : (
-        <div className="divide-y divide-outline-variant -my-1">
-          {contacts.map(c => (
-            <div key={c.id} className="flex items-center gap-3 py-2.5">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-on-surface truncate">{c.name}{c.jobTitle && <span className="text-on-surface-variant"> · {c.jobTitle}</span>}</p>
-                <p className="text-xs text-on-surface-variant">{c.phone}</p>
-              </div>
-              <Chip>{DEPT_LABELS[c.department]}</Chip>
-              <button
-                onClick={() => { setEditing(c); setForm({ name: c.name, phone: c.phone, department: c.department, jobTitle: c.jobTitle ?? '' }); setError(null); setAdding(true); }}
-                className={iconBtn}
-                title="Edit"
-                aria-label={`Edit ${c.name}`}
-              >
-                <Pencil className="size-4" />
-              </button>
-              <button onClick={() => setBadgeContact(c)} className={iconBtn} title="Badge QR" aria-label={`Badge QR for ${c.name}`}>
-                <QrCode className="size-4" />
-              </button>
-              <DeleteButton onDelete={() => handleDelete(c.id)} label="Remove" />
+      {loading ? null : (() => {
+        const current = dept ?? (DEPARTMENTS.find(d => contacts.some(c => c.department === d.value))?.value ?? DEPARTMENTS[0].value);
+        const inDept = contacts.filter(c => c.department === current);
+        return (
+          <>
+            <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 mb-3" role="tablist" aria-label="Departments">
+              {DEPARTMENTS.map(d => {
+                const n = contacts.filter(c => c.department === d.value).length;
+                const on = d.value === current;
+                return (
+                  <button
+                    key={d.value}
+                    role="tab"
+                    aria-selected={on}
+                    onClick={() => setDept(d.value)}
+                    className={`h-10 px-4 rounded-full text-sm font-medium whitespace-nowrap inline-flex items-center gap-1.5 transition-colors ${on ? 'bg-primary text-on-primary' : 'bg-surface-container-low text-on-surface hover:bg-surface-container'}`}
+                  >
+                    {d.label}
+                    {n > 0 && <span className={`min-w-5 h-5 px-1.5 rounded-full text-[11px] font-semibold flex items-center justify-center ${on ? 'bg-surface-container-lowest text-on-surface' : 'bg-primary text-on-primary'}`}>{n}</span>}
+                  </button>
+                );
+              })}
             </div>
-          ))}
-        </div>
-      )}
+            {inDept.length === 0 ? (
+              <p className="text-sm text-on-surface-variant py-3">No one in {DEPT_LABELS[current].toLowerCase()} yet. Use “Add person” to add them.</p>
+            ) : (
+              <div className="divide-y divide-outline-variant -my-1">
+                {inDept.map(c => (
+                  <div key={c.id} className="flex items-center gap-3 py-2.5">
+                    <span className="size-9 shrink-0 rounded-full bg-surface-container-low flex items-center justify-center text-sm font-semibold text-on-surface">{c.name.charAt(0).toUpperCase()}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-on-surface truncate">{c.name}{c.jobTitle && <span className="text-on-surface-variant"> · {c.jobTitle}</span>}</p>
+                      <p className="text-xs text-on-surface-variant">{c.phone}</p>
+                    </div>
+                    <button
+                      onClick={() => { setEditing(c); setForm({ name: c.name, phone: c.phone, department: c.department, jobTitle: c.jobTitle ?? '' }); setError(null); setAdding(true); }}
+                      className={iconBtn}
+                      title="Edit"
+                      aria-label={`Edit ${c.name}`}
+                    >
+                      <Pencil className="size-4" />
+                    </button>
+                    <button onClick={() => setBadgeContact(c)} className={iconBtn} title="Badge QR" aria-label={`Badge QR for ${c.name}`}>
+                      <QrCode className="size-4" />
+                    </button>
+                    <DeleteButton onDelete={() => handleDelete(c.id)} label="Remove" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {adding && (
         <Modal

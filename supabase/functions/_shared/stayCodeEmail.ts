@@ -16,6 +16,8 @@ export interface StayCodeDetails {
   reason?: 'checkin' | 'resend';
 }
 
+import { emailShell } from './emailLayout.ts';
+
 function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 }
@@ -50,7 +52,7 @@ export function renderStayCodeEmail(d: StayCodeDetails) {
   const introText = d.reason === 'resend'
     ? `Here is a new code for Room ${d.roomNumber} at ${d.propertyName}. The earlier one no longer works.`
     : `Welcome to ${d.propertyName}. You are in Room ${d.roomNumber}. This code opens room service on your phone: food, housekeeping, requests and chat with the front desk.`;
-  const digits = d.code.split('').map(c => `<span style="display:inline-block;width:34px;height:46px;line-height:46px;margin:0 3px;border-radius:12px;background:#f1f3ef;font-size:26px;font-weight:600">${c}</span>`).join('');
+  const digits = d.code.split('').map(c => `<span class="digit" style="display:inline-block;width:34px;height:46px;line-height:46px;margin:0 3px;border-radius:12px;background:#f1f3ef;font-size:26px;font-weight:600;text-align:center">${c}</span>`).join('');
   // The subject says what the email is, never the code: it shows on lock screens and in notification previews.
   const subject = (d.reason === 'resend' ? `Your new room service access for ${d.propertyName}` : `Welcome to ${d.propertyName}: your room service access`).replace(/[\r\n]/g, ' ');
 
@@ -61,13 +63,10 @@ export function renderStayCodeEmail(d: StayCodeDetails) {
   ];
   const tipsHtml = tips.map(([h, t]) => `<tr><td style="padding:6px 0;font-size:13px;line-height:1.5;color:#3a3a3a"><strong style="color:#111">${h}.</strong> ${t}</td></tr>`).join('');
 
-  const html = `<!doctype html><html><body style="margin:0;background:#eef0ec;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111">
-  <div style="max-width:480px;margin:0 auto;padding:32px 16px">
-    <div style="font-size:15px;font-weight:600;letter-spacing:-0.01em;margin-bottom:16px;color:#444">${hotel}</div>
-    <div style="background:#fff;border-radius:24px;padding:28px">
+  const inner = `
       <p style="margin:0 0 12px;font-size:15px">${hello}</p>
       <p style="margin:0 0 22px;font-size:15px;line-height:1.55;color:#333">${intro}</p>
-      <div style="text-align:center;margin:0 0 24px">${digits}</div>
+      <div style="text-align:center;margin:0 0 24px;white-space:nowrap">${digits}</div>
       <p style="margin:0 0 6px;font-size:14px;font-weight:600">To open it</p>
       <ol style="margin:0 0 20px;padding-left:20px;font-size:14px;line-height:1.7;color:#333">
         <li>In your room, scan the QR code (or tap the NFC tag).</li>
@@ -77,11 +76,9 @@ export function renderStayCodeEmail(d: StayCodeDetails) {
       <p style="margin:0 0 22px;font-size:13px;line-height:1.5;color:#666">Please keep this code to yourself. If it stops working, tap “Send me a new code” on that page, or ask the front desk.</p>
       <div style="background:#f6f7f3;border-radius:16px;padding:16px 18px">
         <p style="margin:0 0 4px;font-size:15px;font-weight:600">Happy stay! 🌿</p>
-        <table role="presentation" style="border-collapse:collapse;width:100%">${tipsHtml}</table>
-      </div>
-    </div>
-    <p style="margin:16px 0 0;font-size:12px;color:#888;text-align:center">Sent by ${hotel} through Cabadra. You are getting this because you checked in with this email address.</p>
-  </div></body></html>`;
+        <table role="presentation" width="100%" style="border-collapse:collapse;width:100%">${tipsHtml}</table>
+      </div>`;
+  const html = emailShell({ title: hotel, hotelName: hotel, inner, footer: `Sent by ${hotel} through Cabadra. You are getting this because you checked in with this email address.`, maxWidth: 480 });
 
   const text = `${helloText}\n\n${introText}\n\nYour code: ${d.code}\n\nTo open it:\n1. In your room, scan the QR code (or tap the NFC tag).\n2. Type the six digits, once.\n3. Your phone stays signed in${day ? ` until checkout on ${day}` : ' until you check out'}.\n\nPlease keep this code to yourself. If it stops working, tap "Send me a new code" on that page, or ask the front desk.\n\nHappy stay!\n${tips.map(([h, t]) => `- ${h}. ${t}`).join('\n')}\n\nSent by ${d.propertyName} through Cabadra.`;
   return { subject, html, text };
