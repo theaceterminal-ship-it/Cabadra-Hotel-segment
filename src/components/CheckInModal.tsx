@@ -3,6 +3,9 @@ import { UserPlus, X } from 'lucide-react';
 import { Room } from '../types';
 import { checkInNewGuest } from '../lib/staffApi';
 import { ImageUploadField } from './ImageUploadField';
+import { PhoneField } from './PhoneField';
+import { CheckInAccessChoice } from './CheckInAccessChoice';
+import { promptStayAccess, type StayAccessChoice } from '../lib/stayAccess';
 
 interface CheckInModalProps {
   propertyId: string;
@@ -38,6 +41,7 @@ export function CheckInModal({ propertyId, room, source = 'built_in', onClose, o
   const [idDocumentUrl, setIdDocumentUrl] = useState('');
   const [checkOut, setCheckOut] = useState(defaultCheckoutDate());
   const [partySize, setPartySize] = useState('1');
+  const [accessChoice, setAccessChoice] = useState<StayAccessChoice>('auto');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,7 +51,7 @@ export function CheckInModal({ propertyId, room, source = 'built_in', onClose, o
     setSubmitting(true);
     setError(null);
     try {
-      await checkInNewGuest(propertyId, room.id, {
+      const reservationId = await checkInNewGuest(propertyId, room.id, {
         name: name.trim(),
         phone: phone.trim() || undefined,
         email: email.trim() || undefined,
@@ -57,6 +61,8 @@ export function CheckInModal({ propertyId, room, source = 'built_in', onClose, o
         partySize: parseInt(partySize, 10) || 1,
         source,
       });
+      // The code goes to the email above unless the stay link was picked.
+      promptStayAccess(reservationId, accessChoice);
       onCheckedIn();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to check in guest.');
@@ -87,10 +93,10 @@ export function CheckInModal({ propertyId, room, source = 'built_in', onClose, o
             <label className={labelCls}>Guest Name *</label>
             <input required value={name} onChange={e => setName(e.target.value)} placeholder="Full name" className={inputCls} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>Phone</label>
-              <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 555 000 0000" className={inputCls} />
+              <PhoneField value={phone} onChange={setPhone} />
             </div>
             <div>
               <label className={labelCls}>Email</label>
@@ -107,6 +113,7 @@ export function CheckInModal({ propertyId, room, source = 'built_in', onClose, o
               <input type="number" min={1} value={partySize} onChange={e => setPartySize(e.target.value)} className={inputCls} />
             </div>
           </div>
+          <CheckInAccessChoice email={email} phone={phone} choice={accessChoice} onChange={setAccessChoice} />
           <ImageUploadField label="ID Document (optional)" idDocument value={idDocumentUrl} onChange={setIdDocumentUrl} />
           <label className="flex items-center gap-2 text-xs font-semibold text-on-surface">
             <input type="checkbox" checked={vip} onChange={e => setVip(e.target.checked)} className="accent-primary" />

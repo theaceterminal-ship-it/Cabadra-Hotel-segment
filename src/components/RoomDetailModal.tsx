@@ -4,6 +4,7 @@ import { GuestLinkCard } from './GuestLinkCard';
 import { RoomFolioModal } from './RoomFolioModal';
 import { RoomQrModal } from './RoomQrModal';
 import { CheckInModal } from './CheckInModal';
+import { GuestAccessPanel } from './GuestAccessPanel';
 import { StaffFolioChatModal } from './StaffFolioChatModal';
 import { formatCurrency } from '../lib/currency';
 import { Phone, Mail, FileText, UserPlus, QrCode, Receipt, MessageCircle } from 'lucide-react';
@@ -112,7 +113,9 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
               </div>
             )}
 
-            {displayRoom.guestToken && <GuestLinkCard guestToken={displayRoom.guestToken} />}
+            {displayRoom.guestToken && (displayRoom.reservationId
+              ? <GuestAccessPanel reservationId={displayRoom.reservationId} guestToken={displayRoom.guestToken} />
+              : <GuestLinkCard guestToken={displayRoom.guestToken} />)}
 
             {CHECKINABLE_STATUSES.includes(displayRoom.status) && (
               <button

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { StayAccessHost } from '../components/StayAccessHost';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
@@ -131,6 +132,7 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16">
+      <StayAccessHost />
       <Link
         to="/owner/properties"
         className="inline-flex items-center gap-1.5 h-9 pl-2 pr-3 -ml-2 rounded-full text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors"
