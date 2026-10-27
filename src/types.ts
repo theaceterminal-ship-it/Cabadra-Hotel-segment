@@ -158,6 +158,8 @@ export interface UpcomingArrival {
   isDelayed?: boolean;
   assignedRoom?: string;
   checkedIn?: boolean;
+  /** Something the guest asked to have ready on arrival (from the pre-arrival email). */
+  preorders?: { item: string; quantity: number; inKitchen: boolean }[];
 }
 
 export interface UrgentRequest {

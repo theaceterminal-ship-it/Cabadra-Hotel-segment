@@ -218,18 +218,18 @@ echo; echo "### K. Guest emails: queued by triggers, written and sent only by th
 BK=d0000000-0000-0000-0000-0000000000b1; BK2=d0000000-0000-0000-0000-0000000000b2
 $PSQL -c "update guests set email='asha@example.com' where id='b0000000-0000-0000-0000-000000000001'" >/dev/null
 $PSQL -c "insert into reservations (id, property_id, room_id, guest_id, check_in, check_out, status, source) values ('$BK','p1','r102','b0000000-0000-0000-0000-000000000001', now() + interval '3 days', now() + interval '5 days', 'upcoming', 'built_in')" >/dev/null
-t "an advance booking queues a confirmation"            "booking_confirmation|pending" postgres - "select kind||'|'||status from guest_email_outbox where reservation_id='$BK'"
-t "...due about a minute from now"                      "t" postgres - "select due_at between now() and now() + interval '2 minutes' from guest_email_outbox where reservation_id='$BK'"
+t "an advance booking queues a confirmation"            "booking_confirmation|pending" postgres - "select kind||'|'||status from guest_email_outbox where reservation_id='$BK' and kind='booking_confirmation'"
+t "...due about a minute from now"                      "t" postgres - "select due_at between now() and now() + interval '2 minutes' from guest_email_outbox where reservation_id='$BK' and kind='booking_confirmation'"
 t "nothing is claimed before it is due"                 0 postgres - "select count(*) from system_claim_guest_emails(10)"
-$PSQL -c "update guest_email_outbox set due_at = now() - interval '1 second' where reservation_id='$BK'" >/dev/null
-t "once due, it is claimed"                             1 postgres - "select count(*) from system_claim_guest_emails(10)"
+$PSQL -c "update guest_email_outbox set due_at = now() - interval '1 second' where reservation_id='$BK' and kind='booking_confirmation'" >/dev/null
+t "once due, it is claimed (the pre-arrival one is not due yet)" 1 postgres - "select count(*) from system_claim_guest_emails(10)"
 t "...and a second run does not claim it again"         0 postgres - "select count(*) from system_claim_guest_emails(10)"
 t "the context has the hotel, room and the guest's email" "HillView|102|asha@example.com" postgres - "select c->'property'->>'name' || '|' || (c->'room'->>'number') || '|' || (c->'guest'->>'email') from (select system_guest_email_context('$BK') c) x"
-t "a failed send can be put back for later"             "pending" postgres - "select system_guest_email_done((select id from guest_email_outbox where reservation_id='$BK'), 'retry', 'boom', null, 10); select status from guest_email_outbox where reservation_id='$BK'"
-t "a sent email is recorded"                            "sent|cabadra" postgres - "select system_guest_email_done((select id from guest_email_outbox where reservation_id='$BK'), 'sent', null, 'cabadra'); select status||'|'||sent_via from guest_email_outbox where reservation_id='$BK'"
+t "a failed send can be put back for later"             "pending" postgres - "select system_guest_email_done((select id from guest_email_outbox where reservation_id='$BK' and kind='booking_confirmation'), 'retry', 'boom', null, 10); select status from guest_email_outbox where reservation_id='$BK' and kind='booking_confirmation'"
+t "a sent email is recorded"                            "sent|cabadra" postgres - "select system_guest_email_done((select id from guest_email_outbox where reservation_id='$BK' and kind='booking_confirmation'), 'sent', null, 'cabadra'); select status||'|'||sent_via from guest_email_outbox where reservation_id='$BK' and kind='booking_confirmation'"
 $PSQL -c "insert into reservations (id, property_id, room_id, guest_id, check_in, check_out, status, source) values ('$BK2','p1','r102','b0000000-0000-0000-0000-000000000001', now() + interval '8 days', now() + interval '9 days', 'upcoming', 'built_in')" >/dev/null
 $PSQL -c "update reservations set status='cancelled' where id='$BK2'" >/dev/null
-t "a cancelled booking's confirmation is skipped"       "skipped" postgres - "select status from guest_email_outbox where reservation_id='$BK2'"
+t "a cancelled booking's confirmation is skipped"       "skipped" postgres - "select status from guest_email_outbox where reservation_id='$BK2' and kind='booking_confirmation'"
 t "a walk-in that checks straight in queues none"       0 postgres - "select count(*) from guest_email_outbox where reservation_id='$RES' and kind='booking_confirmation'"
 t "an imported (PMS) booking queues none"               0 postgres - "insert into reservations (id, property_id, room_id, guest_id, check_in, check_out, status, source) values ('d0000000-0000-0000-0000-0000000000b3','p1','r102','b0000000-0000-0000-0000-000000000001', now() + interval '2 days', now() + interval '3 days', 'upcoming', 'imported'); select count(*) from guest_email_outbox where reservation_id='d0000000-0000-0000-0000-0000000000b3'"
 $PSQL -c "update reservations set status='checked_out' where id='$RES'" >/dev/null
@@ -248,5 +248,62 @@ t "...nor edit one"                                     error authenticated $OWN
 t "the owner sees the sent list without email addresses" "f" authenticated $OWNER "select (select string_agg(x::text, '') from owner_guest_email_log('p1') x) like '%@%'"
 t "a receptionist can't see the sent list"              error authenticated $RECEP "select * from owner_guest_email_log('p1')"
 t "another hotel's owner can't see it"                  error authenticated $OTHER "select * from owner_guest_email_log('p1')"
+
+echo; echo "### L. Arrival pre-orders: single-use links, the kitchen order 45 minutes ahead, the bill at check-in"
+G=b0000000-0000-0000-0000-000000000001; B3=d0000000-0000-0000-0000-0000000000c3; B4=d0000000-0000-0000-0000-0000000000c4
+$PSQL -c "update guests set email='asha@example.com', name='Asha Rao' where id='$G'; update properties set pre_arrival_enabled=true where id='p1';
+  insert into menu_items (id, property_id, name, category, price) values ('s1','p1','Hot Tomato Soup','Starters',180), ('s2','p1','Masala Chai','Beverage',60), ('s3','p1','Draught Beer','Beverage',250) on conflict do nothing;
+  insert into menu_items (id, property_id, name, category, price, variations) values ('s4','p1','Club Sandwich','Starters',220,'[{\"id\":\"v1\",\"name\":\"Large\",\"price\":260}]'::jsonb) on conflict do nothing;
+  insert into reservations (id, property_id, room_id, guest_id, check_in, check_out, status, source) values ('$B3','p1','r102','$G', date_trunc('day', now() + interval '2 days') + interval '11 hours 30 minutes', now() + interval '4 days', 'upcoming', 'built_in');" >/dev/null
+t "pre-arrival email is queued for the day before"       "pre_arrival" postgres - "select kind from guest_email_outbox where reservation_id='$B3' and kind='pre_arrival'"
+t "a booking for in an hour queues no pre-arrival email" 0 postgres - "insert into reservations (id, property_id, room_id, guest_id, check_in, check_out, status, source) values ('d0000000-0000-0000-0000-0000000000c9','p1','r102','$G', now() + interval '1 hour', now() + interval '2 days', 'upcoming', 'built_in'); select count(*) from guest_email_outbox where reservation_id='d0000000-0000-0000-0000-0000000000c9' and kind='pre_arrival'"
+t "suggestions never include alcohol or dishes with sizes" "0" postgres - "select count(*) from system_arrival_suggestions('$B3', 10) where name in ('Draught Beer','Club Sandwich')"
+t "a 5pm arrival is offered soup and chai first"         "t" postgres - "select bool_and(name in ('Hot Tomato Soup','Masala Chai','Paneer Butter Masala')) from system_arrival_suggestions('$B3', 2)"
+t "anon can't make links"                                error anon - "select system_make_arrival_links('$B3')"
+t "a receptionist can't make links"                      error authenticated $RECEP "select system_make_arrival_links('$B3')"
+L1=$($PSQL -c "select system_make_arrival_links('$B3')->0->>'token'")
+[ ${#L1} = 48 ] && { pass=$((pass+1)); echo "PASS  links are 192-bit random tokens"; } || { fail=$((fail+1)); echo "FAIL  links are 192-bit random tokens (got '$L1')"; }
+t "asking again returns the same links, not new ones"    "$L1" postgres - "select system_make_arrival_links('$B3')->0->>'token'"
+t "at most three links"                                  "t" postgres - "select jsonb_array_length(system_make_arrival_links('$B3')) between 1 and 3"
+t "an unknown link is refused"                           "invalid" anon - "select guest_redeem_arrival_link('not-a-token')->>'status'"
+t "tapping the link records the request"                 "ok|HotTomatoSoup" anon - "select r->>'status' || '|' || (r->>'item_name') from (select guest_redeem_arrival_link('$L1') r) x"
+t "...and tells staff"                                   1 postgres - "select count(*) from notifications where type='arrival_request' and ref_id=(select id from arrival_requests where link_token='$L1')"
+t "tapping again says it is already done"                "already" anon - "select guest_redeem_arrival_link('$L1')->>'status'"
+t "...and does not make a second request"                1 postgres - "select count(*) from arrival_requests where link_token='$L1'"
+t "nothing is in the kitchen yet"                        0 postgres - "select count(*) from orders where reservation_id='$B3'"
+t "nothing is charged yet"                               0 postgres - "select count(*) from folio_charges where reservation_id='$B3'"
+t "the guest can say when they'll arrive"                "ok" anon - "select guest_set_arrival_time('$L1', now() + interval '3 hours')->>'status'"
+t "...but not after checkout"                            "out_of_range" anon - "select guest_set_arrival_time('$L1', now() + interval '30 days')->>'status'"
+t "the conversion job leaves it alone while it is far off" 0 postgres - "select system_convert_arrival_requests()"
+$PSQL -c "update arrival_requests set ready_at_override = now() + interval '30 minutes' where link_token='$L1'" >/dev/null
+t "45 minutes ahead, it becomes one kitchen order"       1 postgres - "select system_convert_arrival_requests()"
+t "...marked as a pre-order, status new"                 "new|true" postgres - "select status || '|' || (notes ilike 'PRE-ORDER%pay at the hotel%') from orders where reservation_id='$B3'"
+t "...and the request says it is in the kitchen"         "in_kitchen" postgres - "select status from arrival_requests where link_token='$L1'"
+t "running the job again makes no second order"          0 postgres - "select system_convert_arrival_requests()"
+t "it is still not on the bill"                          0 postgres - "select count(*) from folio_charges where reservation_id='$B3'"
+t "too late to cancel once it is in the kitchen"         "too_late" anon - "select guest_cancel_arrival_request('$L1')->>'status'"
+t "reception sees the pre-order on the arrival"          "HotTomatoSoup|in_kitchen" authenticated $RECEP "select item_name || '|' || status from staff_arrival_preorders('p1') where reservation_id='$B3'"
+t "another hotel's staff can't see it"                   error authenticated $OTHER "select * from staff_arrival_preorders('p1')"
+$PSQL -c "update reservations set status='checked_in' where id='$B3'" >/dev/null
+t "checking in puts the pre-order on the bill, once"     "1|180.00" postgres - "select count(*) || '|' || sum(amount) from folio_charges where reservation_id='$B3'"
+t "...described as pre-ordered"                           "t" postgres - "select description like '%(pre-ordered)' from folio_charges where reservation_id='$B3'"
+# changed mind before the kitchen, then a cancelled booking
+L2=$($PSQL -c "insert into reservations (id, property_id, room_id, guest_id, check_in, check_out, status, source) values ('$B4','p1','r101','$G', now() + interval '3 days', now() + interval '5 days', 'upcoming', 'built_in'); select system_make_arrival_links('$B4')->0->>'token'")
+L2=$(echo "$L2" | tail -1)
+$PSQL -c "select guest_redeem_arrival_link('$L2')" >/dev/null
+t "the guest can cancel before the kitchen has it"       "cancelled" anon - "select guest_cancel_arrival_request('$L2')->>'status'"
+t "the link then reads as cancelled"                     "cancelled" anon - "select guest_redeem_arrival_link('$L2')->>'status'"
+L3=$($PSQL -c "select system_make_arrival_links('$B4')->0->>'token'")
+$PSQL -c "update arrival_links set used_at=null where token='$L2'; delete from arrival_requests where link_token='$L2'" >/dev/null
+$PSQL -c "set role anon; select guest_redeem_arrival_link('$L2')" >/dev/null
+$PSQL -c "update reservations set status='cancelled' where id='$B4'" >/dev/null
+t "a cancelled booking drops waiting requests"           "void" postgres - "select status from arrival_requests where link_token='$L2'"
+$PSQL -c "update properties set pre_arrival_enabled=false where id='p1'" >/dev/null
+t "with the switch off, a link does nothing"             "closed" anon - "select guest_redeem_arrival_link('$L3')->>'status'"
+$PSQL -c "update properties set pre_arrival_enabled=true where id='p1'" >/dev/null
+t "anon can't read the link or request tables"           error anon - "select count(*) from arrival_links"
+t "a receptionist can't read the request table"          error authenticated $RECEP "select count(*) from arrival_requests"
+t "the owner can switch pre-arrival on"                  ok authenticated $OWNER "select owner_update_guest_email_settings('p1', '{\"enabled\":true,\"preArrival\":true}'::jsonb)"
+t "a receptionist can't"                                 error authenticated $RECEP "select owner_update_guest_email_settings('p1', '{\"preArrival\":true}'::jsonb)"
 
 echo; echo "pass=$pass fail=$fail"

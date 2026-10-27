@@ -375,6 +375,11 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold text-on-surface truncate">{arr.guestName}</p>
                   <p className="text-[10px] text-on-surface-variant truncate">ETA: {arr.eta} · {arr.roomType}</p>
+                  {arr.preorders && arr.preorders.length > 0 && (
+                    <p className="text-[10px] font-medium text-primary truncate" title="Asked for this to be ready on arrival">
+                      Pre-order: {arr.preorders.map(p => `${p.quantity > 1 ? `${p.quantity}x ` : ''}${p.item}`).join(', ')}{arr.preorders.every(p => p.inKitchen) ? ' (with the kitchen)' : ''}
+                    </p>
+                  )}
                 </div>
                 {arr.checkedIn ? (
                   <span className="text-[10px] font-semibold text-success bg-success/10 px-2 py-1 rounded shrink-0">Checked In</span>

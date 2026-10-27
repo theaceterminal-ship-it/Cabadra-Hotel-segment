@@ -6,7 +6,7 @@ import {
 } from '../../lib/staffApi';
 import { Chip, ErrorNote, Field, Panel, Switch, btnPrimary, btnSecondary, inputCls, textareaCls } from './ui';
 
-const KIND_LABEL = { booking_confirmation: 'Booking confirmation', checkout_thanks: 'Thank-you' } as const;
+const KIND_LABEL = { booking_confirmation: 'Booking confirmation', pre_arrival: 'Pre-arrival offer', checkout_thanks: 'Thank-you' } as const;
 
 function CopyCell({ text }: { text: string }) {
   const [done, setDone] = useState(false);
@@ -68,12 +68,12 @@ export function GuestEmailsPanel({ propertyId }: { propertyId: string }) {
     } finally { setBusy(null); }
   };
 
-  const sendSample = (kind: 'booking_confirmation' | 'checkout_thanks') =>
+  const sendSample = (kind: 'booking_confirmation' | 'pre_arrival' | 'checkout_thanks') =>
     run(`test-${kind}`, async () => {
       // The sample uses what is saved, so save first if there are changes.
       await saveGuestEmailSettings(propertyId, form).catch(err => { throw err; });
       return guestEmailAction('test', propertyId, { kind });
-    }, r => `A sample ${kind === 'booking_confirmation' ? 'booking confirmation' : 'thank-you'} is on its way to ${r.sentTo}.`).catch(err => setError(err instanceof Error ? err.message : 'Couldn’t send the sample.'));
+    }, r => `A sample ${kind === 'booking_confirmation' ? 'booking confirmation' : kind === 'pre_arrival' ? 'pre-arrival offer' : 'thank-you'} is on its way to ${r.sentTo}.`).catch(err => setError(err instanceof Error ? err.message : 'Couldn’t send the sample.'));
 
   const verified = domain?.status === 'verified';
   const statusChip = !domain ? null : verified ? <Chip tone="good">Verified</Chip> : domain.status === 'failed' ? <Chip tone="bad">Not found yet</Chip> : <Chip tone="warn">Waiting for DNS</Chip>;
@@ -111,6 +111,14 @@ export function GuestEmailsPanel({ propertyId }: { propertyId: string }) {
           </Field>
         </div>
 
+        <div className="rounded-[20px] bg-surface-container-low p-4 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-on-surface">Offer something ready on arrival</p>
+            <p className="text-xs text-on-surface-variant mt-0.5 max-w-xl">The day before, guests with an email get up to three dishes from your menu, chosen for their arrival time and the season, each a single tap. The kitchen sees it as a normal order 45 minutes before they arrive, marked as a pre-order. They pay at the hotel, and it goes on their bill when they check in. Alcohol and dishes with sizes are never offered. Turn this on once your kitchen is ready for it.</p>
+          </div>
+          <Switch checked={form.preArrival} onChange={v => set('preArrival', v)} label="Offer something ready on arrival" />
+        </div>
+
         <p className="text-xs text-on-surface-variant">
           The address, phone number and reply-to email come from <strong>Bills &amp; GST</strong> below
           {form.replyTo ? <> (replies go to <strong>{form.replyTo}</strong>)</> : <>. <span className="text-warning">No email is set there, so guests can’t reply to these.</span></>}
@@ -123,6 +131,7 @@ export function GuestEmailsPanel({ propertyId }: { propertyId: string }) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2">
             <button type="button" disabled={!!busy} onClick={() => sendSample('booking_confirmation')} className={btnSecondary}>{busy === 'test-booking_confirmation' ? 'Sending…' : 'Email me a sample confirmation'}</button>
+            <button type="button" disabled={!!busy} onClick={() => sendSample('pre_arrival')} className={btnSecondary}>{busy === 'test-pre_arrival' ? 'Sending…' : 'Email me a sample pre-arrival offer'}</button>
             <button type="button" disabled={!!busy} onClick={() => sendSample('checkout_thanks')} className={btnSecondary}>{busy === 'test-checkout_thanks' ? 'Sending…' : 'Email me a sample thank-you'}</button>
           </div>
           <div className="flex items-center gap-3">
