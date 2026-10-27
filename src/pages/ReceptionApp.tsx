@@ -41,6 +41,7 @@ import { ConciergeView } from '../components/ConciergeView';
 import { ChatInboxView } from '../components/ChatInboxView';
 import { fetchChatInbox } from '../lib/staffApi';
 import { DepartmentsView } from '../components/DepartmentsView';
+import { NoHotelNotice } from '../components/NoHotelNotice';
 import { ReadyToDeliver } from '../components/ReadyToDeliver';
 import { NewRequestModal } from '../components/NewRequestModal';
 import { SupabaseSetupNeeded } from '../components/SupabaseSetupNeeded';
@@ -56,7 +57,7 @@ type ReceptionTab = 'dashboard' | 'messages' | 'concierge' | 'bookings' | 'day_c
 /** The reception page: `/reception`. Supabase Auth-gated, receptionist role. Every screen is wired to real Supabase data — no mock/local-only state left. */
 export default function ReceptionApp() {
   usePwaManifest('staff');
-  const { loading, session, assignments } = useAuth();
+  const { loading, session, assignments, assignmentsReady, assignmentsError, refreshAssignments } = useAuth();
   const [view, setView] = useState<ReceptionTab>('dashboard');
   // Guest messages nobody at the desk has read yet, for the Messages badge.
   const [unreadChats, setUnreadChats] = useState(0);
@@ -268,21 +269,11 @@ export default function ReceptionApp() {
   if (!isSupabaseConfigured) return <SupabaseSetupNeeded />;
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-surface text-sm text-on-surface-strong">Loading…</div>;
   if (!session) return <LoginPage roleLabel="Reception" />;
+  // Just signed in: wait for the account's hotels instead of flashing "no hotel" first.
+  if (!assignmentsReady) return <div className="min-h-screen flex items-center justify-center bg-surface text-sm text-on-surface-strong">Loading…</div>;
 
   if (!propertyId) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-surface p-6">
-        <div className="max-w-md text-center space-y-3">
-          <h1 className="text-lg font-semibold text-on-surface">No property assigned yet</h1>
-          <p className="text-sm text-on-surface-variant">
-            You're signed in, but this account isn't linked to a hotel yet. Reception access isn't self-serve —
-            ask your hotel's owner to invite this email from their property's Staff tab, and you'll land here
-            automatically once they do.
-          </p>
-          <button onClick={() => signOut()} className="text-xs font-semibold text-primary hover:underline">Sign out</button>
-        </div>
-      </div>
-    );
+    return <NoHotelNotice email={session.user.email} assignments={assignments} error={assignmentsError} onRetry={refreshAssignments} onSignOut={() => signOut()} />;
   }
 
   const openRequestsCount = urgentRequests.filter(r => r.status === 'open').length;
