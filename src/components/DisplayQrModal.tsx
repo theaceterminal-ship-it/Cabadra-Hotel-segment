@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { escapeHtml } from '../lib/safeText';
 import QRCode from 'qrcode';
 import { QrCode, Copy, Check, Printer, X } from 'lucide-react';
 import { DepartmentDisplayAdmin } from '../lib/staffApi';
@@ -45,7 +46,7 @@ export function DisplayQrModal({ display, onClose }: DisplayQrModalProps) {
     const win = window.open('', '_blank', 'width=420,height=560');
     if (!win) return;
     win.document.write(`
-      <html><head><title>Display — ${display.label}</title>
+      <html><head><title>Display — ${escapeHtml(display.label)}</title>
         <style>
           body { text-align: center; font-family: sans-serif; margin-top: 40px; color: #141d23; }
           h2 { font-size: 20px; margin-bottom: 4px; }
@@ -54,14 +55,15 @@ export function DisplayQrModal({ display, onClose }: DisplayQrModalProps) {
           img { width: 240px; height: 240px; display: block; }
         </style>
       </head><body>
-        <h2>${display.label}</h2>
-        <p>${DEPT_LABELS[display.department]}</p>
+        <h2>${escapeHtml(display.label)}</h2>
+        <p>${escapeHtml(DEPT_LABELS[display.department])}</p>
         <p>Scan to re-open this display</p>
         <div class="qr-wrap"><img src="${qrDataUrl}" /></div>
-        <script>window.onload = () => setTimeout(() => window.print(), 300);</script>
       </body></html>
     `);
     win.document.close();
+    // Printing is triggered from here, not by a script inside the page, so the site can forbid inline scripts.
+    setTimeout(() => { win.focus(); win.print(); }, 400);
   };
 
   return (

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { escapeHtml } from '../lib/safeText';
 import QRCode from 'qrcode';
 import { QrCode, Copy, Check, Printer, X, RefreshCw } from 'lucide-react';
 import { fetchRoomQrCode, regenerateRoomQrCode } from '../lib/staffApi';
@@ -72,7 +73,7 @@ export function RoomQrModal({ roomNumber, roomId, qrCode, onClose }: RoomQrModal
     const win = window.open('', '_blank', 'width=420,height=560');
     if (!win) return;
     win.document.write(`
-      <html><head><title>Room ${roomNumber} QR</title>
+      <html><head><title>Room ${escapeHtml(roomNumber)} QR</title>
         <style>
           body { text-align: center; font-family: sans-serif; margin-top: 40px; color: #141d23; }
           h2 { font-size: 22px; margin-bottom: 4px; }
@@ -81,13 +82,14 @@ export function RoomQrModal({ roomNumber, roomId, qrCode, onClose }: RoomQrModal
           img { width: 260px; height: 260px; display: block; }
         </style>
       </head><body>
-        <h2>Room ${roomNumber}</h2>
+        <h2>Room ${escapeHtml(roomNumber)}</h2>
         <p>Scan to order room service</p>
         <div class="qr-wrap"><img src="${qrDataUrl}" /></div>
-        <script>window.onload = () => setTimeout(() => window.print(), 300);</script>
       </body></html>
     `);
     win.document.close();
+    // Printing is triggered from here, not by a script inside the page, so the site can forbid inline scripts.
+    setTimeout(() => { win.focus(); win.print(); }, 400);
   };
 
   return (

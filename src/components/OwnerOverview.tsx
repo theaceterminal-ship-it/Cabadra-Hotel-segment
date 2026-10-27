@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { escapeHtml, toCsv } from '../lib/safeText';
 import { Property, AppView } from '../types';
 import {
   fetchTicketSizeAnalytics,
@@ -97,7 +98,7 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
       ['Property', 'Location', 'Currency', 'Occupancy %', 'Revenue Today', 'Total Revenue', 'Avg Order Value', 'Open Requests'],
       ...properties.map(p => [p.name, p.location, p.currency, p.occupancy, p.revenueToday, p.totalRevenue, p.avgOrderValue, p.requestsCount]),
     ];
-    const csv = rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const csv = toCsv(rows);
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -110,8 +111,8 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
   const printPortfolioReport = () => {
     const rowsHtml = properties.map(p => `
       <tr>
-        <td>${p.name}</td>
-        <td>${p.location}</td>
+        <td>${escapeHtml(p.name)}</td>
+        <td>${escapeHtml(p.location)}</td>
         <td style="text-align:right">${p.occupancy}%</td>
         <td style="text-align:right">${p.revenueToday}</td>
         <td style="text-align:right">${p.totalRevenue}</td>
@@ -136,10 +137,11 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
           <thead><tr><th>Property</th><th>Location</th><th style="text-align:right">Occupancy</th><th style="text-align:right">Revenue Today</th><th style="text-align:right">Total Revenue</th><th style="text-align:right">Open Requests</th></tr></thead>
           <tbody>${rowsHtml}</tbody>
         </table>
-        <script>window.onload = () => setTimeout(() => window.print(), 300);</script>
       </body></html>
     `);
     win.document.close();
+    // Printing is triggered from here, not by a script inside the page, so the site can forbid inline scripts.
+    setTimeout(() => { win.focus(); win.print(); }, 400);
   };
 
   return (

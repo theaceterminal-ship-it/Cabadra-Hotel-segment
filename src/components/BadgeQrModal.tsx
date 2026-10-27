@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { escapeHtml } from '../lib/safeText';
 import QRCode from 'qrcode';
 import { QrCode, RefreshCw, Printer, X } from 'lucide-react';
 import { DirectoryContact, regenerateBadgeToken } from '../lib/staffApi';
@@ -49,7 +50,7 @@ export function BadgeQrModal({ contact, onClose, onRegenerated }: BadgeQrModalPr
     const win = window.open('', '_blank', 'width=420,height=560');
     if (!win) return;
     win.document.write(`
-      <html><head><title>Badge — ${contact.name}</title>
+      <html><head><title>Badge — ${escapeHtml(contact.name)}</title>
         <style>
           body { text-align: center; font-family: sans-serif; margin-top: 40px; color: #141d23; }
           h2 { font-size: 20px; margin-bottom: 4px; }
@@ -58,13 +59,14 @@ export function BadgeQrModal({ contact, onClose, onRegenerated }: BadgeQrModalPr
           img { width: 240px; height: 240px; display: block; }
         </style>
       </head><body>
-        <h2>${contact.name}</h2>
+        <h2>${escapeHtml(contact.name)}</h2>
         <p>Scan at a department display to clock in or out</p>
         <div class="qr-wrap"><img src="${qrDataUrl}" /></div>
-        <script>window.onload = () => setTimeout(() => window.print(), 300);</script>
       </body></html>
     `);
     win.document.close();
+    // Printing is triggered from here, not by a script inside the page, so the site can forbid inline scripts.
+    setTimeout(() => { win.focus(); win.print(); }, 400);
   };
 
   return (

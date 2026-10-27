@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { toCsv } from '../lib/safeText';
 import { AlertTriangle, Download, Printer } from 'lucide-react';
 import { BOOKING_CHANNELS, GUEST_ID_TYPES, ExtrasReport, PropertyReport, RegisterEntry, fetchExtrasReport, fetchGuestRegister, fetchReport } from '../lib/staffApi';
 import { DEPARTMENT_LABELS } from '../lib/departments';
@@ -27,10 +28,7 @@ function rangeFor(p: Preset, custom: { from: string; to: string }): { from: stri
 }
 
 function downloadCsv(name: string, rows: (string | number | undefined | null)[][]) {
-  const csv = rows.map(r => r.map(v => {
-    const s = v == null ? '' : String(v);
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  }).join(',')).join('\n');
+  const csv = toCsv(rows);
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
   const a = Object.assign(document.createElement('a'), { href: url, download: name });
   a.click();

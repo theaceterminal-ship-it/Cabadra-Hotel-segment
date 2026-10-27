@@ -1,0 +1,21 @@
+# Security headers for every page and file (Cloudflare Workers static assets read this file).
+#
+# The content policy is deliberately specific to what the app uses:
+#   - scripts: only this site, plus Razorpay's checkout script;
+#   - the database and realtime: Supabase; photo uploads: Cloudinary;
+#   - fonts: Google Fonts; photos shown to guests may come from any https site
+#     (owners can paste an image link), but are images only, never script;
+#   - no framing of these pages by anyone (clickjacking), no plugins, no <base>.
+# Style uses 'unsafe-inline' because React sets style attributes; scripts do not.
+# If something external stops loading after a change, its origin belongs here.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://checkout.razorpay.com https://cdn.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.cloudinary.com https://*.razorpay.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io; frame-src https://*.razorpay.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(self), microphone=(), geolocation=(), payment=(self "https://checkout.razorpay.com" "https://api.razorpay.com"), usb=(), interest-cohort=()
+  Strict-Transport-Security: max-age=15552000
+
+# The worker file must always be fetched fresh so a fixed version reaches installed apps.
+/sw.js
+  Cache-Control: no-cache
