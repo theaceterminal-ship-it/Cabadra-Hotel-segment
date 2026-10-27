@@ -7,7 +7,7 @@
 --
 -- A refused statement rolls back everything it did, including a log row written
 -- in the same transaction, so the row is written on a separate short connection
--- back into this database (dblink) as a login that can only INSERT into this
+-- back into this database (dblink, over the project's own database host) as a login that can only INSERT into this
 -- one table. The connection string, with a random password generated here, is
 -- kept in Vault, never in this file. If that loopback can't be made, the event
 -- still goes to the Postgres log (RAISE WARNING) and, when the caller's
@@ -76,6 +76,7 @@ declare
   v_pw text := encode(gen_random_bytes(24), 'hex');
   v_conn text;
   v_secret_id uuid;
+  v_host text;
 begin
   if not exists (select 1 from pg_roles where rolname = 'security_logger') then
     execute format('create role security_logger login password %L', v_pw);
@@ -88,8 +89,16 @@ begin
   drop policy if exists security_events_logger_insert on security_events;
   create policy security_events_logger_insert on security_events for insert to security_logger with check (true);
 
-  v_conn := format('host=127.0.0.1 port=%s dbname=%s user=security_logger password=%s connect_timeout=2',
-                   coalesce(nullif(current_setting('port', true), ''), '5432'), current_database(), v_pw);
+  -- dblink won't let a non-superuser connect unless the server asks for the password, and
+  -- Supabase's own localhost/socket rules don't. The project's public database host does
+  -- (SSL + password), so use that: https://<ref>.supabase.co -> db.<ref>.supabase.co.
+  -- (No project_url in Vault, e.g. a local test database: fall back to 127.0.0.1.)
+  select regexp_replace(decrypted_secret, '^https?://', 'db.') into v_host
+  from vault.decrypted_secrets where name = 'project_url';
+  v_conn := format('host=%s port=%s dbname=%s user=security_logger password=%s sslmode=%s connect_timeout=2',
+                   coalesce(v_host, '127.0.0.1'),
+                   case when v_host is null then coalesce(nullif(current_setting('port', true), ''), '5432') else '5432' end,
+                   current_database(), v_pw, case when v_host is null then 'prefer' else 'require' end);
   begin
     select id into v_secret_id from vault.secrets where name = 'security_log_conn';
     if v_secret_id is null then
