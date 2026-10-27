@@ -7,6 +7,7 @@ import { ImageUploadField } from './ImageUploadField';
 import { PhoneField } from './PhoneField';
 import { promptStayAccess } from '../lib/stayAccess';
 import { RoomQrModal } from './RoomQrModal';
+import { DateRangePicker } from './DatePicker';
 
 interface NewBookingModalProps {
   propertyId: string;
@@ -168,25 +169,18 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
 
         {step === 'search' && (
           <form onSubmit={handleSearch} className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelCls}><Calendar className="w-3 h-3 inline mr-1" />Check-in Date</label>
-                <input
-                  type="date" value={checkIn} min={todayIso()}
-                  onChange={e => {
-                    setCheckIn(e.target.value);
-                    if (e.target.value >= checkOut) {
-                      const d = new Date(`${e.target.value}T00:00:00`); d.setDate(d.getDate() + 1);
-                      setCheckOut(d.toISOString().slice(0, 10));
-                    }
-                  }}
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className={labelCls}>Checkout Date</label>
-                <input type="date" value={checkOut} onChange={e => setCheckOut(e.target.value)} min={checkIn} className={inputCls} />
-              </div>
+            <div>
+              <label className={labelCls}><Calendar className="w-3 h-3 inline mr-1" />Stay: pick the check-in day, then the checkout day</label>
+              <DateRangePicker
+                start={checkIn}
+                end={checkOut}
+                min={todayIso()}
+                showNights
+                startLabel="Check-in"
+                endLabel="Checkout"
+                onChange={(a, b) => { setCheckIn(a); setCheckOut(b); }}
+                className={`${inputCls} flex items-center justify-between gap-2 text-left`}
+              />
             </div>
             {isFutureBooking && (
               <p className="text-[11px] text-primary bg-highlight border border-warning rounded-lg px-2.5 py-1.5">
@@ -259,13 +253,18 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
 
             {initialRoom && (
               <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className={labelCls}>Arrival</label>
-                  <input type="date" value={checkIn} onChange={e => { setCheckIn(e.target.value); if (checkOut <= e.target.value) setCheckOut(dayAfter(e.target.value)); }} className={inputCls} />
-                </div>
-                <div>
-                  <label className={labelCls}>Departure</label>
-                  <input type="date" min={dayAfter(checkIn)} value={checkOut} onChange={e => setCheckOut(e.target.value)} className={inputCls} />
+                <div className="col-span-2">
+                  <label className={labelCls}>Arrival → Departure</label>
+                  <DateRangePicker
+                    start={checkIn}
+                    end={checkOut}
+                    min={todayIso()}
+                    showNights
+                    startLabel="Arrival"
+                    endLabel="Departure"
+                    onChange={(a, b) => { setCheckIn(a); setCheckOut(b); }}
+                    className={`${inputCls} flex items-center justify-between gap-2 text-left`}
+                  />
                 </div>
                 <div>
                   <label className={labelCls}>Guests</label>

@@ -7,6 +7,7 @@ import {
 import { formatCurrency } from '../../lib/currency';
 import { promptStayAccess } from '../../lib/stayAccess';
 import { STATUS_CHIP, STATUS_LABEL, addDays, fmtDay, todayIso } from './bookingUtils';
+import { DateRangePicker } from '../DatePicker';
 
 const btn = 'h-10 px-4 rounded-full text-sm font-medium inline-flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50';
 const btnPrimary = `${btn} bg-primary text-on-primary hover:bg-primary-hover`;
@@ -245,8 +246,19 @@ function EditForm({ booking: b, rooms, busy, registerOnly, onSave, onCancel }: {
     <form onSubmit={save} className="space-y-4">
       {!registerOnly && <>
       <div className="grid grid-cols-2 gap-3">
-        <label><span className={label}>Arrives</span><input type="date" disabled={inHouse} value={f.checkInDate} onChange={e => set('checkInDate', e.target.value)} className={`${input} disabled:opacity-60`} /></label>
-        <label><span className={label}>Leaves</span><input type="date" min={addDays(f.checkInDate, 1)} value={f.checkOutDate} onChange={e => set('checkOutDate', e.target.value)} className={input} /></label>
+        <div className="col-span-2">
+          <span className={label}>{inHouse ? 'Stay (arrival is fixed, pick the leaving day)' : 'Stay: pick the arrival day, then the leaving day'}</span>
+          <DateRangePicker
+            start={f.checkInDate}
+            end={f.checkOutDate}
+            startLocked={inHouse}
+            showNights
+            startLabel="Arrives"
+            endLabel="Leaves"
+            onChange={(s, e) => { set('checkInDate', s); set('checkOutDate', e); }}
+            className={`${input} flex items-center justify-between gap-2 text-left`}
+          />
+        </div>
         <label>
           <span className={label}>{inHouse ? 'Move to room' : 'Room'}</span>
           <select value={f.roomId} onChange={e => set('roomId', e.target.value)} className={input}>

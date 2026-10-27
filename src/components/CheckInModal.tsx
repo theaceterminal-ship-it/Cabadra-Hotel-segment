@@ -4,6 +4,8 @@ import { Room } from '../types';
 import { checkInNewGuest } from '../lib/staffApi';
 import { ImageUploadField } from './ImageUploadField';
 import { PhoneField } from './PhoneField';
+import { ModalShell } from './ModalShell';
+import { DateRangePicker, toIso, todayLocalIso } from './DatePicker';
 import { CheckInAccessChoice } from './CheckInAccessChoice';
 import { promptStayAccess, type StayAccessChoice } from '../lib/stayAccess';
 
@@ -19,7 +21,7 @@ interface CheckInModalProps {
 function defaultCheckoutDate(): string {
   const d = new Date();
   d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
+  return toIso(d);
 }
 
 const inputCls = 'w-full h-10 px-3 text-sm border border-outline-variant rounded-lg focus:border-primary focus:outline-none';
@@ -41,6 +43,7 @@ export function CheckInModal({ propertyId, room, source = 'built_in', onClose, o
   const [idDocumentUrl, setIdDocumentUrl] = useState('');
   const [checkOut, setCheckOut] = useState(defaultCheckoutDate());
   const [partySize, setPartySize] = useState('1');
+  const today = todayLocalIso();
   const [accessChoice, setAccessChoice] = useState<StayAccessChoice>('auto');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,16 +75,22 @@ export function CheckInModal({ propertyId, room, source = 'built_in', onClose, o
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-[70]">
-      <form onSubmit={handleSubmit} className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-outline-variant">
-          <div className="flex items-center gap-2">
-            <UserPlus className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold text-on-surface">Check In — Room {room.number}</h3>
-          </div>
-          <button type="button" onClick={onClose} className="text-on-surface-variant hover:text-on-surface p-1"><X className="w-5 h-5" /></button>
+    <ModalShell
+      onClose={onClose}
+      zClass="z-[70]"
+      title={`Check In — Room ${room.number}`}
+      footer={
+        <div className="flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="px-4 py-2 border border-outline-variant rounded-lg text-xs font-semibold text-on-surface-variant">
+            Cancel
+          </button>
+          <button type="submit" form="check-in-form" disabled={submitting || !name.trim()} className="px-5 py-2 bg-primary text-on-primary rounded-lg text-xs font-semibold hover:bg-primary-hover disabled:opacity-60">
+            {submitting ? 'Checking in…' : 'Check In & Assign Room'}
+          </button>
         </div>
-
+      }
+    >
+      <form id="check-in-form" onSubmit={handleSubmit} className="space-y-4">
         <p className="text-xs text-on-surface-variant">
           {source === 'imported'
             ? "This doesn't book the room — it just tells Cabadra who's staying in it, so their room QR, folio and requests work for them specifically until checkout."
@@ -105,8 +114,18 @@ export function CheckInModal({ propertyId, room, source = 'built_in', onClose, o
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Checkout Date</label>
-              <input type="date" value={checkOut} onChange={e => setCheckOut(e.target.value)} min={new Date().toISOString().slice(0, 10)} className={inputCls} />
+              <label className={labelCls}>Stay (today → checkout)</label>
+              <DateRangePicker
+                start={today}
+                end={checkOut}
+                startLocked
+                compact
+                showNights
+                startLabel="Today"
+                endLabel="Checkout"
+                onChange={(_, b) => setCheckOut(b)}
+                className={`${inputCls} flex items-center justify-between gap-2 text-left`}
+              />
             </div>
             <div>
               <label className={labelCls}>Party Size</label>
@@ -123,15 +142,7 @@ export function CheckInModal({ propertyId, room, source = 'built_in', onClose, o
 
         {error && <p className="text-xs text-error">{error}</p>}
 
-        <div className="flex justify-end gap-2 pt-3 border-t border-outline-variant">
-          <button type="button" onClick={onClose} className="px-4 py-2 border border-outline-variant rounded-lg text-xs font-semibold text-on-surface-variant">
-            Cancel
-          </button>
-          <button type="submit" disabled={submitting || !name.trim()} className="px-5 py-2 bg-primary text-on-primary rounded-lg text-xs font-semibold hover:bg-primary-hover disabled:opacity-60">
-            {submitting ? 'Checking in…' : 'Check In & Assign Room'}
-          </button>
-        </div>
       </form>
-    </div>
+    </ModalShell>
   );
 }

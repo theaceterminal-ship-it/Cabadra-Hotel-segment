@@ -5,6 +5,7 @@ import { BOOKING_CHANNELS, GUEST_ID_TYPES, ExtrasReport, PropertyReport, Registe
 import { DEPARTMENT_LABELS } from '../lib/departments';
 import { formatCurrency } from '../lib/currency';
 import { addDays, fmtDay, todayIso } from './bookings/bookingUtils';
+import { DateRangePicker } from './DatePicker';
 
 type Preset = 'today' | 'yesterday' | 'week' | 'month' | 'last_month' | 'custom';
 
@@ -94,9 +95,14 @@ export function ReportsView({ propertyId, propertyName, currency, hasExternalPms
         ))}
         {preset === 'custom' && (
           <span className="flex items-center gap-1.5">
-            <input type="date" value={custom.from} max={custom.to} onChange={e => e.target.value && setCustom(x => ({ ...x, from: e.target.value }))} className="h-9 px-3 rounded-full bg-surface-container-lowest border border-outline-variant text-sm" aria-label="From" />
-            <span className="text-on-surface-variant">–</span>
-            <input type="date" value={custom.to} min={custom.from} onChange={e => e.target.value && setCustom(x => ({ ...x, to: e.target.value }))} className="h-9 px-3 rounded-full bg-surface-container-lowest border border-outline-variant text-sm" aria-label="To" />
+            <DateRangePicker
+              start={custom.from}
+              end={custom.to}
+              onChange={(from, to) => setCustom({ from, to })}
+              allowSameDay
+              compact
+              className="h-9 px-3 gap-2 rounded-full bg-surface-container-lowest border border-outline-variant text-sm flex items-center"
+            />
           </span>
         )}
         <span className="text-sm text-on-surface-variant ml-1">{label}</span>

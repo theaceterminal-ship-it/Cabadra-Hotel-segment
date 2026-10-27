@@ -17,6 +17,7 @@ import {
   User,
 } from 'lucide-react';
 import { DEPARTMENT_LABELS } from '../lib/departments';
+import { DatePicker } from './DatePicker';
 
 const DEPT_LABELS = DEPARTMENT_LABELS;
 
@@ -94,11 +95,11 @@ export function DepartmentShifts({ propertyId, department }: { propertyId: strin
           <h3 className="text-base font-semibold text-on-surface">Shifts</h3>
           <p className="text-xs text-on-surface-variant">Who scanned in for each shift, and when</p>
         </div>
-        <input
-          type="date"
+        <DatePicker
           value={date}
-          onChange={e => setDate(e.target.value)}
-          className="h-9 px-3 text-xs border border-outline-variant rounded-lg bg-surface-container-lowest focus:border-primary focus:outline-none"
+          onChange={d => d && setDate(d)}
+          compact
+          className="h-9 px-3 gap-2 text-xs border border-outline-variant rounded-lg bg-surface-container-lowest focus:border-primary focus:outline-none flex items-center"
         />
       </div>
 

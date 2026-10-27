@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Bell, UtensilsCrossed, Megaphone, ClipboardList, AlertTriangle, MessageCircle } from 'lucide-react';
 import { AppNotification } from '../types';
+import { DatePicker } from './DatePicker';
 
 const ICONS: Record<AppNotification['type'], typeof Bell> = {
   new_order: UtensilsCrossed,
@@ -69,11 +70,12 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ notification
             <span className="text-xs font-semibold text-on-surface shrink-0">Notifications</span>
             <div className="flex items-center gap-2 shrink-0">
               {onDateChange && (
-                <input
-                  type="date"
+                <DatePicker
                   value={date ?? ''}
-                  onChange={(e) => onDateChange(e.target.value)}
-                  className="h-7 px-1.5 text-[11px] border border-outline-variant rounded bg-surface-container-lowest focus:border-primary focus:outline-none"
+                  onChange={(d) => onDateChange(d)}
+                  compact
+                  placeholder="Date"
+                  className="h-7 px-2 gap-1.5 text-[11px] border border-outline-variant rounded bg-surface-container-lowest focus:border-primary focus:outline-none flex items-center"
                 />
               )}
               {onMarkAllRead && unreadCount > 0 && (

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { DEPARTMENT_LABELS, DEPARTMENT_VALUES, type Department } from '../lib/departments';
 import { formatCurrency } from '../lib/currency';
+import { DateRangePicker } from './DatePicker';
 
 interface LiveOpsViewProps {
   propertyId: string;
@@ -344,18 +345,13 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
 
               {dateFilterMode === 'custom' && (
                 <div className="flex items-center gap-1.5 animate-in fade-in duration-200">
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="h-8 px-2 text-xs border border-outline-variant rounded-lg bg-surface-container-lowest text-on-surface focus:border-primary focus:outline-none"
-                  />
-                  <span className="text-xs text-on-surface-variant">to</span>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="h-8 px-2 text-xs border border-outline-variant rounded-lg bg-surface-container-lowest text-on-surface focus:border-primary focus:outline-none"
+                  <DateRangePicker
+                    start={startDate}
+                    end={endDate}
+                    onChange={(a, b) => { setStartDate(a); setEndDate(b); }}
+                    allowSameDay
+                    compact
+                    className="h-8 px-2.5 gap-2 text-xs border border-outline-variant rounded-lg bg-surface-container-lowest text-on-surface focus:border-primary focus:outline-none flex items-center"
                   />
                 </div>
               )}

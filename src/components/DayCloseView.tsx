@@ -3,6 +3,7 @@ import { Banknote, Building2, ChevronLeft, ChevronRight, CreditCard, Lock, Print
 import { DaySummary, closeDay, fetchDaySummary } from '../lib/staffApi';
 import { formatCurrency } from '../lib/currency';
 import { addDays, fmtDay, todayIso } from './bookings/bookingUtils';
+import { DatePicker } from './DatePicker';
 
 const METHODS = [
   { id: 'cash', label: 'Cash', icon: Banknote },
@@ -61,7 +62,7 @@ export function DayCloseView({ propertyId, propertyName, currency }: { propertyI
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setDate(d => addDays(d, -1))} aria-label="Previous day" className="size-9 rounded-full bg-surface-container-lowest border border-outline-variant flex items-center justify-center"><ChevronLeft className="size-4" /></button>
-          <input type="date" max={today} value={date} onChange={e => e.target.value && setDate(e.target.value)} className="h-9 px-3 rounded-full bg-surface-container-lowest border border-outline-variant text-sm" aria-label="Day" />
+          <DatePicker max={today} value={date} onChange={d => d && setDate(d)} compact aria-label="Day" className="h-9 px-3 gap-2 rounded-full bg-surface-container-lowest border border-outline-variant text-sm flex items-center" />
           <button onClick={() => setDate(d => (d < today ? addDays(d, 1) : d))} disabled={date >= today} aria-label="Next day" className="size-9 rounded-full bg-surface-container-lowest border border-outline-variant flex items-center justify-center disabled:opacity-40"><ChevronRight className="size-4" /></button>
           <button onClick={() => window.print()} className="h-9 px-4 rounded-full bg-surface-container-lowest border border-outline-variant text-sm font-medium inline-flex items-center gap-1.5"><Printer className="size-4" /> Print</button>
         </div>

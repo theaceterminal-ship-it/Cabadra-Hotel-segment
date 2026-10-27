@@ -40,6 +40,7 @@ function fromHeader(propertyName: string, resendFrom: string): string {
 
 export function renderStayCodeEmail(d: StayCodeDetails) {
   const hello = firstName(d.guestName) ? `Hi ${escapeHtml(firstName(d.guestName))},` : 'Hello,';
+  const helloText = firstName(d.guestName) ? `Hi ${firstName(d.guestName)},` : 'Hello,';
   const hotel = escapeHtml(d.propertyName);
   const room = escapeHtml(d.roomNumber);
   const day = formatDay(d.checkOut);
@@ -49,9 +50,16 @@ export function renderStayCodeEmail(d: StayCodeDetails) {
   const introText = d.reason === 'resend'
     ? `Here is a new code for Room ${d.roomNumber} at ${d.propertyName}. The earlier one no longer works.`
     : `Welcome to ${d.propertyName}. You are in Room ${d.roomNumber}. This code opens room service on your phone: food, housekeeping, requests and chat with the front desk.`;
-  const helloText = firstName(d.guestName) ? `Hi ${firstName(d.guestName)},` : 'Hello,';
   const digits = d.code.split('').map(c => `<span style="display:inline-block;width:34px;height:46px;line-height:46px;margin:0 3px;border-radius:12px;background:#f1f3ef;font-size:26px;font-weight:600">${c}</span>`).join('');
-  const subject = `${d.code} is your room service code for ${d.propertyName}, Room ${d.roomNumber}`.replace(/[\r\n]/g, ' ');
+  // The subject says what the email is, never the code: it shows on lock screens and in notification previews.
+  const subject = (d.reason === 'resend' ? `Your new room service access for ${d.propertyName}` : `Welcome to ${d.propertyName}: your room service access`).replace(/[\r\n]/g, ' ');
+
+  const tips = [
+    ['Eat in', 'The in-room menu is open round the clock. Order from your phone and we bring it to the door.'],
+    ['Get out', 'Look under “Things to do” and “Around you” for local walks, drives, adventures and trusted guides, booked in a tap.'],
+    ['Ask anything', 'Chat with the front desk from the same screen: an extra pillow, a late checkout, a table for tonight.'],
+  ];
+  const tipsHtml = tips.map(([h, t]) => `<tr><td style="padding:6px 0;font-size:13px;line-height:1.5;color:#3a3a3a"><strong style="color:#111">${h}.</strong> ${t}</td></tr>`).join('');
 
   const html = `<!doctype html><html><body style="margin:0;background:#eef0ec;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111">
   <div style="max-width:480px;margin:0 auto;padding:32px 16px">
@@ -66,12 +74,16 @@ export function renderStayCodeEmail(d: StayCodeDetails) {
         <li>Type the six digits above, once.</li>
         <li>That is it. Your phone stays signed in${day ? ` until checkout on ${escapeHtml(day)}` : ' until you check out'}.</li>
       </ol>
-      <p style="margin:0;font-size:13px;line-height:1.5;color:#666">Please keep this code to yourself. Anyone who has it can place orders to your room. If the code stops working, tap “Send me a new code” on that page, or ask the front desk.</p>
+      <p style="margin:0 0 22px;font-size:13px;line-height:1.5;color:#666">Please keep this code to yourself. If it stops working, tap “Send me a new code” on that page, or ask the front desk.</p>
+      <div style="background:#f6f7f3;border-radius:16px;padding:16px 18px">
+        <p style="margin:0 0 4px;font-size:15px;font-weight:600">Happy stay! 🌿</p>
+        <table role="presentation" style="border-collapse:collapse;width:100%">${tipsHtml}</table>
+      </div>
     </div>
     <p style="margin:16px 0 0;font-size:12px;color:#888;text-align:center">Sent by ${hotel} through Cabadra. You are getting this because you checked in with this email address.</p>
   </div></body></html>`;
 
-  const text = `${helloText}\n\n${introText}\n\nYour code: ${d.code}\n\nTo open it:\n1. In your room, scan the QR code (or tap the NFC tag).\n2. Type the six digits, once.\n3. Your phone stays signed in${day ? ` until checkout on ${day}` : ' until you check out'}.\n\nPlease keep this code to yourself. If it stops working, tap "Send me a new code" on that page, or ask the front desk.\n\nSent by ${d.propertyName} through Cabadra.`;
+  const text = `${helloText}\n\n${introText}\n\nYour code: ${d.code}\n\nTo open it:\n1. In your room, scan the QR code (or tap the NFC tag).\n2. Type the six digits, once.\n3. Your phone stays signed in${day ? ` until checkout on ${day}` : ' until you check out'}.\n\nPlease keep this code to yourself. If it stops working, tap "Send me a new code" on that page, or ask the front desk.\n\nHappy stay!\n${tips.map(([h, t]) => `- ${h}. ${t}`).join('\n')}\n\nSent by ${d.propertyName} through Cabadra.`;
   return { subject, html, text };
 }
 
