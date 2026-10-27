@@ -161,6 +161,7 @@ begin
   order by
     ((m.name ~* v_period_rx)::int * 3 + (coalesce(m.category, '') ~* v_period_rx)::int
       + (v_cold and m.name ~* v_cold_rx)::int * 2
+      + (coalesce(m.image, '') <> '')::int  -- a dish with a photo looks better in the email
       + ln(1 + (select count(*) from orders o, jsonb_array_elements(o.items) li
                 where o.property_id = m.property_id and li->>'menuItemId' = m.id))) desc,
     m.name
@@ -191,7 +192,7 @@ begin
     end loop;
   end if;
   return coalesce((
-    select jsonb_agg(jsonb_build_object('token', l.token, 'name', m.name, 'price', m.price) order by l.created_at, m.name)
+    select jsonb_agg(jsonb_build_object('token', l.token, 'name', m.name, 'price', m.price, 'image', nullif(m.image, '')) order by l.created_at, m.name)
     from arrival_links l join menu_items m on m.id = l.menu_item_id and m.property_id = l.property_id
     where l.reservation_id = p_reservation_id and l.used_at is null
   ), '[]'::jsonb);
@@ -268,7 +269,7 @@ begin
     select * into v_req from arrival_requests where link_token = v_link.token;
     return jsonb_build_object(
       'status', case when v_req.status in ('cancelled', 'void') then 'cancelled' else 'already' end,
-      'property_name', v_prop.name, 'item_name', coalesce(v_req.item_name, v_item.name),
+      'property_name', v_prop.name, 'item_name', coalesce(v_req.item_name, v_item.name), 'image', nullif(v_item.image, ''),
       'ready_at', coalesce(v_req.ready_at_override, v_eta), 'in_kitchen', v_req.status = 'in_kitchen'
     );
   end if;
@@ -292,7 +293,7 @@ begin
           v_room.number, v_req.id);
 
   return jsonb_build_object(
-    'status', 'ok', 'property_name', v_prop.name, 'item_name', v_item.name, 'ready_at', v_eta, 'in_kitchen', false
+    'status', 'ok', 'property_name', v_prop.name, 'item_name', v_item.name, 'image', nullif(v_item.image, ''), 'ready_at', v_eta, 'in_kitchen', false
   );
 end;
 $$;

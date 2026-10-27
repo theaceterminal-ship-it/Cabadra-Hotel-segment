@@ -190,7 +190,16 @@ export function renderCheckoutThanks(ctx: GuestEmailContext): RenderedEmail {
 
 
 // ---- the day before: something ready on arrival ----------------------------------------------
-export interface ArrivalOffer { url: string; name: string; price: number }
+export interface ArrivalOffer { url: string; name: string; price: number; image?: string | null }
+
+/** A photo sized for an email: Cloudinary pictures are cropped to 520x300 JPEG; any other https picture is used as it is. */
+function emailPhoto(u?: string | null): string | null {
+  const url = httpsOnly(u);
+  if (!url) return null;
+  return /^https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/(?![^/]*[,_])/.test(url)
+    ? url.replace('/image/upload/', '/image/upload/c_fill,w_520,h_300,q_auto,f_jpg/')
+    : url;
+}
 
 function periodWords(eta: string): { greeting: string; ask: string } {
   const h = Number(new Date(eta).toLocaleTimeString('en-GB', { hour: '2-digit', hour12: false, timeZone: TZ }).slice(0, 2));
@@ -209,7 +218,15 @@ export function renderPreArrival(ctx: GuestEmailContext, offers: ArrivalOffer[])
   const address = p.address || p.location || '';
   const tel = phoneDigits(p.phone);
   const safeOffers = offers.filter(o => httpsOnly(o.url));
-  const offerButtons = safeOffers.map(o => `<a href="${esc(o.url)}" style="display:block;margin:0 0 10px;padding:14px 20px;border-radius:16px;background:#111;color:#fff;text-decoration:none;font-size:15px;font-weight:600">${esc(o.name)}<span style="float:right;font-weight:500;opacity:.8">${esc(money(o.price, p.currency))}</span></a>`).join('');
+  const offerButtons = safeOffers.map(o => {
+    const photo = emailPhoto(o.image);
+    return `<a href="${esc(o.url)}" style="display:block;margin:0 0 12px;border-radius:18px;overflow:hidden;background:#fff;border:1px solid #e3e6df;text-decoration:none;color:#111">
+          ${photo ? `<img src="${esc(photo)}" alt="${esc(o.name)}" width="520" style="display:block;width:100%;height:auto;max-height:170px;object-fit:cover">` : ''}
+          <table role="presentation" style="border-collapse:collapse;width:100%"><tr>
+            <td style="padding:12px 14px;font-size:15px;font-weight:600;line-height:1.35">${esc(o.name)}<br><span style="font-weight:400;font-size:13px;color:#666">${esc(money(o.price, p.currency))}</span></td>
+            <td style="padding:12px 14px;text-align:right;white-space:nowrap"><span style="display:inline-block;background:#111;color:#fff;border-radius:999px;padding:9px 16px;font-size:13px;font-weight:600">Have it ready</span></td>
+          </tr></table></a>`;
+  }).join('');
 
   const inner = `
       <p style="margin:0 0 6px;font-size:15px">${name ? `Hi ${esc(name)},` : 'Hello,'}</p>

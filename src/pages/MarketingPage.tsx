@@ -7,6 +7,7 @@ import {
   BellOff,
   Building2,
   Hash,
+  Mail,
   MapPin,
   Plus,
   QrCode,
@@ -58,9 +59,9 @@ const FEATURES = [
   { icon: Smartphone, title: 'Guest app', body: 'Guests scan the room QR to order food, book the spa or ask for towels. Nothing to install.' },
   { icon: QrCode, title: 'Straight to the right department', body: 'Orders and requests land on the kitchen, housekeeping or spa screen. Staff pick them up with a badge scan.' },
   { icon: BellOff, title: 'No calls, slips or WhatsApp', body: 'Nothing gets lost between the guest and your team, and nobody has to chase it.' },
-  { icon: ReceiptText, title: 'One checkout total', body: 'Room service, laundry, spa, transfers and experiences add up to one total. Post it into your PMS.' },
-  { icon: UtensilsCrossed, title: 'No more missed charges', body: 'Each order is charged when it’s placed, so nothing is forgotten at checkout.' },
-  { icon: Sparkles, title: 'New income from extras', body: 'Guests book experiences and extras from their phone, money you’re not making today.' },
+  { icon: ReceiptText, title: 'One checkout total, nothing missed', body: 'Room service, laundry, spa, transfers and experiences are charged as they’re ordered and add up to one total. Post it into your PMS.' },
+  { icon: Mail, title: 'Guests who feel expected', body: 'A confirmation with directions, a one-tap meal ready on arrival, and a warm thank-you with your review link, all sent in your hotel’s name.' },
+  { icon: Sparkles, title: 'New income from extras', body: 'Guests pre-order a meal before they arrive and book experiences from their phone, money you’re not making today.' },
 ];
 
 const STEPS = [

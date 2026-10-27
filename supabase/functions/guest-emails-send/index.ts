@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
         if (c.reservation.status !== 'upcoming') { await done(row.id, 'skipped', 'the stay is no longer upcoming'); tally.skipped++; continue; }
         const { data: links, error: linkErr } = await admin.rpc('system_make_arrival_links', { p_reservation_id: row.reservation_id });
         if (linkErr) throw new Error(linkErr.message);
-        offers = ((links ?? []) as { token: string; name: string; price: number }[]).map(l => ({ url: `${siteUrl()}/pre/${l.token}`, name: l.name, price: Number(l.price) }));
+        offers = ((links ?? []) as { token: string; name: string; price: number; image?: string | null }[]).map(l => ({ url: `${siteUrl()}/pre/${l.token}`, name: l.name, price: Number(l.price), image: l.image }));
         if (offers.length === 0) { await done(row.id, 'skipped', 'nothing on the menu to offer'); tally.skipped++; continue; }
       }
       const email = renderGuestEmail(row.kind, c, offers);

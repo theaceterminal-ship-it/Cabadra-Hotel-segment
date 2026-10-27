@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useSiteTheme } from '../hooks/useTheme';
 
 type Result =
-  | { status: 'ok' | 'already'; propertyName: string; itemName: string; readyAt: string; inKitchen: boolean }
+  | { status: 'ok' | 'already'; propertyName: string; itemName: string; image?: string; readyAt: string; inKitchen: boolean }
   | { status: 'cancelled' | 'closed' | 'arrived' | 'invalid' | 'slow_down'; propertyName?: string };
 
 const TZ = 'Asia/Kolkata';
@@ -46,7 +46,7 @@ export default function ArrivalPreorderPage() {
       const d = data as Record<string, unknown>;
       const status = d.status as Result['status'];
       if (status === 'ok' || status === 'already') {
-        setResult({ status, propertyName: d.property_name as string, itemName: d.item_name as string, readyAt: d.ready_at as string, inKitchen: d.in_kitchen === true });
+        setResult({ status, propertyName: d.property_name as string, itemName: d.item_name as string, image: (d.image as string | null) ?? undefined, readyAt: d.ready_at as string, inKitchen: d.in_kitchen === true });
       } else {
         setResult({ status, propertyName: d.property_name as string | undefined } as Result);
       }
@@ -84,6 +84,9 @@ export default function ArrivalPreorderPage() {
   if (result.status === 'ok' || result.status === 'already') {
     return shell(
       <>
+        {result.image && /^https:\/\//i.test(result.image)
+          ? <img src={result.image} alt={result.itemName} className="w-full max-h-48 rounded-3xl object-cover" />
+          : null}
         <CheckCircle2 className="size-12 mx-auto text-primary" />
         <h1 className="text-2xl font-semibold tracking-[-0.02em] text-on-surface">Your {result.itemName.toLowerCase()} will be ready when you arrive</h1>
         <p className="text-sm text-on-surface-variant">We’ll have it waiting around <strong className="text-on-surface">{fmtTime(result.readyAt)}</strong> at {result.propertyName}. You pay at the hotel.</p>
