@@ -214,4 +214,39 @@ t "checkout deletes the code"                               0 postgres - "select
 t "after checkout the QR shows no stay"                     "none" anon - "select guest_room_gate('$QR')->>'status'"
 t "a guest with no email can't be issued a code"            "no_email" postgres - "update reservations set status='checked_in', access_mode='link' where id='$RES'; update guests set email=null where id='b0000000-0000-0000-0000-000000000001'; select system_issue_stay_code('$RES','email')->>'reason'"
 
+echo; echo "### K. Guest emails: queued by triggers, written and sent only by the server"
+BK=d0000000-0000-0000-0000-0000000000b1; BK2=d0000000-0000-0000-0000-0000000000b2
+$PSQL -c "update guests set email='asha@example.com' where id='b0000000-0000-0000-0000-000000000001'" >/dev/null
+$PSQL -c "insert into reservations (id, property_id, room_id, guest_id, check_in, check_out, status, source) values ('$BK','p1','r102','b0000000-0000-0000-0000-000000000001', now() + interval '3 days', now() + interval '5 days', 'upcoming', 'built_in')" >/dev/null
+t "an advance booking queues a confirmation"            "booking_confirmation|pending" postgres - "select kind||'|'||status from guest_email_outbox where reservation_id='$BK'"
+t "...due about a minute from now"                      "t" postgres - "select due_at between now() and now() + interval '2 minutes' from guest_email_outbox where reservation_id='$BK'"
+t "nothing is claimed before it is due"                 0 postgres - "select count(*) from system_claim_guest_emails(10)"
+$PSQL -c "update guest_email_outbox set due_at = now() - interval '1 second' where reservation_id='$BK'" >/dev/null
+t "once due, it is claimed"                             1 postgres - "select count(*) from system_claim_guest_emails(10)"
+t "...and a second run does not claim it again"         0 postgres - "select count(*) from system_claim_guest_emails(10)"
+t "the context has the hotel, room and the guest's email" "HillView|102|asha@example.com" postgres - "select c->'property'->>'name' || '|' || (c->'room'->>'number') || '|' || (c->'guest'->>'email') from (select system_guest_email_context('$BK') c) x"
+t "a failed send can be put back for later"             "pending" postgres - "select system_guest_email_done((select id from guest_email_outbox where reservation_id='$BK'), 'retry', 'boom', null, 10); select status from guest_email_outbox where reservation_id='$BK'"
+t "a sent email is recorded"                            "sent|cabadra" postgres - "select system_guest_email_done((select id from guest_email_outbox where reservation_id='$BK'), 'sent', null, 'cabadra'); select status||'|'||sent_via from guest_email_outbox where reservation_id='$BK'"
+$PSQL -c "insert into reservations (id, property_id, room_id, guest_id, check_in, check_out, status, source) values ('$BK2','p1','r102','b0000000-0000-0000-0000-000000000001', now() + interval '8 days', now() + interval '9 days', 'upcoming', 'built_in')" >/dev/null
+$PSQL -c "update reservations set status='cancelled' where id='$BK2'" >/dev/null
+t "a cancelled booking's confirmation is skipped"       "skipped" postgres - "select status from guest_email_outbox where reservation_id='$BK2'"
+t "a walk-in that checks straight in queues none"       0 postgres - "select count(*) from guest_email_outbox where reservation_id='$RES' and kind='booking_confirmation'"
+t "an imported (PMS) booking queues none"               0 postgres - "insert into reservations (id, property_id, room_id, guest_id, check_in, check_out, status, source) values ('d0000000-0000-0000-0000-0000000000b3','p1','r102','b0000000-0000-0000-0000-000000000001', now() + interval '2 days', now() + interval '3 days', 'upcoming', 'imported'); select count(*) from guest_email_outbox where reservation_id='d0000000-0000-0000-0000-0000000000b3'"
+$PSQL -c "update reservations set status='checked_out' where id='$RES'" >/dev/null
+t "checking out queues a thank-you about 90 minutes later" "checkout_thanks|true" postgres - "select kind || '|' || (due_at between now() + interval '85 minutes' and now() + interval '95 minutes') from guest_email_outbox where reservation_id='$RES' and kind='checkout_thanks'"
+t "checking out twice does not queue two"               1 postgres - "update reservations set status='checked_in' where id='$RES'; update reservations set status='checked_out' where id='$RES'; select count(*) from guest_email_outbox where reservation_id='$RES' and kind='checkout_thanks'"
+t "anon can't read the outbox"                          error anon - "select count(*) from guest_email_outbox"
+t "a receptionist can't read the outbox"                error authenticated $RECEP "select count(*) from guest_email_outbox"
+t "nobody can claim emails through the API"             error authenticated $OWNER "select * from system_claim_guest_emails(5)"
+t "the owner can set the review link"                   ok authenticated $OWNER "select owner_update_guest_email_settings('p1', '{\"enabled\":true,\"googleReviewUrl\":\"https://g.page/r/abc/review\",\"checkInTime\":\"14:00\"}'::jsonb)"
+t "a receptionist can't change the settings"            error authenticated $RECEP "select owner_update_guest_email_settings('p1', '{\"enabled\":false}'::jsonb)"
+t "another hotel's owner can't either"                  error authenticated $OTHER "select owner_update_guest_email_settings('p1', '{\"enabled\":false}'::jsonb)"
+t "a javascript: link is refused"                       error authenticated $OWNER "select owner_update_guest_email_settings('p1', '{\"googleReviewUrl\":\"javascript:alert(1)\"}'::jsonb)"
+t "a bad time is refused"                               error authenticated $OWNER "select owner_update_guest_email_settings('p1', '{\"checkInTime\":\"25:99\"}'::jsonb)"
+t "the owner can't claim a sending domain through the API" error authenticated $OWNER "insert into property_email_domains (property_id, domain) values ('p1','evil.example')"
+t "...nor edit one"                                     error authenticated $OWNER "update property_email_domains set status='verified'"
+t "the owner sees the sent list without email addresses" "f" authenticated $OWNER "select (select string_agg(x::text, '') from owner_guest_email_log('p1') x) like '%@%'"
+t "a receptionist can't see the sent list"              error authenticated $RECEP "select * from owner_guest_email_log('p1')"
+t "another hotel's owner can't see it"                  error authenticated $OTHER "select * from owner_guest_email_log('p1')"
+
 echo; echo "pass=$pass fail=$fail"
