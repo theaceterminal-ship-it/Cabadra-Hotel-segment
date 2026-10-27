@@ -7,7 +7,8 @@ import { CheckInModal } from './CheckInModal';
 import { GuestAccessPanel } from './GuestAccessPanel';
 import { StaffFolioChatModal } from './StaffFolioChatModal';
 import { formatCurrency } from '../lib/currency';
-import { Phone, Mail, FileText, UserPlus, QrCode, Receipt, MessageCircle } from 'lucide-react';
+import { Phone, Mail, FileText, UserPlus, User, QrCode, Receipt, MessageCircle } from 'lucide-react';
+import { ModalShell } from './ModalShell';
 
 /** Rooms that can actually accept a new check-in — matches staff_checkin_new_guest's own allowed-status check (0013_guest_checkin.sql). */
 export const CHECKINABLE_STATUSES: RoomStatus[] = ['ready', 'dirty', 'cleaning'];
@@ -37,21 +38,50 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [showChat, setShowChat] = useState(false);
 
+  const footerButtons = (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <button
+        onClick={() => setShowQr(true)}
+        className="h-9 px-3 rounded-lg border border-outline-variant text-on-surface-variant text-xs font-semibold hover:border-primary hover:text-primary flex items-center gap-1.5 whitespace-nowrap"
+        title="The sticker on the room's door, the same for every guest"
+      >
+        <QrCode className="w-3.5 h-3.5" /> Door QR
+      </button>
+      <div className="flex flex-wrap items-center gap-2">
+        {displayRoom.reservationId && (
+          <button
+            onClick={() => setShowChat(true)}
+            className="h-9 px-3 rounded-lg border border-outline-variant text-on-surface-variant text-xs font-semibold hover:border-primary hover:text-primary flex items-center gap-1.5 whitespace-nowrap"
+            title="Message this guest (Folio Chat)"
+          >
+            <MessageCircle className="w-3.5 h-3.5" /> Chat
+          </button>
+        )}
+        {(displayRoom.reservationId || displayRoom.status === 'occupied' || displayRoom.status === 'occupied_vip') && (
+          <button
+            type="button"
+            onClick={() => setShowFolio(true)}
+            className="h-9 px-3 rounded-lg border border-primary text-primary text-xs font-semibold hover:bg-highlight flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
+          >
+            <Receipt className="w-3.5 h-3.5" /> Folio &amp; Checkout
+          </button>
+        )}
+        <button onClick={onClose} className="h-9 px-4 bg-on-surface text-inverse-on-surface rounded-lg text-xs font-semibold whitespace-nowrap cursor-pointer">
+          Done
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-        <div className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant space-y-4">
-          <div className="flex justify-between items-start pb-3 border-b border-outline-variant">
-            <div>
-              <span className="text-xs font-medium text-primary">
-                Floor {displayRoom.floor} • Room Details
-              </span>
-              <h3 className="text-2xl font-semibold text-on-surface">Room {displayRoom.number}</h3>
-              <p className="text-xs text-on-surface-variant">{displayRoom.type}</p>
-            </div>
-            <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface text-xl font-semibold p-1">&times;</button>
-          </div>
-
+      <ModalShell
+        onClose={onClose}
+        eyebrow={`Floor ${displayRoom.floor} • Room Details`}
+        title={`Room ${displayRoom.number}`}
+        subtitle={displayRoom.type}
+        footer={footerButtons}
+      >
           <div className="space-y-3 text-xs">
             <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant space-y-1.5">
               <div className="flex justify-between">
@@ -78,12 +108,6 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
                   <span className="font-semibold text-on-surface">{displayRoom.bathroomDetails}</span>
                 </div>
               )}
-              {displayRoom.guestName && (
-                <div className="flex justify-between">
-                  <span className="text-on-surface-variant">Guest Name:</span>
-                  <span className="font-semibold text-on-surface">{displayRoom.guestName}</span>
-                </div>
-              )}
               {displayRoom.notes && (
                 <div className="flex justify-between">
                   <span className="text-on-surface-variant">Notes / Issue:</span>
@@ -96,9 +120,12 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
               </div>
             </div>
 
-            {(displayRoom.guestPhone || displayRoom.guestEmail || displayRoom.guestIdDocumentUrl) && (
+            {(displayRoom.guestName || displayRoom.guestPhone || displayRoom.guestEmail || displayRoom.guestIdDocumentUrl) && (
               <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant space-y-1.5">
                 <p className="text-xs font-medium text-on-surface-variant">Guest Profile</p>
+                {displayRoom.guestName && (
+                  <div className="flex items-center gap-1.5 text-sm font-semibold text-on-surface"><User className="w-3.5 h-3.5 text-on-surface-variant" /> {displayRoom.guestName}</div>
+                )}
                 {displayRoom.guestPhone && (
                   <div className="flex items-center gap-1.5 text-on-surface"><Phone className="w-3 h-3 text-on-surface-variant" /> {displayRoom.guestPhone}</div>
                 )}
@@ -151,39 +178,7 @@ export function RoomDetailModal({ propertyId, propertyName, currency, upiId, has
             </div>
           </div>
 
-          <div className="flex justify-between items-center pt-3 border-t border-outline-variant gap-2">
-            <button
-              onClick={() => setShowQr(true)}
-              className="h-9 px-3 rounded-lg border border-outline-variant text-on-surface-variant text-xs font-semibold hover:border-primary hover:text-primary flex items-center gap-1.5 whitespace-nowrap"
-            >
-              <QrCode className="w-3.5 h-3.5" /> Room QR
-            </button>
-            <div className="flex items-center gap-2">
-              {displayRoom.reservationId && (
-                <button
-                  onClick={() => setShowChat(true)}
-                  className="h-9 px-3 rounded-lg border border-outline-variant text-on-surface-variant text-xs font-semibold hover:border-primary hover:text-primary flex items-center gap-1.5 whitespace-nowrap"
-                  title="Message this guest (Folio Chat)"
-                >
-                  <MessageCircle className="w-3.5 h-3.5" /> Chat
-                </button>
-              )}
-              {(displayRoom.reservationId || displayRoom.status === 'occupied' || displayRoom.status === 'occupied_vip') && (
-                <button
-                  type="button"
-                  onClick={() => setShowFolio(true)}
-                  className="h-9 px-3 rounded-lg border border-primary text-primary text-xs font-semibold hover:bg-highlight flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
-                >
-                  <Receipt className="w-3.5 h-3.5" /> Folio &amp; Checkout
-                </button>
-              )}
-              <button onClick={onClose} className="px-4 py-2 bg-on-surface text-inverse-on-surface rounded-lg text-xs font-semibold whitespace-nowrap cursor-pointer">
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      </ModalShell>
 
       {showFolio && (displayRoom.reservationId || displayRoom.id) && (
         <RoomFolioModal

@@ -5,6 +5,7 @@ import { fetchGuestCrmDirectory } from '../lib/staffApi';
 import { formatCurrency } from '../lib/currency';
 import { RoomFolioModal } from './RoomFolioModal';
 import { Users, Search, Download, Filter, FileText, ExternalLink, RefreshCw, Star, Phone, Mail, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { DateRangePicker } from './DatePicker';
 
 interface GuestCrmViewProps {
   propertyId: string;
@@ -161,19 +162,19 @@ export function GuestCrmView({ propertyId, propertyName, currency, upiId, onRefr
               <option value="cancelled">Cancelled</option>
             </select>
 
-            <input
-              type="date"
-              value={startDate}
-              onChange={e => setStartDate(e.target.value)}
-              className="h-10 px-3 text-xs border border-outline-variant rounded-xl bg-surface-container-low font-medium"
+            <DateRangePicker
+              start={startDate}
+              end={endDate}
+              onChange={(a, b) => { setStartDate(a); setEndDate(b); }}
+              allowSameDay
+              compact
+              startLabel="From"
+              endLabel="To"
+              className="h-10 px-3 gap-2 text-xs border border-outline-variant rounded-xl bg-surface-container-low font-medium flex items-center"
             />
-            <span className="text-xs text-on-surface-variant">to</span>
-            <input
-              type="date"
-              value={endDate}
-              onChange={e => setEndDate(e.target.value)}
-              className="h-10 px-3 text-xs border border-outline-variant rounded-xl bg-surface-container-low font-medium"
-            />
+            {(startDate || endDate) && (
+              <button type="button" onClick={() => { setStartDate(''); setEndDate(''); }} className="text-xs font-semibold text-on-surface-variant hover:text-on-surface">Clear dates</button>
+            )}
 
             <button
               type="submit"

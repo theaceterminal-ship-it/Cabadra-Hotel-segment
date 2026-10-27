@@ -3,6 +3,7 @@ import { StaffExperienceBooking } from '../types';
 import { fetchStaffExperienceBookings, confirmExperienceBooking, cancelExperienceBooking } from '../lib/staffApi';
 import { formatCurrency } from '../lib/currency';
 import { Calendar, Clock, Users, CheckCircle2, XCircle, Sparkles, RefreshCw, MessageSquare } from 'lucide-react';
+import { DatePicker } from './DatePicker';
 
 interface ReservedExperiencesViewProps {
   propertyId: string;
@@ -345,15 +346,13 @@ export function ReservedExperiencesView({ propertyId, currency }: ReservedExperi
                 <label className="text-xs font-semibold text-on-surface block mb-1">
                   Select Scheduled Date *
                 </label>
-                <input
-                  type="date"
+                <DatePicker
                   value={scheduleDate}
-                  onChange={e => {
-                    setScheduleDate(e.target.value);
-                    updateFormattedTime(e.target.value, scheduleTimeSlot);
+                  onChange={d => {
+                    setScheduleDate(d);
+                    updateFormattedTime(d, scheduleTimeSlot);
                   }}
-                  className="w-full h-10 px-3 text-xs border border-outline-variant rounded-xl focus:border-primary focus:outline-none bg-surface-container-lowest font-medium"
-                  required
+                  className="w-full h-10 px-3 text-xs border border-outline-variant rounded-xl focus:border-primary focus:outline-none bg-surface-container-lowest font-medium flex items-center justify-between gap-2 text-left"
                 />
               </div>
 

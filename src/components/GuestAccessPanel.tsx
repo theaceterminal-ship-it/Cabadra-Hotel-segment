@@ -12,6 +12,7 @@ export function GuestAccessPanel({ reservationId, guestToken }: { reservationId:
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showLink, setShowLink] = useState(false);
 
   const load = useCallback(async () => {
     try { setInfo(await fetchStayAccess(reservationId)); } catch (e) { setError(e instanceof Error ? e.message : 'Could not load access.'); }
@@ -37,7 +38,7 @@ export function GuestAccessPanel({ reservationId, guestToken }: { reservationId:
         <p className="text-xs font-medium text-on-surface-variant flex items-center gap-1.5"><KeyRound className="size-3.5" /> Room service access</p>
 
         {info.accessMode === 'open' && (
-          <p className="flex items-start gap-2 text-xs text-warning"><AlertTriangle className="size-3.5 mt-0.5 shrink-0" /> This stay began before codes existed: anyone who scans this room’s QR can open it. Email the guest a code to close that.</p>
+          <p className="flex items-start gap-2 text-xs text-warning"><AlertTriangle className="size-3.5 mt-0.5 shrink-0" /> This stay began before codes existed: anyone who scans this room’s door QR can open it. Email the guest a code to close that.</p>
         )}
         {(info.accessMode === 'email' || info.accessMode === 'sms') && (
           <div className="text-xs text-on-surface space-y-0.5">
@@ -50,7 +51,7 @@ export function GuestAccessPanel({ reservationId, guestToken }: { reservationId:
           </div>
         )}
         {info.accessMode === 'link' && (
-          <p className="text-xs text-on-surface-variant">Stay link only: the room QR opens nothing until the guest has opened their personal link once.</p>
+          <p className="text-xs text-on-surface-variant">Stay link only: the door QR opens nothing until the guest has opened their personal stay link once.</p>
         )}
 
         {note && <p className="text-xs text-primary">{note}</p>}
@@ -69,7 +70,14 @@ export function GuestAccessPanel({ reservationId, guestToken }: { reservationId:
           )}
         </div>
       </div>
-      <GuestLinkCard guestToken={guestToken} />
+      {/* The personal link is only what a guest without a code needs; the door QR is separate (button below). */}
+      {info.accessMode === 'email' || info.accessMode === 'sms' ? (
+        showLink
+          ? <GuestLinkCard guestToken={guestToken} />
+          : <button type="button" onClick={() => setShowLink(true)} className="text-[11px] font-semibold text-primary hover:underline">Show this guest’s personal stay link</button>
+      ) : (
+        <GuestLinkCard guestToken={guestToken} />
+      )}
     </div>
   );
 }

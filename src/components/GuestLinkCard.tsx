@@ -4,6 +4,8 @@ import { Copy, Check } from 'lucide-react';
 
 interface GuestLinkCardProps {
   guestToken: string;
+  /** What this card is called; the personal link is not the door QR. */
+  title?: string;
 }
 
 /**
@@ -13,7 +15,7 @@ interface GuestLinkCardProps {
  * it. Rendered fully client-side (the `qrcode` package), no external image
  * service involved.
  */
-export function GuestLinkCard({ guestToken }: GuestLinkCardProps) {
+export function GuestLinkCard({ guestToken, title = 'Personal stay link' }: GuestLinkCardProps) {
   const url = `${window.location.origin}/guest/${guestToken}`;
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -39,9 +41,9 @@ export function GuestLinkCard({ guestToken }: GuestLinkCardProps) {
 
   return (
     <div className="bg-surface-container-low p-3 rounded-lg border border-outline-variant flex items-center gap-3">
-      {qrDataUrl && <img src={qrDataUrl} alt="Guest link QR code" className="w-16 h-16 rounded border border-outline-variant bg-surface-container-lowest shrink-0" />}
+      {qrDataUrl && <img src={qrDataUrl} alt="Stay link QR code" className="w-16 h-16 rounded border border-outline-variant bg-surface-container-lowest shrink-0" />}
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-on-surface-variant mb-1">Guest Link</p>
+        <p className="text-xs font-medium text-on-surface-variant mb-1">{title}</p>
         <p className="text-[11px] text-on-surface-variant truncate mb-1.5">{url}</p>
         <button
           onClick={handleCopy}

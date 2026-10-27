@@ -8,6 +8,7 @@ import { RoomFolioModal } from '../RoomFolioModal';
 import { BookingCalendar } from './BookingCalendar';
 import { BookingDrawer } from './BookingDrawer';
 import { STATUS_CHIP, STATUS_LABEL, addDays, fmtDay, todayIso } from './bookingUtils';
+import { DatePicker } from '../DatePicker';
 
 type ListFilter = 'arrivals' | 'in_house' | 'departures' | 'upcoming' | 'closed' | 'all';
 
@@ -113,7 +114,7 @@ export function BookingsView({ propertyId, propertyName, currency, upiId, rooms,
             <button onClick={() => setStart(s => addDays(s, -7))} aria-label="Previous week" className="size-9 rounded-full bg-surface-container-lowest border border-outline-variant flex items-center justify-center"><ChevronLeft className="size-4" /></button>
             <button onClick={() => setStart(addDays(today, -1))} className="h-9 px-4 rounded-full bg-surface-container-lowest border border-outline-variant text-sm font-medium">Today</button>
             <button onClick={() => setStart(s => addDays(s, 7))} aria-label="Next week" className="size-9 rounded-full bg-surface-container-lowest border border-outline-variant flex items-center justify-center"><ChevronRight className="size-4" /></button>
-            <input type="date" value={start} onChange={e => e.target.value && setStart(e.target.value)} className="h-9 px-3 rounded-full bg-surface-container-lowest border border-outline-variant text-sm" aria-label="Start date" />
+            <DatePicker value={start} onChange={d => d && setStart(d)} compact aria-label="Start date" className="h-9 px-3 gap-2 rounded-full bg-surface-container-lowest border border-outline-variant text-sm flex items-center" />
             <p className="text-sm text-on-surface-variant ml-1 hidden sm:block">{fmtDay(start, { day: 'numeric', month: 'long' })} – {fmtDay(addDays(start, CALENDAR_DAYS - 1), { day: 'numeric', month: 'long' })}</p>
           </div>
           {rooms.length === 0 ? (
