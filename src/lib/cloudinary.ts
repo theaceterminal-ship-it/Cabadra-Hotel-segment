@@ -11,6 +11,10 @@ const DEFAULT_UPLOAD_PRESET = 'cabadra_preset';
 const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || DEFAULT_CLOUD_NAME;
 const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || DEFAULT_UPLOAD_PRESET;
 
+/** Guest ID photos go to their own `ids` folder, so they can be found, locked down and purged apart from hotel and menu photos. If a dedicated preset (one that already files into `ids`) is set it is used as-is; otherwise the normal preset is used and the folder is asked for here. */
+const idPreset = import.meta.env.VITE_CLOUDINARY_ID_PRESET || '';
+export const ID_PHOTO_FOLDER = 'ids';
+
 export const isCloudinaryConfigured = Boolean(cloudName && uploadPreset);
 
 /** Photos only, and not huge. SVG is excluded on purpose: it can carry script. (Cloudinary's own upload preset should enforce the same; this is the first line, and the friendly error.) */
@@ -27,15 +31,19 @@ export function checkImageFile(file: File): string | null {
   return null;
 }
 
-export async function uploadImageToCloudinary(file: File): Promise<string> {
+export async function uploadImageToCloudinary(file: File, opts?: { idDocument?: boolean }): Promise<string> {
   const problem = checkImageFile(file);
   if (problem) throw new Error(problem);
   const activeCloud = cloudName || DEFAULT_CLOUD_NAME;
-  const activePreset = uploadPreset || DEFAULT_UPLOAD_PRESET;
+  const activePreset = opts?.idDocument && idPreset ? idPreset : uploadPreset || DEFAULT_UPLOAD_PRESET;
 
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', activePreset);
+  if (opts?.idDocument) {
+    if (!idPreset) formData.append('folder', ID_PHOTO_FOLDER);
+    formData.append('tags', 'id-document');
+  }
 
   const res = await fetch(`https://api.cloudinary.com/v1_1/${activeCloud}/image/upload`, {
     method: 'POST',

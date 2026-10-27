@@ -6,6 +6,8 @@ interface ImageUploadFieldProps {
   label: string;
   value: string;
   onChange: (url: string) => void;
+  /** A guest ID photo: filed in the separate `ids` folder and deleted 30 days after checkout. */
+  idDocument?: boolean;
 }
 
 /**
@@ -15,7 +17,7 @@ interface ImageUploadFieldProps {
  * are set, and just fills the same field with the URL Cloudinary hands
  * back — nothing downstream needs to know or care which path was used.
  */
-export function ImageUploadField({ label, value, onChange }: ImageUploadFieldProps) {
+export function ImageUploadField({ label, value, onChange, idDocument }: ImageUploadFieldProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +30,7 @@ export function ImageUploadField({ label, value, onChange }: ImageUploadFieldPro
     setUploading(true);
     setError(null);
     try {
-      const url = await uploadImageToCloudinary(file);
+      const url = await uploadImageToCloudinary(file, { idDocument });
       onChange(url);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed.');

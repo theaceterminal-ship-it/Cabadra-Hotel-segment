@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Property } from '../types';
 import { AddPropertyFlow } from './AddPropertyFlow';
 import { SETUP_FEE_INR, type Organization } from '../lib/setupPayment';
@@ -33,6 +33,17 @@ export const PropertiesPortfolio: React.FC<PropertiesPortfolioProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'maintenance'>('all');
   const [showAddModal, setShowAddModal] = useState(false);
+
+  // The Overview page's "Add property" button lands here with ?add=1 so the
+  // setup form opens straight away; the flag is dropped so a refresh or the
+  // back button doesn't reopen it.
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get('add') === '1') {
+      setShowAddModal(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const filteredProperties = properties.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

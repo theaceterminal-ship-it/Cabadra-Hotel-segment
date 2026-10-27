@@ -18,3 +18,5 @@ supabase/tests/security/attack.sh sec                                           
 Run it after any migration that touches policies, grants, guards or the guest functions. A `FAIL` means a door
 that should be shut is open (or a legitimate action broke). Run it before the hardening migration (0087) and a
 large share of the attacks succeed; that is the point of the suite.
+
+Section H checks the blocked-attempts log (0089): each refused action must leave a row in `security_events`, written over a separate connection so it survives the rollback.

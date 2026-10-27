@@ -312,7 +312,7 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
               <label className={labelCls}>Notes (optional)</label>
               <textarea value={notes} onChange={e => setNotes(e.target.value)} maxLength={1000} rows={2} placeholder="Late arrival, extra bed, anniversary…" className={`${inputCls} h-auto py-2`} />
             </div>
-            <ImageUploadField label="ID Document (optional)" value={idDocumentUrl} onChange={setIdDocumentUrl} />
+            <ImageUploadField label="ID Document (optional)" idDocument value={idDocumentUrl} onChange={setIdDocumentUrl} />
             <label className="flex items-center gap-2 text-xs font-semibold text-on-surface">
               <input type="checkbox" checked={vip} onChange={e => setVip(e.target.checked)} className="accent-primary" />
               VIP guest

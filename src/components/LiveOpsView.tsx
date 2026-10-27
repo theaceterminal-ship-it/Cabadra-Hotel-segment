@@ -95,8 +95,13 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
   }
 
   const todayStr = getLocalDateString(new Date());
+  const minutesBetween = (from: string, to: string) => {
+    const m = Math.max(0, Math.round((+new Date(to) - +new Date(from)) / 60000));
+    return m < 60 ? `${m} min` : `${Math.floor(m / 60)}h ${m % 60}m`;
+  };
+  const daysAgoStr = (n: number) => { const d = new Date(); d.setDate(d.getDate() - n); return getLocalDateString(d); };
 
-  const [dateFilterMode, setDateFilterMode] = useState<'today' | 'custom' | 'all'>('today');
+  const [dateFilterMode, setDateFilterMode] = useState<'today' | 'yesterday' | 'week' | 'custom' | 'all'>('today');
   const [startDate, setStartDate] = useState<string>(todayStr);
   const [endDate, setEndDate] = useState<string>(todayStr);
 
@@ -109,10 +114,17 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
     // 2. Date Filter
     if (dateFilterMode === 'all') return true;
 
+    if (!t.createdAt) return false;
     const taskDateStr = getLocalDateString(t.createdAt);
 
     if (dateFilterMode === 'today') {
       return taskDateStr === todayStr;
+    }
+    if (dateFilterMode === 'yesterday') {
+      return taskDateStr === daysAgoStr(1);
+    }
+    if (dateFilterMode === 'week') {
+      return taskDateStr >= daysAgoStr(6) && taskDateStr <= todayStr;
     }
 
     if (dateFilterMode === 'custom') {
@@ -148,7 +160,10 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
 
   const exportCsv = () => {
     const csv = Papa.unparse(visibleTasks.map(t => ({
-      Time: t.createdAt ? new Date(t.createdAt).toLocaleString('en-IN') : '',
+      Requested: t.createdAt ? new Date(t.createdAt).toLocaleString('en-IN') : '',
+      Started: t.startedAt ? new Date(t.startedAt).toLocaleString('en-IN') : '',
+      'Finished / rejected': t.completedAt ? new Date(t.completedAt).toLocaleString('en-IN') : '',
+      'Minutes to finish': t.status === 'completed' && t.createdAt && t.completedAt ? Math.max(0, Math.round((+new Date(t.completedAt) - +new Date(t.createdAt)) / 60000)) : '',
       Room: t.roomNumber,
       Task: t.title,
       Department: DEPT_LABELS[t.category],
@@ -291,6 +306,24 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
                 </button>
                 <button
                   type="button"
+                  onClick={() => setDateFilterMode('yesterday')}
+                  className={`px-2.5 py-1 rounded font-semibold transition-colors cursor-pointer ${
+                    dateFilterMode === 'yesterday' ? 'bg-surface-container-lowest text-primary shadow-xs' : 'text-on-surface-variant'
+                  }`}
+                >
+                  Yesterday
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDateFilterMode('week')}
+                  className={`px-2.5 py-1 rounded font-semibold transition-colors cursor-pointer ${
+                    dateFilterMode === 'week' ? 'bg-surface-container-lowest text-primary shadow-xs' : 'text-on-surface-variant'
+                  }`}
+                >
+                  Last 7 days
+                </button>
+                <button
+                  type="button"
                   onClick={() => setDateFilterMode('custom')}
                   className={`px-2.5 py-1 rounded font-semibold transition-colors cursor-pointer ${
                     dateFilterMode === 'custom' ? 'bg-surface-container-lowest text-primary shadow-xs' : 'text-on-surface-variant'
@@ -380,7 +413,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
               <table className="w-full text-sm min-w-[980px]">
                 <thead>
                   <tr className="text-left text-xs text-on-surface-variant border-b border-outline-variant bg-surface-container-low/60">
-                    <th className="px-3 py-2.5 font-medium w-20">Time</th>
+                    <th className="px-3 py-2.5 font-medium w-28">Requested</th>
                     <th className="px-3 py-2.5 font-medium w-24">Room</th>
                     <th className="px-3 py-2.5 font-medium">Task</th>
                     <th className="px-3 py-2.5 font-medium w-40">Department</th>
@@ -402,7 +435,13 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({
                       <tr key={task.id} id={`task-row-${task.id}`} className={`align-top transition-colors ${closed ? 'text-on-surface-variant' : 'hover:bg-surface-container-low/50'}`}>
                         <td className="px-3 py-2.5 whitespace-nowrap">
                           {task.createdAt ? new Date(task.createdAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) : '—'}
-                          {dateFilterMode !== 'today' && task.createdAt && <span className="block text-[11px] text-on-surface-variant">{new Date(task.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>}
+                          {task.createdAt && <span className="block text-[11px] text-on-surface-variant">{new Date(task.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>}
+                          {task.completedAt && task.createdAt && (
+                            <span className="block text-[11px] text-on-surface-variant" title={isRejected ? 'Rejected at' : 'Finished at'}>
+                              {isRejected ? 'Rejected' : 'Done'} {new Date(task.completedAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}
+                              {isDone && ` · ${minutesBetween(task.createdAt, task.completedAt)}`}
+                            </span>
+                          )}
                         </td>
                         <td className="px-3 py-2.5 whitespace-nowrap font-medium">{task.roomNumber}</td>
                         <td className="px-3 py-2.5">

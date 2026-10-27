@@ -107,7 +107,7 @@ export function CheckInModal({ propertyId, room, source = 'built_in', onClose, o
               <input type="number" min={1} value={partySize} onChange={e => setPartySize(e.target.value)} className={inputCls} />
             </div>
           </div>
-          <ImageUploadField label="ID Document (optional)" value={idDocumentUrl} onChange={setIdDocumentUrl} />
+          <ImageUploadField label="ID Document (optional)" idDocument value={idDocumentUrl} onChange={setIdDocumentUrl} />
           <label className="flex items-center gap-2 text-xs font-semibold text-on-surface">
             <input type="checkbox" checked={vip} onChange={e => setVip(e.target.checked)} className="accent-primary" />
             VIP guest
