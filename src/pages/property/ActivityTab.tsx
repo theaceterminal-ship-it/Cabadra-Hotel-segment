@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ChevronDown, Loader2, ShieldCheck } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
-import { Chip, ErrorNote, Panel, SectionHeader, btnSecondary } from './ui';
+import { Chip, ErrorNote, Panel, SectionHeader, btnPrimary, btnSecondary } from './ui';
+import { DatePicker, fromIso, todayLocalIso } from '../../components/DatePicker';
 
 interface AuditRow {
   id: number;
@@ -69,7 +70,7 @@ const COLUMN_LABEL: Record<string, string> = {
   welcome_note: 'welcome note', thanks_note: 'thank-you note', check_in_time: 'check-in time', check_out_time: 'check-out time',
   upi_id: 'UPI id', has_external_pms: 'uses another booking system', image: 'photo', location: 'location', legal_name: 'business name',
   billing_address: 'bill address', billing_phone: 'bill phone', billing_email: 'bill email', gstin: 'GSTIN', gst_enabled: 'GST', invoice_prefix: 'bill prefix',
-  access_mode: 'room service access',
+  access_mode: 'room service access', qr_code: 'door QR code',
 };
 const labelOf = (c: string) => COLUMN_LABEL[c] ?? c.replace(/_/g, ' ');
 
@@ -79,7 +80,7 @@ const fmt = (v: unknown): string => {
   if (v === null || v === undefined || v === '') return 'empty';
   if (typeof v === 'number') return v.toLocaleString('en-IN');
   if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) return new Date(v).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
-  if (typeof v === 'object') return JSON.stringify(v).slice(0, 80);
+  if (typeof v === 'object') return 'updated';
   return String(v).length > 60 ? `${String(v).slice(0, 60)}…` : String(v);
 };
 
@@ -105,56 +106,43 @@ function summarise(r: AuditRow): string {
   return `Changed ${noun}: ${parts.join(', ')}${keys.length > 3 ? ` and ${keys.length - 3} more` : ''}`;
 }
 
-const who = (r: AuditRow) => r.actor_email ?? (r.actor_kind === 'service' ? 'Cabadra system' : 'A guest or an automatic job');
+const who = (r: AuditRow) => r.actor_email ?? (r.actor_kind === 'service' ? 'Cabadra, automatically' : 'a guest or an automatic job');
+const timeOf = (iso: string) => new Date(iso).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
 
-/** What a row changed, in words: "price per night: 3,000 → 3,500". The raw record is one tap away. */
-function ChangeDetails({ row }: { row: AuditRow }) {
-  const [raw, setRaw] = useState(false);
-  const c = (row.changes ?? {}) as Record<string, unknown>;
-  const entries = Object.entries(c);
-  const isUpdate = row.action === 'UPDATE';
-  const shown = isUpdate ? entries : entries.filter(([, v]) => v !== null && v !== '' && typeof v !== 'object').slice(0, 8);
-  return (
-    <div className="space-y-1.5">
-      {shown.length > 0 && (
-        <ul className="rounded-xl bg-surface-container-lowest border border-outline-variant divide-y divide-outline-variant overflow-hidden">
-          {shown.map(([k, v]) => {
-            const ch = v as { old?: unknown; new?: unknown; changed?: boolean };
-            return (
-              <li key={k} className="px-3 py-2 flex flex-wrap items-baseline gap-x-2 text-xs">
-                <span className="font-medium text-on-surface capitalize">{labelOf(k)}</span>
-                <span className="text-on-surface-variant">
-                  {isUpdate
-                    ? (ch?.changed ? 'changed' : <>{fmt(ch?.old)} <span aria-hidden>→</span> <span className="text-on-surface font-medium">{fmt(ch?.new)}</span></>)
-                    : fmt(v)}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      <button type="button" onClick={() => setRaw(x => !x)} className="text-[11px] font-semibold text-on-surface-variant hover:text-on-surface">{raw ? 'Hide technical details' : 'Show technical details'}</button>
-      {raw && <pre className="whitespace-pre-wrap break-words rounded-xl bg-surface-container-lowest border border-outline-variant p-3 text-[11px] leading-relaxed text-on-surface max-h-64 overflow-auto">{JSON.stringify(row.changes, null, 2)}</pre>}
-    </div>
-  );
+/** The fields an entry changed, in plain words: "Price per night   3,000 → 3,500". Nothing technical is shown. */
+function changedFields(r: AuditRow): { label: string; before: string; after: string | null }[] {
+  if (r.action !== 'UPDATE' || !r.changes) return [];
+  return Object.entries(r.changes as Record<string, { old?: unknown; new?: unknown; changed?: boolean }>).map(([k, ch]) => ({
+    label: labelOf(k),
+    before: fmt(ch?.old),
+    after: ch?.changed ? null : fmt(ch?.new),
+  }));
 }
 
 const PAGE = 30;
 
+/** The start of a day (local time) and of the next one, as the timestamps the database compares. */
+function dayRange(iso: string): [string, string] {
+  const start = fromIso(iso);
+  const next = new Date(start);
+  next.setDate(next.getDate() + 1);
+  return [start.toISOString(), next.toISOString()];
+}
+
 /**
- * Who did what (audit_log, 0087): every change to bookings, orders, bill
- * lines, payments, room and menu prices, staff and settings, with the login
- * that made it and what it was before. It can't be edited or erased by
- * anyone, which is the point: a bill line or a price can't be changed
- * without leaving a record here. Only the owner sees this tab.
+ * Who did what: every change to stays, orders, bills, payments, prices, staff and
+ * settings, with who made it. It can't be edited or erased by anyone, so a bill line
+ * or a price can't change without leaving a line here. Only the owner sees this tab.
  *
- * Nothing is fetched until the owner asks (the button below), and then only
- * 30 rows at a time, so opening the tab costs no database reads.
+ * Nothing is loaded until the owner asks (Show activity), and then only the chosen
+ * day, 30 lines at a time, so opening the tab costs no database reads. Today is
+ * chosen to begin with.
  */
 export function ActivityTab({ propertyId }: { propertyId: string }) {
   const [rows, setRows] = useState<AuditRow[]>([]);
   const [events, setEvents] = useState<SecurityEventRow[]>([]);
   const [area, setArea] = useState('all');
+  const [day, setDay] = useState(todayLocalIso());
   const [loading, setLoading] = useState(true);
   const [more, setMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -163,39 +151,51 @@ export function ActivityTab({ propertyId }: { propertyId: string }) {
 
   const load = useCallback(async (before?: number) => {
     setLoading(true);
+    const [from, to] = dayRange(day);
     if (area === 'blocked') {
-      let eq = supabase.from('security_events').select('*').eq('property_id', propertyId).order('id', { ascending: false }).limit(PAGE + 1);
+      let eq = supabase.from('security_events').select('*').eq('property_id', propertyId).gte('at', from).lt('at', to).order('id', { ascending: false }).limit(PAGE + 1);
       if (before) eq = eq.lt('id', before);
       const { data, error: err } = await eq;
       setLoading(false);
-      if (err) { setError(err.message); return; }
+      if (err) { setError('Couldn’t load this just now. Please try again.'); return; }
       setError(null);
       const page = (data ?? []) as SecurityEventRow[];
       setMore(page.length > PAGE);
       setEvents(prev => (before ? [...prev, ...page.slice(0, PAGE)] : page.slice(0, PAGE)));
       return;
     }
-    let q = supabase.from('audit_log').select('*').eq('property_id', propertyId).order('id', { ascending: false }).limit(PAGE + 1);
+    let q = supabase.from('audit_log').select('*').eq('property_id', propertyId).gte('at', from).lt('at', to).order('id', { ascending: false }).limit(PAGE + 1);
     const tables = AREAS.find(a => a.id === area)?.tables ?? [];
     if (tables.length) q = q.in('table_name', tables);
     if (before) q = q.lt('id', before);
     const { data, error: err } = await q;
     setLoading(false);
-    if (err) { setError(err.message); return; }
+    if (err) { setError('Couldn’t load this just now. Please try again.'); return; }
     setError(null);
     const page = (data ?? []) as AuditRow[];
     setMore(page.length > PAGE);
     setRows(prev => (before ? [...prev, ...page.slice(0, PAGE)] : page.slice(0, PAGE)));
-  }, [propertyId, area]);
+  }, [propertyId, area, day]);
 
-  // Only once the owner has asked; after that, changing the filter reloads.
-  useEffect(() => { if (started) { setRows([]); setEvents([]); load(); } }, [load, started]);
+  // Only once the owner has asked; after that, picking another day or area reloads.
+  useEffect(() => { if (started) { setRows([]); setEvents([]); setOpen(null); load(); } }, [load, started]);
+
+  const dayLabel = day === todayLocalIso() ? 'today' : fromIso(day).toLocaleDateString('en-IN', { day: 'numeric', month: 'long' });
 
   return (
     <Panel>
       <SectionHeader
         title="Activity"
-        description="Every change to stays, orders, bills, payments, prices, staff and settings, and who made it. Nobody can edit or erase this list."
+        description="Who changed what, and when: stays, orders, bills, payments, prices, staff and settings. Nobody can edit or erase this list."
+        actions={
+          <DatePicker
+            value={day}
+            onChange={d => d && setDay(d)}
+            max={todayLocalIso()}
+            aria-label="Day"
+            className="h-10 px-4 gap-2 rounded-full bg-surface-container-low text-sm font-medium text-on-surface flex items-center"
+          />
+        }
       />
       <div className="flex flex-wrap gap-1.5 mb-4">
         {AREAS.map(a => (
@@ -208,71 +208,79 @@ export function ActivityTab({ propertyId }: { propertyId: string }) {
       {!started ? (
         <div className="py-10 text-center">
           <ShieldCheck className="size-7 mx-auto mb-2 text-on-surface-variant opacity-60" />
-          <p className="text-sm text-on-surface-variant mb-4">The latest 30 changes load when you ask, so this page stays light.</p>
-          <button onClick={() => setStarted(true)} className={btnSecondary}>Show activity</button>
+          <p className="text-sm text-on-surface-variant mb-4">Pick a day and press the button. Nothing is loaded until you ask.</p>
+          <button onClick={() => setStarted(true)} className={btnPrimary}>Show activity for {dayLabel}</button>
         </div>
       ) : area === 'blocked' ? (
         events.length === 0 && !loading && !error ? (
           <div className="py-10 text-center text-sm text-on-surface-variant">
             <ShieldCheck className="size-7 mx-auto mb-2 opacity-50" />
-            No blocked attempts recorded. If someone tries something they shouldn’t, it will show here with who it was.
+            Nothing was blocked {dayLabel}.
           </div>
         ) : (
-          <div className="rounded-[20px] border border-outline-variant divide-y divide-outline-variant overflow-hidden">
+          <ul className="rounded-[20px] border border-outline-variant divide-y divide-outline-variant overflow-hidden">
             {events.map(e => (
-              <div key={e.id} className="px-4 py-3">
-                <span className="block text-sm text-on-surface">{EVENT_TEXT[e.kind] ?? e.kind}</span>
-                <span className="block text-xs text-on-surface-variant mt-0.5">
-                  {new Date(e.at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', second: '2-digit' })} · {e.actor_email ?? 'Not signed in'}
-                  {e.ip ? ` · ${e.ip}` : ''}{e.target_table ? ` · ${e.target_table.replace(/_/g, ' ')}` : ''}
+              <li key={e.id} className="px-4 py-3 flex items-start gap-3">
+                <span className="w-16 shrink-0 text-xs font-medium text-on-surface-variant pt-0.5">{timeOf(e.at)}</span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm text-on-surface">{EVENT_TEXT[e.kind] ?? 'A request was blocked'}</span>
+                  <span className="block text-xs text-on-surface-variant mt-0.5">{e.actor_email ?? 'Someone who was not signed in'}{e.ip ? ` · from ${e.ip}` : ''}</span>
                 </span>
-                {e.detail && Object.keys(e.detail).length > 0 && (
-                  <span className="block text-[11px] font-mono text-on-surface-variant mt-1 break-words">{JSON.stringify(e.detail).slice(0, 200)}</span>
-                )}
-              </div>
+                <Chip tone="warn">Blocked</Chip>
+              </li>
             ))}
-          </div>
+          </ul>
         )
       ) : rows.length === 0 && !loading && !error ? (
         <div className="py-10 text-center text-sm text-on-surface-variant">
           <ShieldCheck className="size-7 mx-auto mb-2 opacity-50" />
-          Nothing recorded here yet. New changes will show up as they happen.
+          Nothing was recorded {dayLabel}.
         </div>
       ) : (
-        <div className="rounded-[20px] border border-outline-variant divide-y divide-outline-variant overflow-hidden">
-          {rows.map(r => (
-            <div key={r.id}>
-              <button onClick={() => setOpen(open === r.id ? null : r.id)} className="w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-surface-container-low transition-colors">
-                <span className="flex-1 min-w-0">
-                  <span className="block text-sm text-on-surface">{summarise(r)}</span>
-                  <span className="block text-xs text-on-surface-variant mt-0.5">
-                    {new Date(r.at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', second: '2-digit' })} · {who(r)}
+        <ul className="rounded-[20px] border border-outline-variant divide-y divide-outline-variant overflow-hidden">
+          {rows.map(r => {
+            const fields = changedFields(r);
+            const expandable = fields.length > 0;
+            const isOpen = open === r.id;
+            return (
+              <li key={r.id}>
+                <button
+                  type="button"
+                  disabled={!expandable}
+                  onClick={() => setOpen(isOpen ? null : r.id)}
+                  className={`w-full text-left px-4 py-3 flex items-start gap-3 transition-colors ${expandable ? 'hover:bg-surface-container-low cursor-pointer' : 'cursor-default'}`}
+                >
+                  <span className="w-16 shrink-0 text-xs font-medium text-on-surface-variant pt-0.5">{timeOf(r.at)}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm text-on-surface">{summarise(r)}</span>
+                    <span className="block text-xs text-on-surface-variant mt-0.5">by {who(r)}</span>
                   </span>
-                </span>
-                {r.actor_kind === 'user' ? <Chip>Staff</Chip> : r.actor_kind === 'service' ? <Chip tone="warn">System</Chip> : <Chip tone="neutral">Guest / auto</Chip>}
-                <ChevronDown className={`size-4 mt-1 text-on-surface-variant shrink-0 transition-transform ${open === r.id ? 'rotate-180' : ''}`} />
-              </button>
-              {open === r.id && (
-                <div className="px-4 pb-4 text-xs text-on-surface-variant space-y-2 bg-surface-container-low/60">
-                  <p>
-                    <span className="font-medium text-on-surface">{TABLE_NOUN[r.table_name] ?? r.table_name}</span> · {r.action.toLowerCase()}
-                    {r.row_id ? <> · <span className="font-mono">{r.row_id.slice(0, 13)}</span></> : null}
-                    {r.via ? <> · via <span className="font-mono">{r.via}</span></> : null}
-                    {r.ip ? <> · from <span className="font-mono">{r.ip}</span></> : null}
-                  </p>
-                  {r.changes && <ChangeDetails row={r} />}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+                  {r.actor_kind === 'user' ? <Chip>Staff</Chip> : r.actor_kind === 'service' ? <Chip tone="warn">Automatic</Chip> : <Chip tone="neutral">Guest</Chip>}
+                  {expandable && <ChevronDown className={`size-4 mt-1 text-on-surface-variant shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />}
+                </button>
+                {isOpen && (
+                  <ul className="mx-4 mb-3 ml-[5.75rem] rounded-xl bg-surface-container-low divide-y divide-outline-variant overflow-hidden text-xs">
+                    {fields.map(f => (
+                      <li key={f.label} className="px-3 py-2 flex flex-wrap items-baseline gap-x-2">
+                        <span className="font-medium text-on-surface">{f.label.charAt(0).toUpperCase() + f.label.slice(1)}</span>
+                        <span className="text-on-surface-variant">
+                          {f.after === null ? 'was changed' : <>{f.before} <span aria-hidden>→</span> <span className="font-medium text-on-surface">{f.after}</span></>}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       )}
       {started && (
         <div className="mt-4 flex justify-center gap-2">
           {loading ? <Loader2 className="size-5 animate-spin text-on-surface-variant" /> : (
             <>
               <button onClick={() => load()} className={btnSecondary}>Refresh</button>
-              {more && <button onClick={() => load(area === 'blocked' ? events[events.length - 1]?.id : rows[rows.length - 1]?.id)} className={btnSecondary}>Show older</button>}
+              {more && <button onClick={() => load(area === 'blocked' ? events[events.length - 1]?.id : rows[rows.length - 1]?.id)} className={btnSecondary}>Show earlier</button>}
             </>
           )}
         </div>
