@@ -194,23 +194,18 @@ function Hero() {
 
 /**
  * Outlined label with a pointed left edge and a line that fades out to the
- * right. Fixed width so the notch is the same size on every chip. The
- * frosted backing (clipped to the same notch) keeps the dark text readable
- * whether the chip lands on sky or on dark hillside.
+ * right. Fixed width so the notch is the same size on every chip. No backing:
+ * white text with a soft shadow reads on both the sky and the dark hillside.
  */
 function NotchedChip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="relative flex items-center h-12 w-[290px] pl-7 text-[15px] font-medium text-[#111]">
-      <span
-        aria-hidden="true"
-        className="absolute inset-0 backdrop-blur-md bg-[linear-gradient(90deg,rgba(255,255,255,0.72)_0%,rgba(255,255,255,0.55)_75%,rgba(255,255,255,0)_100%)] [clip-path:polygon(15px_0,100%_0,100%_100%,15px_100%,0_50%)]"
-      />
+    <span className="relative flex items-center h-12 w-[290px] pl-7 text-[15px] font-medium text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.65),0_0_14px_rgba(0,0,0,0.4)]">
       <svg className="absolute inset-0 h-full w-full" viewBox="0 0 290 48" fill="none" aria-hidden="true">
         <defs>
           <linearGradient id="chip-fade" x1="0" x2="290" y1="0" y2="0" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#111" stopOpacity="0.75" />
-            <stop offset="0.75" stopColor="#111" stopOpacity="0.35" />
-            <stop offset="1" stopColor="#111" stopOpacity="0" />
+            <stop offset="0" stopColor="#fff" stopOpacity="0.9" />
+            <stop offset="0.75" stopColor="#fff" stopOpacity="0.5" />
+            <stop offset="1" stopColor="#fff" stopOpacity="0" />
           </linearGradient>
         </defs>
         <path d="M290 0.75H15L1 24L15 47.25H290" stroke="url(#chip-fade)" strokeWidth="1.5" />
