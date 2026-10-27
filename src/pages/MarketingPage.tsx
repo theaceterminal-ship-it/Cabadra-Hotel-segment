@@ -115,13 +115,14 @@ function Hero() {
           </motion.div>
 
           <motion.div className="mt-14 sm:mt-20 pb-10 sm:pb-0 text-center" initial="hidden" animate="show" variants={stagger(0.12, 0.2)}>
-            <h1 className="mx-auto max-w-4xl text-[40px] leading-[1.02] sm:text-6xl lg:text-[76px] font-semibold tracking-[-0.035em]">
+            {/* "atithi devo bhava" (the guest is God): Latin letters in Amita, a calligraphic face with a Devanagari feel. */}
+            <h1 className="mx-auto max-w-4xl text-[46px] leading-[1.08] sm:text-7xl lg:text-[88px] font-bold tracking-[0.05em]" style={{ fontFamily: "'Amita', 'Geist', serif" }}>
               <motion.span variants={fadeUp} className="inline-block">
-                Keep Your PMS.
+                atithi devo
               </motion.span>{' '}
               <br className="hidden sm:block" />
-              <motion.span variants={fadeUp} className="inline-block">
-                Capture <span className="text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.25)]">Every Extra</span>
+              <motion.span variants={fadeUp} className="inline-block text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.25)]">
+                bhava
               </motion.span>
             </h1>
             <motion.p variants={fadeUp} className="mx-auto mt-5 max-w-2xl text-[15px] sm:text-lg text-[#1b1b1b]/80">
@@ -312,10 +313,10 @@ function SetupBar() {
       className="rounded-[28px] sm:rounded-full bg-white p-2.5 sm:p-3 shadow-[0_10px_40px_rgba(0,0,0,0.12)] flex flex-col sm:flex-row gap-2 sm:gap-3"
     >
       <BarField icon={Building2} label="Property name" className="sm:flex-[1.6]">
-        <input value={name} onChange={e => setName(e.target.value)} placeholder="Pine View Cottage" className={barInput} />
+        <input value={name} onChange={e => setName(e.target.value)} className={barInput} />
       </BarField>
       <BarField icon={MapPin} label="City" className="sm:flex-1">
-        <input value={city} onChange={e => setCity(e.target.value)} placeholder="Kufri, Shimla" list="himachal-places" className={barInput} />
+        <input value={city} onChange={e => setCity(e.target.value)} list="himachal-places" className={barInput} />
         {/* Suggestions only; any town can still be typed. The property form matches these back to its own list. */}
         <datalist id="himachal-places">
           {HIMACHAL_PLACE_VALUES.map(value => <option key={value} value={value} />)}
@@ -326,7 +327,6 @@ function SetupBar() {
           value={rooms}
           onChange={e => setRooms(e.target.value.replace(/\D/g, '').slice(0, 4))}
           inputMode="numeric"
-          placeholder="12"
           className={barInput}
         />
       </BarField>
