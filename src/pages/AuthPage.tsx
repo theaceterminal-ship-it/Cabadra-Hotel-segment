@@ -12,10 +12,11 @@ import { SignedInRedirect } from './LandingPage';
  * `/` uses.
  */
 export default function AuthPage({ mode }: { mode: 'sign_in' | 'sign_up' }) {
-  const { loading, session, assignments } = useAuth();
+  const { loading, session, assignments, assignmentsReady } = useAuth();
 
   if (!isSupabaseConfigured) return <SupabaseSetupNeeded />;
-  if (loading) return <div className="min-h-screen bg-[#eef0ec]" />;
+  // Signed in but this account's hotels aren't loaded yet: wait, or we'd send a receptionist to the wrong place.
+  if (loading || (session && !assignmentsReady)) return <div className="min-h-screen bg-[#eef0ec]" />;
   if (session) return <SignedInRedirect assignments={assignments} />;
 
   return <LoginPage key={mode} initialMode={mode} />;

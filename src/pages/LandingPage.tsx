@@ -19,7 +19,7 @@ import { isPartnerAccount } from '../lib/partnersApi';
  * /guest/:token.
  */
 export default function LandingPage() {
-  const { loading, session, assignments } = useAuth();
+  const { loading, session, assignments, assignmentsReady } = useAuth();
 
   // The website must render even when Supabase isn't reachable or
   // configured — nobody can be signed in then anyway.
@@ -28,7 +28,7 @@ export default function LandingPage() {
   // Session restore reads local storage, so this is a blink. Showing the
   // fog background instead of the website avoids a flash of marketing copy
   // for staff who are about to be redirected.
-  if (loading) return <div className="min-h-screen bg-[#eef0ec]" />;
+  if (loading || (session && !assignmentsReady)) return <div className="min-h-screen bg-[#eef0ec]" />;
 
   if (session) return <SignedInRedirect assignments={assignments} />;
 
