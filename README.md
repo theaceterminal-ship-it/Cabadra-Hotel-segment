@@ -84,7 +84,7 @@ Authentication > Sign In / Providers > Google in the Supabase dashboard, using a
 
 ### Optional: Cloudinary (photo uploads)
 
-Cloudinary dashboard > Settings > Upload > Add upload preset, Signing Mode **Unsigned**. Set `VITE_CLOUDINARY_CLOUD_NAME` and `VITE_CLOUDINARY_UPLOAD_PRESET` in `.env.local`. Without these, the photo fields still work as plain URL inputs — you just won't see the upload button.
+Cloudinary dashboard > Settings > Upload > Add upload preset, Signing Mode **Unsigned**. Set `VITE_CLOUDINARY_CLOUD_NAME` and `VITE_CLOUDINARY_UPLOAD_PRESET` in `.env.local`. Without these, the photo fields still work as plain URL inputs — you just won't see the upload button. Guest ID photos are filed in their own `ids` folder (the app asks for it; or set `VITE_CLOUDINARY_ID_PRESET` to a second unsigned preset whose folder is `ids`) and are deleted from Cloudinary 30 days after the guest's last checkout (see "ID photo deletion").
 
 ## Deploying (Vercel)
 

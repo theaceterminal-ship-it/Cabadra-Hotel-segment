@@ -141,7 +141,11 @@ export interface LiveOpsTask {
   price?: number;
   /** The guest_requests row this task answers, if any — completing the task resolves the request in the same write. See staff_complete_task (0045). */
   guestRequestId?: string;
+  /** When the request came in (tasks.created_at). */
   createdAt?: string;
+  /** When staff started it / finished or rejected it (0088); absent on tasks from before that. */
+  startedAt?: string;
+  completedAt?: string;
 }
 
 export interface UpcomingArrival {

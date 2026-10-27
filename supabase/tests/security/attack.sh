@@ -125,4 +125,30 @@ t "reception reads reservations"                       ok authenticated $RECEP "
 t "reception reads the chat inbox"                     ok authenticated $RECEP "select staff_chat_inbox('p1')"
 t "reception replies in chat"                          ok authenticated $RECEP "select staff_send_chat_message('p1','$RES','On our way')"
 
+echo; echo "### H. Refused attempts are written to security_events (and survive the rollback)"
+ev() { $PSQL -c "select count(*) from security_events where $1"; }
+chk() { # chk <label> <where-clause> <sql that gets refused>
+  local before after; before=$(ev "$2")
+  $PSQL -c "set role authenticated; set test.uid='$RECEP'; $3" >/dev/null 2>&1
+  after=$(ev "$2")
+  if [ "$after" -gt "$before" ]; then pass=$((pass+1)); printf 'PASS  %s\n' "$1"; else fail=$((fail+1)); printf 'FAIL  %s  [events %s -> %s]\n' "$1" "$before" "$after"; fi
+}
+chk "receptionist's room price edit is logged with who"      "kind='room_edit_blocked' and actor_email='reception@hill.test' and detail->'columns' ? 'price_per_night'" "update rooms set price_per_night=1 where id='r101'"
+chk "a bill line edit that reaches the guard is logged"     "kind='bill_line_tamper' and detail->>'attempt'='edit'" "reset role; update folio_charges set amount=1 where reservation_id='$RES'"
+chk "a bill line delete that reaches the guard is logged"   "kind='bill_line_tamper' and detail->>'attempt'='delete'" "reset role; delete from folio_charges where reservation_id='$RES'"
+chk "receptionist PATCHing bill lines over the API is logged" "kind='direct_write_blocked' and target_table='folio_charges' and actor_email='reception@hill.test' and property_id='p1'" "select set_config('request.method','PATCH',true), set_config('request.path','/folio_charges',true), api_pre_request()"
+chk "anon DELETEing reservations over the API is logged"    "kind='direct_write_blocked' and target_table='reservations' and actor_id is null" "reset role; set role anon; set test.uid=''; select set_config('request.method','DELETE',true), set_config('request.path','/reservations',true), api_pre_request()"
+t "reading and normal order PATCHes are not flagged"   ok authenticated $RECEP "select set_config('request.method','PATCH',true), set_config('request.path','/orders',true), api_pre_request()"
+chk "editing the audit log is logged"                        "kind='audit_log_tamper'" "reset role; update audit_log set property_id='p2'"
+$PSQL -c "set role authenticated; set test.uid='$OTHER'; select staff_update_arrival_eta('$RES', now())" >/dev/null 2>&1
+if [ "$(ev "kind='cross_property_attempt' and actor_email='reception@lake.test' and target_id='$RES'")" -ge 1 ]; then pass=$((pass+1)); echo "PASS  other hotel's staff poking this stay's ETA is logged"; else fail=$((fail+1)); echo "FAIL  other hotel's staff poking this stay's ETA is logged"; fi
+t "nobody can add a fake event through the API"        error authenticated $RECEP "insert into security_events (kind) values ('fake')"
+t "nobody can call the logger directly"                error authenticated $RECEP "select security_log('fake', null, null, null)"
+t "anon can't read the events"                         error anon - "select count(*) from security_events"
+t "a receptionist can't read the events"               0 authenticated $RECEP "select count(*) from security_events"
+t "another hotel's owner sees none of this hotel's"    0 authenticated $OTHER "select count(*) from security_events where property_id='p1'"
+t "the owner reads their hotel's events"               ok authenticated $OWNER "select count(*) from security_events where property_id='p1'"
+t "events can't be edited"                             error postgres - "update security_events set kind='x'"
+t "events can't be deleted"                            error postgres - "delete from security_events"
+
 echo; echo "pass=$pass fail=$fail"

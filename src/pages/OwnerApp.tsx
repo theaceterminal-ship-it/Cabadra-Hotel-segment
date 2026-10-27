@@ -164,6 +164,7 @@ export default function OwnerApp() {
               <OwnerOverview
                 properties={properties}
                 onNavigate={handleLegacyNavigate}
+                onAddProperty={() => navigate('/owner/properties?add=1')}
                 onSelectProperty={setSelectedPropertyId}
               />
             }

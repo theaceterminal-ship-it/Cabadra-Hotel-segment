@@ -27,6 +27,7 @@ import {
   AlertTriangle,
   ChevronDown,
   Building,
+  Plus,
   FileText,
   CheckCircle2,
   Download,
@@ -36,12 +37,15 @@ import {
 interface OwnerOverviewProps {
   properties: Property[];
   onNavigate: (view: AppView) => void;
+  /** Opens the add-a-property setup (with its one-time setup fee) */
+  onAddProperty?: () => void;
   onSelectProperty?: (propertyId: string) => void;
 }
 
 export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
   properties,
   onNavigate,
+  onAddProperty,
   onSelectProperty,
 }) => {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('7d');
@@ -194,6 +198,17 @@ export const OwnerOverview: React.FC<OwnerOverviewProps> = ({
             <Building className="w-4 h-4" />
             <span>Manage Properties</span>
           </button>
+
+          {onAddProperty && (
+            <button
+              id="btn-overview-add-property"
+              onClick={onAddProperty}
+              className="h-11 px-4 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface text-xs font-semibold hover:bg-surface-container-low transition-colors flex items-center gap-2 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add property</span>
+            </button>
+          )}
         </div>
       </div>
 

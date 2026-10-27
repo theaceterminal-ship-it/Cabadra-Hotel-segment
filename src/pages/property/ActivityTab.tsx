@@ -17,8 +17,33 @@ interface AuditRow {
   changes: Record<string, unknown> | null;
 }
 
+interface SecurityEventRow {
+  id: number;
+  at: string;
+  kind: string;
+  actor_email: string | null;
+  actor_kind: string;
+  via: string | null;
+  ip: string | null;
+  target_table: string | null;
+  detail: Record<string, unknown> | null;
+}
+
+const EVENT_TEXT: Record<string, string> = {
+  bill_line_tamper: 'Tried to change or remove a posted bill line',
+  payment_tamper: 'Tried to change or remove a recorded payment',
+  room_edit_blocked: 'Tried to change a room’s details or price without being the owner',
+  cross_property_attempt: 'Tried to reach another hotel’s data',
+  guest_flood: 'A guest link sent far too many requests, and was stopped',
+  room_qr_guessing: 'Someone kept trying room codes that don’t exist',
+  room_qr_rate_limited: 'A room’s code was looked up too many times in a minute',
+  audit_log_tamper: 'Tried to edit or erase the activity log',
+  direct_write_blocked: 'Tried to write straight to protected records',
+};
+
 const AREAS: { id: string; label: string; tables: string[] }[] = [
   { id: 'all', label: 'Everything', tables: [] },
+  { id: 'blocked', label: 'Blocked attempts', tables: [] },
   { id: 'money', label: 'Money', tables: ['folio_charges', 'folio_payments', 'invoices', 'day_closes'] },
   { id: 'stays', label: 'Stays & orders', tables: ['reservations', 'guests', 'orders', 'experience_bookings'] },
   { id: 'setup', label: 'Rooms & menu', tables: ['rooms', 'menu_items', 'experiences', 'service_categories', 'transport_routes'] },
@@ -89,6 +114,7 @@ const PAGE = 30;
  */
 export function ActivityTab({ propertyId }: { propertyId: string }) {
   const [rows, setRows] = useState<AuditRow[]>([]);
+  const [events, setEvents] = useState<SecurityEventRow[]>([]);
   const [area, setArea] = useState('all');
   const [loading, setLoading] = useState(true);
   const [more, setMore] = useState(false);
@@ -98,6 +124,18 @@ export function ActivityTab({ propertyId }: { propertyId: string }) {
 
   const load = useCallback(async (before?: number) => {
     setLoading(true);
+    if (area === 'blocked') {
+      let eq = supabase.from('security_events').select('*').eq('property_id', propertyId).order('id', { ascending: false }).limit(PAGE + 1);
+      if (before) eq = eq.lt('id', before);
+      const { data, error: err } = await eq;
+      setLoading(false);
+      if (err) { setError(err.message); return; }
+      setError(null);
+      const page = (data ?? []) as SecurityEventRow[];
+      setMore(page.length > PAGE);
+      setEvents(prev => (before ? [...prev, ...page.slice(0, PAGE)] : page.slice(0, PAGE)));
+      return;
+    }
     let q = supabase.from('audit_log').select('*').eq('property_id', propertyId).order('id', { ascending: false }).limit(PAGE + 1);
     const tables = AREAS.find(a => a.id === area)?.tables ?? [];
     if (tables.length) q = q.in('table_name', tables);
@@ -112,7 +150,7 @@ export function ActivityTab({ propertyId }: { propertyId: string }) {
   }, [propertyId, area]);
 
   // Only once the owner has asked; after that, changing the filter reloads.
-  useEffect(() => { if (started) { setRows([]); load(); } }, [load, started]);
+  useEffect(() => { if (started) { setRows([]); setEvents([]); load(); } }, [load, started]);
 
   return (
     <Panel>
@@ -134,6 +172,28 @@ export function ActivityTab({ propertyId }: { propertyId: string }) {
           <p className="text-sm text-on-surface-variant mb-4">The latest 30 changes load when you ask, so this page stays light.</p>
           <button onClick={() => setStarted(true)} className={btnSecondary}>Show activity</button>
         </div>
+      ) : area === 'blocked' ? (
+        events.length === 0 && !loading && !error ? (
+          <div className="py-10 text-center text-sm text-on-surface-variant">
+            <ShieldCheck className="size-7 mx-auto mb-2 opacity-50" />
+            No blocked attempts recorded. If someone tries something they shouldn’t, it will show here with who it was.
+          </div>
+        ) : (
+          <div className="rounded-[20px] border border-outline-variant divide-y divide-outline-variant overflow-hidden">
+            {events.map(e => (
+              <div key={e.id} className="px-4 py-3">
+                <span className="block text-sm text-on-surface">{EVENT_TEXT[e.kind] ?? e.kind}</span>
+                <span className="block text-xs text-on-surface-variant mt-0.5">
+                  {new Date(e.at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', second: '2-digit' })} · {e.actor_email ?? 'Not signed in'}
+                  {e.ip ? ` · ${e.ip}` : ''}{e.target_table ? ` · ${e.target_table.replace(/_/g, ' ')}` : ''}
+                </span>
+                {e.detail && Object.keys(e.detail).length > 0 && (
+                  <span className="block text-[11px] font-mono text-on-surface-variant mt-1 break-words">{JSON.stringify(e.detail).slice(0, 200)}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )
       ) : rows.length === 0 && !loading && !error ? (
         <div className="py-10 text-center text-sm text-on-surface-variant">
           <ShieldCheck className="size-7 mx-auto mb-2 opacity-50" />
@@ -175,7 +235,7 @@ export function ActivityTab({ propertyId }: { propertyId: string }) {
           {loading ? <Loader2 className="size-5 animate-spin text-on-surface-variant" /> : (
             <>
               <button onClick={() => load()} className={btnSecondary}>Refresh</button>
-              {more && <button onClick={() => load(rows[rows.length - 1]?.id)} className={btnSecondary}>Show older</button>}
+              {more && <button onClick={() => load(area === 'blocked' ? events[events.length - 1]?.id : rows[rows.length - 1]?.id)} className={btnSecondary}>Show older</button>}
             </>
           )}
         </div>
