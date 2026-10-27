@@ -12,6 +12,7 @@ import OwnerApp from './pages/OwnerApp';
 import ReceptionApp from './pages/ReceptionApp';
 import GuestApp from './pages/GuestApp';
 import RoomRedirect from './pages/RoomRedirect';
+import ArrivalPreorderPage from './pages/ArrivalPreorderPage';
 import TaskScanPage from './pages/TaskScanPage';
 import AccessLinkPage from './pages/AccessLinkPage';
 import DepartmentDisplayPage from './pages/DepartmentDisplayPage';
@@ -51,6 +52,7 @@ export default function App() {
       <Route path="/owner/*" element={<OwnerApp />} />
       <Route path="/reception/*" element={<ReceptionApp />} />
       <Route path="/guest/room/:roomId" element={<RoomRedirect />} />
+      <Route path="/pre/:token" element={<ArrivalPreorderPage />} />
       <Route path="/guest/:token" element={<GuestApp />} />
       <Route path="/guest" element={<GuestApp />} />
       <Route path="/task/:token" element={<TaskScanPage />} />

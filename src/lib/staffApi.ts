@@ -557,6 +557,15 @@ export async function fetchArrivals(propertyId: string): Promise<UpcomingArrival
     .order('check_in', { ascending: true });
   if (error) throw error;
 
+  // What each arriving guest asked to have ready (0093). Best effort: the list works without it.
+  const preorders = new Map<string, { item: string; quantity: number; inKitchen: boolean }[]>();
+  const { data: pre } = await supabase.rpc('staff_arrival_preorders', { p_property_id: propertyId });
+  for (const p of (pre ?? []) as { reservation_id: string; item_name: string; quantity: number; status: string }[]) {
+    const list = preorders.get(p.reservation_id) ?? [];
+    list.push({ item: p.item_name, quantity: p.quantity, inKitchen: p.status === 'in_kitchen' });
+    preorders.set(p.reservation_id, list);
+  }
+
   return (data ?? []).map(r => {
     const guest = r.guests as unknown as { name: string; vip: boolean } | null;
     const room = r.rooms as unknown as { id: string; number: string; type: string } | null;
@@ -575,6 +584,7 @@ export async function fetchArrivals(propertyId: string): Promise<UpcomingArrival
       assignedRoom: room?.number,
       isDelayed: new Date(effectiveEta).getTime() < Date.now(),
       checkedIn: false,
+      preorders: preorders.get(r.id),
     };
   });
 }
@@ -1388,6 +1398,8 @@ export async function saveBillingSettings(propertyId: string, settings: BillingS
 
 export interface GuestEmailSettings {
   enabled: boolean;
+  /** Offer guests something ready on arrival (0093); off until the owner turns it on. */
+  preArrival: boolean;
   mapsUrl: string;
   checkInTime: string;
   checkOutTime: string;
@@ -1403,12 +1415,13 @@ export interface GuestEmailSettings {
 export async function fetchGuestEmailSettings(propertyId: string): Promise<GuestEmailSettings> {
   const { data, error } = await supabase
     .from('properties')
-    .select('guest_emails_enabled, maps_url, check_in_time, check_out_time, welcome_note, thanks_note, google_review_url, billing_address, billing_phone, billing_email, location')
+    .select('guest_emails_enabled, pre_arrival_enabled, maps_url, check_in_time, check_out_time, welcome_note, thanks_note, google_review_url, billing_address, billing_phone, billing_email, location')
     .eq('id', propertyId)
     .single();
   if (error) throw error;
   return {
     enabled: data.guest_emails_enabled ?? true,
+    preArrival: data.pre_arrival_enabled ?? false,
     mapsUrl: data.maps_url ?? '',
     checkInTime: data.check_in_time ?? '',
     checkOutTime: data.check_out_time ?? '',
@@ -1424,7 +1437,7 @@ export async function fetchGuestEmailSettings(propertyId: string): Promise<Guest
 export async function saveGuestEmailSettings(propertyId: string, s: GuestEmailSettings): Promise<void> {
   const { error } = await supabase.rpc('owner_update_guest_email_settings', {
     p_property_id: propertyId,
-    p_settings: { enabled: s.enabled, mapsUrl: s.mapsUrl, checkInTime: s.checkInTime, checkOutTime: s.checkOutTime, welcomeNote: s.welcomeNote, thanksNote: s.thanksNote, googleReviewUrl: s.googleReviewUrl },
+    p_settings: { enabled: s.enabled, preArrival: s.preArrival, mapsUrl: s.mapsUrl, checkInTime: s.checkInTime, checkOutTime: s.checkOutTime, welcomeNote: s.welcomeNote, thanksNote: s.thanksNote, googleReviewUrl: s.googleReviewUrl },
   });
   if (error) throw new Error(error.message);
 }
@@ -1450,7 +1463,7 @@ export async function fetchEmailDomain(propertyId: string): Promise<EmailDomain 
 export async function guestEmailAction(
   action: 'test' | 'domain_start' | 'domain_verify' | 'domain_local' | 'domain_remove',
   propertyId: string,
-  extra: { kind?: 'booking_confirmation' | 'checkout_thanks'; domain?: string; localPart?: string } = {},
+  extra: { kind?: 'booking_confirmation' | 'pre_arrival' | 'checkout_thanks'; domain?: string; localPart?: string } = {},
 ): Promise<{ ok: boolean; message?: string; sentTo?: string; via?: string; status?: string }> {
   const { data, error } = await supabase.functions.invoke('property-guest-email', { body: { action, propertyId, ...extra } });
   if (error) return { ok: false, message: 'Could not reach the server. Please try again.' };
@@ -1458,7 +1471,7 @@ export async function guestEmailAction(
   return { ok: d?.success === true, message: d?.message, sentTo: d?.sentTo, via: d?.via, status: d?.status };
 }
 
-export interface GuestEmailLogRow { id: number; kind: 'booking_confirmation' | 'checkout_thanks'; status: 'pending' | 'sending' | 'sent' | 'failed' | 'skipped'; guestName: string; dueAt: string; sentAt?: string; sentVia?: string; error?: string }
+export interface GuestEmailLogRow { id: number; kind: 'booking_confirmation' | 'pre_arrival' | 'checkout_thanks'; status: 'pending' | 'sending' | 'sent' | 'failed' | 'skipped'; guestName: string; dueAt: string; sentAt?: string; sentVia?: string; error?: string }
 
 export async function fetchGuestEmailLog(propertyId: string): Promise<GuestEmailLogRow[]> {
   const { data, error } = await supabase.rpc('owner_guest_email_log', { p_property_id: propertyId });

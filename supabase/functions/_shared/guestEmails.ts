@@ -9,14 +9,14 @@
 
 import { fromHeader } from './stayCodeEmail.ts';
 
-export type GuestEmailKind = 'booking_confirmation' | 'checkout_thanks';
+export type GuestEmailKind = 'booking_confirmation' | 'pre_arrival' | 'checkout_thanks';
 
 export interface GuestEmailContext {
-  reservation: { id: string; status: string; source: string; booking_ref?: string | null; check_in: string; check_out: string; party_size?: number | null; rate_per_night?: number | null };
+  reservation: { id: string; status: string; source: string; booking_ref?: string | null; check_in: string; check_out: string; updated_eta?: string | null; party_size?: number | null; rate_per_night?: number | null };
   guest: { name?: string | null; email?: string | null };
   room: { number: string; type?: string | null };
   property: {
-    id: string; name: string; location?: string | null; image?: string | null; currency?: string | null; enabled: boolean;
+    id: string; name: string; location?: string | null; image?: string | null; currency?: string | null; enabled: boolean; pre_arrival_enabled?: boolean;
     address?: string | null; phone?: string | null; reply_to?: string | null; maps_url?: string | null;
     check_in_time?: string | null; check_out_time?: string | null; welcome_note?: string | null; thanks_note?: string | null; google_review_url?: string | null;
   };
@@ -188,7 +188,76 @@ export function renderCheckoutThanks(ctx: GuestEmailContext): RenderedEmail {
   };
 }
 
-export function renderGuestEmail(kind: GuestEmailKind, ctx: GuestEmailContext): RenderedEmail {
+
+// ---- the day before: something ready on arrival ----------------------------------------------
+export interface ArrivalOffer { url: string; name: string; price: number; image?: string | null }
+
+/** A photo sized for an email: Cloudinary pictures are cropped to 520x300 JPEG; any other https picture is used as it is. */
+function emailPhoto(u?: string | null): string | null {
+  const url = httpsOnly(u);
+  if (!url) return null;
+  return /^https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/(?![^/]*[,_])/.test(url)
+    ? url.replace('/image/upload/', '/image/upload/c_fill,w_520,h_300,q_auto,f_jpg/')
+    : url;
+}
+
+function periodWords(eta: string): { greeting: string; ask: string } {
+  const h = Number(new Date(eta).toLocaleTimeString('en-GB', { hour: '2-digit', hour12: false, timeZone: TZ }).slice(0, 2));
+  if (h < 11) return { greeting: 'a warm breakfast', ask: 'Fancy something for breakfast when you walk in?' };
+  if (h < 15) return { greeting: 'lunch', ask: 'Arriving around lunchtime? We can have it waiting.' };
+  if (h < 19) return { greeting: 'a hot cup or a bowl of something warm', ask: 'Arriving in the afternoon? Something warm can be waiting for you.' };
+  return { greeting: 'dinner', ask: 'Arriving in the evening? We can have dinner ready.' };
+}
+
+export function renderPreArrival(ctx: GuestEmailContext, offers: ArrivalOffer[]): RenderedEmail {
+  const { reservation: r, guest, property: p } = ctx;
+  const name = firstName(guest.name);
+  const eta = r.updated_eta ?? r.check_in;
+  const etaTime = new Date(eta).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: TZ }).toUpperCase();
+  const { ask } = periodWords(eta);
+  const address = p.address || p.location || '';
+  const tel = phoneDigits(p.phone);
+  const safeOffers = offers.filter(o => httpsOnly(o.url));
+  const offerButtons = safeOffers.map(o => {
+    const photo = emailPhoto(o.image);
+    return `<a href="${esc(o.url)}" style="display:block;margin:0 0 12px;border-radius:18px;overflow:hidden;background:#fff;border:1px solid #e3e6df;text-decoration:none;color:#111">
+          ${photo ? `<img src="${esc(photo)}" alt="${esc(o.name)}" width="520" style="display:block;width:100%;height:auto;max-height:170px;object-fit:cover">` : ''}
+          <table role="presentation" style="border-collapse:collapse;width:100%"><tr>
+            <td style="padding:12px 14px;font-size:15px;font-weight:600;line-height:1.35">${esc(o.name)}<br><span style="font-weight:400;font-size:13px;color:#666">${esc(money(o.price, p.currency))}</span></td>
+            <td style="padding:12px 14px;text-align:right;white-space:nowrap"><span style="display:inline-block;background:#111;color:#fff;border-radius:999px;padding:9px 16px;font-size:13px;font-weight:600">Have it ready</span></td>
+          </tr></table></a>`;
+  }).join('');
+
+  const inner = `
+      <p style="margin:0 0 6px;font-size:15px">${name ? `Hi ${esc(name)},` : 'Hello,'}</p>
+      <h1 style="margin:0 0 6px;font-size:24px;line-height:1.25;letter-spacing:-0.02em">See you ${esc(fmtShortDay(eta) === fmtShortDay(new Date().toISOString()) ? 'today' : fmtShortDay(eta))}</h1>
+      <p style="margin:0 0 20px;font-size:15px;line-height:1.55;color:#444">We are getting ready for you at ${esc(p.name)}. You are expected around <strong>${esc(etaTime)}</strong>${p.check_in_time ? `, and check-in is from ${esc(fmtTime(p.check_in_time) ?? '')}` : ''}.</p>
+      <div style="margin:0 0 4px">${button(mapsLink(p), 'Get directions')}${tel ? button(`tel:${tel}`, 'Call the hotel', false) : ''}</div>
+      ${address ? `<p style="margin:0 0 22px;font-size:13px;line-height:1.5;color:#666">${esc(address)}</p>` : ''}
+      <div style="background:#f6f7f3;border-radius:20px;padding:20px 20px 12px;margin:0 0 18px">
+        <p style="margin:0 0 4px;font-size:16px;font-weight:600">${esc(ask)}</p>
+        <p style="margin:0 0 14px;font-size:13px;line-height:1.5;color:#666">Tap one and the kitchen has it ready around the time you arrive. You pay at the hotel, and there is nothing else to do.</p>
+        ${offerButtons}
+        <p style="margin:6px 0 8px;font-size:12px;color:#888">Not hungry? Ignore this. Nothing happens unless you tap.</p>
+      </div>
+      <p style="margin:0;font-size:13px;line-height:1.55;color:#666">Running late or early? Reply to this email${tel ? ' or call us' : ''}.</p>`;
+
+  const text = [
+    name ? `Hi ${name},` : 'Hello,', '', `See you soon at ${p.name}. You are expected around ${etaTime}.`, '',
+    ask, 'Tap one and the kitchen has it ready around the time you arrive. You pay at the hotel.', '',
+    ...safeOffers.map(o => `${o.name} (${money(o.price, p.currency)}): ${o.url}`), '',
+    `Directions: ${mapsLink(p)}`, tel ? `Call: ${p.phone}` : '', '', 'Not hungry? Ignore this. Nothing happens unless you tap.',
+  ].filter((l, i, a) => !(l === '' && a[i - 1] === '')).join('\n');
+
+  return {
+    subject: `See you ${fmtShortDay(eta)} at ${p.name}: something ready when you arrive?`.replace(/[\r\n]/g, ' '),
+    html: shell(p, inner, `Sent by ${esc(p.name)} through Cabadra, because a booking was made with this email address.`),
+    text,
+  };
+}
+
+export function renderGuestEmail(kind: GuestEmailKind, ctx: GuestEmailContext, offers: ArrivalOffer[] = []): RenderedEmail {
+  if (kind === 'pre_arrival') return renderPreArrival(ctx, offers);
   return kind === 'booking_confirmation' ? renderBookingConfirmation(ctx) : renderCheckoutThanks(ctx);
 }
 

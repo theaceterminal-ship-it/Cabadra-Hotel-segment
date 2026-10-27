@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
 
   // ---- a sample email to the owner ---------------------------------------------------
   if (body.action === 'test') {
-    const kind: GuestEmailKind = body.kind === 'checkout_thanks' ? 'checkout_thanks' : 'booking_confirmation';
+    const kind: GuestEmailKind = body.kind === 'checkout_thanks' ? 'checkout_thanks' : body.kind === 'pre_arrival' ? 'pre_arrival' : 'booking_confirmation';
     const to = userData.user.email;
     const resendFrom = Deno.env.get('RESEND_FROM');
     if (!to || !resendFrom) return json({ success: false, message: 'No email address to send the sample to.' });
@@ -77,7 +77,9 @@ Deno.serve(async (req) => {
       property: { id: p.id, name: p.name, location: p.location, image: p.image, currency: p.currency, enabled: true, address: p.billing_address ?? p.location, phone: p.billing_phone, reply_to: p.billing_email, maps_url: p.maps_url, check_in_time: p.check_in_time, check_out_time: p.check_out_time, welcome_note: p.welcome_note, thanks_note: p.thanks_note, google_review_url: p.google_review_url },
       domain: d ?? null,
     };
-    const email = renderGuestEmail(kind, ctx);
+    const site = (Deno.env.get('SITE_URL') ?? 'https://hotel.churmuri.com').replace(/\/+$/, '');
+    // Sample buttons go to the site's front page, not to a real pre-order.
+    const email = renderGuestEmail(kind, ctx, [{ url: site, name: 'Hot tomato soup', price: 180 }, { url: site, name: 'Masala chai', price: 60 }, { url: site, name: 'Veg momos', price: 150 }]);
     email.subject = `[Sample] ${email.subject}`;
     let lastError = '';
     for (const s of pickSenders(ctx, resendFrom)) {

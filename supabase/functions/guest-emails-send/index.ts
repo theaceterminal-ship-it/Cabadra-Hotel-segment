@@ -1,7 +1,7 @@
 // Edge Function: guest-emails-send
 //
-// Sends the guest emails queued on guest_email_outbox (0092): booking confirmations and
-// post-checkout thank-yous. Called every minute by pg_cron (only when something is due),
+// Sends the guest emails queued on guest_email_outbox (0092, 0093): booking confirmations, the
+// day-before offer of something ready on arrival, and post-checkout thank-yous. Called every minute by pg_cron (only when something is due),
 // not by the app: deployed with --no-verify-jwt and it requires the x-cron-secret header
 // to match CRON_SECRET (the same value as the Vault secret id_document_purge_cron_secret).
 //
@@ -10,10 +10,12 @@
 // if that send fails, the same email goes out as "Hotel via Cabadra".
 //
 // Deploy: supabase functions deploy guest-emails-send --no-verify-jwt
-// Secrets: CRON_SECRET, RESEND_API_KEY, RESEND_FROM
+// Secrets: CRON_SECRET, RESEND_API_KEY, RESEND_FROM; optional SITE_URL (default https://hotel.churmuri.com)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
-import { type GuestEmailContext, type GuestEmailKind, pickSenders, renderGuestEmail, sendWithResend } from '../_shared/guestEmails.ts';
+import { type ArrivalOffer, type GuestEmailContext, type GuestEmailKind, pickSenders, renderGuestEmail, sendWithResend } from '../_shared/guestEmails.ts';
+
+const siteUrl = () => (Deno.env.get('SITE_URL') ?? 'https://hotel.churmuri.com').replace(/\/+$/, '');
 
 const BATCH = 20;
 const MAX_ATTEMPTS = 3;
@@ -61,7 +63,16 @@ Deno.serve(async (req) => {
       if (row.kind === 'booking_confirmation' && c.reservation.status !== 'upcoming') { await done(row.id, 'skipped', 'the stay is no longer upcoming'); tally.skipped++; continue; }
       if (row.kind === 'checkout_thanks' && c.reservation.status !== 'checked_out') { await done(row.id, 'skipped', 'the stay is not checked out'); tally.skipped++; continue; }
 
-      const email = renderGuestEmail(row.kind, c);
+      let offers: ArrivalOffer[] = [];
+      if (row.kind === 'pre_arrival') {
+        if (!c.property.pre_arrival_enabled) { await done(row.id, 'skipped', 'pre-arrival offers are switched off for this hotel'); tally.skipped++; continue; }
+        if (c.reservation.status !== 'upcoming') { await done(row.id, 'skipped', 'the stay is no longer upcoming'); tally.skipped++; continue; }
+        const { data: links, error: linkErr } = await admin.rpc('system_make_arrival_links', { p_reservation_id: row.reservation_id });
+        if (linkErr) throw new Error(linkErr.message);
+        offers = ((links ?? []) as { token: string; name: string; price: number; image?: string | null }[]).map(l => ({ url: `${siteUrl()}/pre/${l.token}`, name: l.name, price: Number(l.price), image: l.image }));
+        if (offers.length === 0) { await done(row.id, 'skipped', 'nothing on the menu to offer'); tally.skipped++; continue; }
+      }
+      const email = renderGuestEmail(row.kind, c, offers);
       const senders = pickSenders(c, resendFrom);
       let sentVia: string | null = null;
       let lastError = '';
