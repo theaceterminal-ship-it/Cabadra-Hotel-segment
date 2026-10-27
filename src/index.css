@@ -378,3 +378,16 @@
 }
 .chat-bubble-in { animation: chat-bubble-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both; }
 @media (prefers-reduced-motion: reduce) { .chat-bubble-in { animation: none; } }
+
+/*
+ * Page background outside the apps. Safari tints its address bar and the
+ * overscroll area from the html/body background (not from the theme-color
+ * meta tag), and body's default bg-surface is still the old purple — so the
+ * public website, login and partner pages, which don't put `theme-site` on
+ * <html>, showed purple bars. Every app sets `theme-site` and keeps its own
+ * surface color (including dark mode).
+ */
+html:not(.theme-site),
+html:not(.theme-site) body {
+  background-color: #eef0ec;
+}
