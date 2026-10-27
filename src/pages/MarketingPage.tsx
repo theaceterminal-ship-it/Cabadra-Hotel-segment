@@ -115,17 +115,18 @@ function Hero() {
           </motion.div>
 
           <motion.div className="mt-14 sm:mt-20 pb-10 sm:pb-0 text-center" initial="hidden" animate="show" variants={stagger(0.12, 0.2)}>
-            <h1 className="mx-auto max-w-4xl text-[40px] leading-[1.02] sm:text-6xl lg:text-[76px] font-semibold tracking-[-0.035em]">
+            {/* अतिथि देवो भव ("the guest is God") in Hindi, set in Yatra One. */}
+            <h1 className="mx-auto max-w-4xl text-[46px] leading-[1.08] sm:text-7xl lg:text-[88px] font-normal tracking-normal" style={{ fontFamily: "'Yatra One', 'Geist', serif" }}>
               <motion.span variants={fadeUp} className="inline-block">
-                Keep Your PMS.
+                अतिथि देवो
               </motion.span>{' '}
               <br className="hidden sm:block" />
-              <motion.span variants={fadeUp} className="inline-block">
-                Capture <span className="text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.25)]">Every Extra</span>
+              <motion.span variants={fadeUp} className="inline-block text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.25)]">
+                भव
               </motion.span>
             </h1>
             <motion.p variants={fadeUp} className="mx-auto mt-5 max-w-2xl text-[15px] sm:text-lg text-[#1b1b1b]/80">
-              Room service, laundry, spa, transfers and experiences, ordered from the guest app and added up for checkout. You post one total into your PMS.
+              Let’s serve our guests with warmth, and make every stay feel like coming home.
             </motion.p>
           </motion.div>
 
@@ -193,23 +194,18 @@ function Hero() {
 
 /**
  * Outlined label with a pointed left edge and a line that fades out to the
- * right. Fixed width so the notch is the same size on every chip. The
- * frosted backing (clipped to the same notch) keeps the dark text readable
- * whether the chip lands on sky or on dark hillside.
+ * right. Fixed width so the notch is the same size on every chip. No backing:
+ * white text with a soft shadow reads on both the sky and the dark hillside.
  */
 function NotchedChip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="relative flex items-center h-12 w-[290px] pl-7 text-[15px] font-medium text-[#111]">
-      <span
-        aria-hidden="true"
-        className="absolute inset-0 backdrop-blur-md bg-[linear-gradient(90deg,rgba(255,255,255,0.72)_0%,rgba(255,255,255,0.55)_75%,rgba(255,255,255,0)_100%)] [clip-path:polygon(15px_0,100%_0,100%_100%,15px_100%,0_50%)]"
-      />
+    <span className="relative flex items-center h-12 w-[290px] pl-7 text-[15px] font-medium text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.65),0_0_14px_rgba(0,0,0,0.4)]">
       <svg className="absolute inset-0 h-full w-full" viewBox="0 0 290 48" fill="none" aria-hidden="true">
         <defs>
           <linearGradient id="chip-fade" x1="0" x2="290" y1="0" y2="0" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#111" stopOpacity="0.75" />
-            <stop offset="0.75" stopColor="#111" stopOpacity="0.35" />
-            <stop offset="1" stopColor="#111" stopOpacity="0" />
+            <stop offset="0" stopColor="#fff" stopOpacity="0.9" />
+            <stop offset="0.75" stopColor="#fff" stopOpacity="0.5" />
+            <stop offset="1" stopColor="#fff" stopOpacity="0" />
           </linearGradient>
         </defs>
         <path d="M290 0.75H15L1 24L15 47.25H290" stroke="url(#chip-fade)" strokeWidth="1.5" />
@@ -312,10 +308,10 @@ function SetupBar() {
       className="rounded-[28px] sm:rounded-full bg-white p-2.5 sm:p-3 shadow-[0_10px_40px_rgba(0,0,0,0.12)] flex flex-col sm:flex-row gap-2 sm:gap-3"
     >
       <BarField icon={Building2} label="Property name" className="sm:flex-[1.6]">
-        <input value={name} onChange={e => setName(e.target.value)} placeholder="Pine View Cottage" className={barInput} />
+        <input value={name} onChange={e => setName(e.target.value)} className={barInput} />
       </BarField>
       <BarField icon={MapPin} label="City" className="sm:flex-1">
-        <input value={city} onChange={e => setCity(e.target.value)} placeholder="Kufri, Shimla" list="himachal-places" className={barInput} />
+        <input value={city} onChange={e => setCity(e.target.value)} list="himachal-places" className={barInput} />
         {/* Suggestions only; any town can still be typed. The property form matches these back to its own list. */}
         <datalist id="himachal-places">
           {HIMACHAL_PLACE_VALUES.map(value => <option key={value} value={value} />)}
@@ -326,7 +322,6 @@ function SetupBar() {
           value={rooms}
           onChange={e => setRooms(e.target.value.replace(/\D/g, '').slice(0, 4))}
           inputMode="numeric"
-          placeholder="12"
           className={barInput}
         />
       </BarField>

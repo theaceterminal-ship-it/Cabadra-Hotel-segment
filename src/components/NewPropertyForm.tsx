@@ -87,7 +87,6 @@ export function NewPropertyForm({ onCreate, onCancel, initialName = '', initialL
         <input
           type="text"
           required
-          placeholder="Pine View Cottage"
           value={name}
           onChange={(e) => setName(e.target.value)}
           className={inputClass}

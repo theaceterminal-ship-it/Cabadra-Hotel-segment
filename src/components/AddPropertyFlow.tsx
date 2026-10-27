@@ -112,7 +112,6 @@ function OrganizationForm({ onSaved, onCancel }: { onSaved: (org: Organization) 
         <input
           required
           maxLength={120}
-          placeholder="Pine View Hospitality"
           value={name}
           onChange={e => setName(e.target.value)}
           className={inputClass}
