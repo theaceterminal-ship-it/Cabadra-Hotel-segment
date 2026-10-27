@@ -50,6 +50,8 @@ import { ThemeToggle } from '../components/ThemeToggle';
 import { useSiteTheme, useTheme } from '../hooks/useTheme';
 import { useNotifications } from '../hooks/useNotifications';
 import LoginPage from './LoginPage';
+import { StayAccessHost } from '../components/StayAccessHost';
+import { promptStayAccess } from '../lib/stayAccess';
 import { usePwaManifest } from '../hooks/usePwaManifest';
 
 type ReceptionTab = 'dashboard' | 'messages' | 'concierge' | 'bookings' | 'day_close' | 'rooms_floors' | 'live_ops' | 'departments' | 'reserved_experiences' | 'guest_crm' | 'sales_reports';
@@ -158,6 +160,7 @@ export default function ReceptionApp() {
     setUpcomingArrivals(prev => prev.map(a => a.id === arrivalId ? { ...a, checkedIn: true } : a));
     try {
       await checkInReservation(arrivalId);
+      promptStayAccess(arrivalId, 'auto');
       if (propertyId) await reloadRoomsAndArrivals(propertyId);
     } catch (err) {
       console.warn(`Failed to check in reservation ${arrivalId}:`, err);
@@ -295,6 +298,7 @@ export default function ReceptionApp() {
 
   return (
     <div className="min-h-screen w-full bg-surface flex">
+      <StayAccessHost />
       <Sidebar
         navItems={navItems}
         activeId={view}

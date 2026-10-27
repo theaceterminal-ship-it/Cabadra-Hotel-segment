@@ -5,6 +5,7 @@ import {
   BOOKING_CHANNELS, GUEST_ID_TYPES, Booking, BookingChanges, GuestIdType, cancelReservation, checkInReservation, issueBookingBill, markNoShow, updateBooking, updateGuestRegister,
 } from '../../lib/staffApi';
 import { formatCurrency } from '../../lib/currency';
+import { promptStayAccess } from '../../lib/stayAccess';
 import { STATUS_CHIP, STATUS_LABEL, addDays, fmtDay, todayIso } from './bookingUtils';
 
 const btn = 'h-10 px-4 rounded-full text-sm font-medium inline-flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50';
@@ -164,7 +165,7 @@ export function BookingDrawer({ booking, rooms, currency, onClose, onChanged, on
         {mode === 'view' && (
           <div className="px-6 py-4 border-t border-outline-variant flex flex-wrap gap-2" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
             {b.status === 'upcoming' && (
-              <button disabled={busy} onClick={() => run(() => checkInReservation(b.id))} className={btnPrimary}>
+              <button disabled={busy} onClick={() => run(async () => { await checkInReservation(b.id); promptStayAccess(b.id, 'auto'); })} className={btnPrimary}>
                 <LogIn className="size-4" /> {b.checkInDate > today ? 'Check in early' : 'Check in'}
               </button>
             )}

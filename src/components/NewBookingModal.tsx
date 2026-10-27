@@ -4,6 +4,8 @@ import { Room } from '../types';
 import { checkInNewGuest, searchAvailableRooms, AvailableRoom, BOOKING_CHANNELS, BookingChannel } from '../lib/staffApi';
 import { formatCurrency } from '../lib/currency';
 import { ImageUploadField } from './ImageUploadField';
+import { PhoneField } from './PhoneField';
+import { promptStayAccess } from '../lib/stayAccess';
 import { RoomQrModal } from './RoomQrModal';
 
 interface NewBookingModalProps {
@@ -123,7 +125,7 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
     setSubmitting(true);
     setError(null);
     try {
-      await checkInNewGuest(propertyId, selectedRoom.id, {
+      const reservationId = await checkInNewGuest(propertyId, selectedRoom.id, {
         name: name.trim(),
         phone: phone.trim() || undefined,
         email: email.trim() || undefined,
@@ -137,6 +139,8 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
         channelDetail: channelDetail.trim() || undefined,
         notes: notes.trim() || undefined,
       });
+      // Only does anything when this booking checked straight in (a booking for later is set up at its check-in).
+      promptStayAccess(reservationId, 'auto');
       setStep('success');
       onBooked();
     } catch (err) {
@@ -288,7 +292,7 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={labelCls}>Phone</label>
-                <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 555 000 0000" className={inputCls} />
+                <PhoneField value={phone} onChange={setPhone} />
               </div>
               <div>
                 <label className={labelCls}>Email</label>

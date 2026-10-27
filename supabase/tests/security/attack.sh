@@ -153,7 +153,65 @@ t "events can't be deleted"                            error postgres - "delete 
 
 echo; echo "### I. The room QR still finds the stay (by its random code, not the room id)"
 QR=$($PSQL -c "select qr_code from rooms where id='r101'")
-t "anon: the QR code resolves to the checked-in stay" "$GTOK" anon - "select guest_resolve_room_token('$QR')"
-t "anon: the room id is NOT a way in"                 "" anon - "select guest_resolve_room_token('r101')"
+t "a stay set to 'link' is not opened by the old resolver"  "" anon - "select guest_resolve_room_token('$QR')"
+$PSQL -c "update reservations set access_mode='open' where id='$RES'" >/dev/null
+t "anon: the QR code resolves to an 'open' stay"            "$GTOK" anon - "select guest_resolve_room_token('$QR')"
+t "anon: the room id is NOT a way in"                       "" anon - "select guest_resolve_room_token('r101')"
+$PSQL -c "update reservations set access_mode='link' where id='$RES'" >/dev/null
+
+echo; echo "### J. Stay codes: the room QR asks for what the stay was set up with"
+$PSQL -c "update guests set email='asha@example.com' where id='b0000000-0000-0000-0000-000000000001'" >/dev/null
+t "link stay: the gate says use the stay link, no token"    "link_required|false" anon - "select guest_room_gate('$QR')->>'status' || '|' || (guest_room_gate('$QR') ? 'token')"
+t "a phone holding the stay link goes straight in"          "open" anon - "select guest_room_gate('$QR', '$GTOK')->>'status'"
+t "a wrong token is not enough"                             "link_required" anon - "select guest_room_gate('$QR', '99999999-9999-9999-9999-999999999999')->>'status'"
+t "anon can't make a code"                                  error anon - "select system_issue_stay_code('$RES','email')"
+t "a receptionist can't make a code"                        error authenticated $RECEP "select system_issue_stay_code('$RES','email')"
+t "a receptionist can't read the code table"                error authenticated $RECEP "select * from stay_access_codes"
+CODE=$($PSQL -c "select system_issue_stay_code('$RES','email')->>'code'")
+[ ${#CODE} = 6 ] && { pass=$((pass+1)); echo "PASS  the server makes a 6-digit code"; } || { fail=$((fail+1)); echo "FAIL  the server makes a 6-digit code (got '$CODE')"; }
+t "the stay is now in email mode"                           "email" postgres - "select access_mode from reservations where id='$RES'"
+t "the gate asks for the code and masks the address"        "code_required|a•••@example.com|false" anon - "select guest_room_gate('$QR')->>'status' || '|' || (guest_room_gate('$QR')->>'hint') || '|' || (guest_room_gate('$QR') ? 'token')"
+t "reception's view never contains the code or its hash"    "f" authenticated $RECEP "select (staff_stay_access('$RES')::text like '%$CODE%') or (staff_stay_access('$RES')::text ilike '%hash%')"
+t "reception's view says email mode"                        "email" authenticated $RECEP "select staff_stay_access('$RES')->>'access_mode'"
+t "another hotel's staff can't view this stay's access"     error authenticated $OTHER "select staff_stay_access('$RES')"
+t "another hotel's staff can't switch it to the link"       error authenticated $OTHER "select staff_set_stay_access_link('$RES')"
+t "email mode: the old resolver no longer hands out a token" "" anon - "select guest_resolve_room_token('$QR')"
+WRONG=$(( (10#$CODE + 1) % 1000000 )); WRONG=$(printf '%06d' $WRONG)
+t "a wrong code is refused, 4 tries left"                   "wrong|4" anon - "select r->>'reason' || '|' || (r->>'attempts_left') from (select guest_verify_stay_code('$QR','$WRONG') as r) x"
+t "the count really is kept (not rolled back)"              "4" postgres - "select 5 - failed_attempts from stay_access_codes where reservation_id='$RES'"
+t "the right code gives the stay token"                     "$GTOK" anon - "select guest_verify_stay_code('$QR','$CODE')->>'token'"
+t "...and a code typed with a space still works"            "$GTOK" anon - "select guest_verify_stay_code('$QR','${CODE:0:3} ${CODE:3:3}')->>'token'"
+t "a phone that entered it is let in next time"             "open" anon - "select guest_room_gate('$QR', '$GTOK')->>'status'"
+# lock-out: 5 wrong tries lock; the right code is refused while locked
+for i in 1 2 3 4 5; do $PSQL -c "set role anon; select guest_verify_stay_code('$QR','$WRONG')" >/dev/null; done
+t "5 wrong tries lock the stay"                             "locked" anon - "select guest_verify_stay_code('$QR','$CODE')->>'reason'"
+t "the lock was written to security_events"                 1 postgres - "select count(*) from security_events where kind='stay_code_locked'"
+$PSQL -c "update stay_access_codes set locked_until = now() - interval '1 minute' where reservation_id='$RES'" >/dev/null
+t "after the lock ends the right code works again"          "$GTOK" anon - "select guest_verify_stay_code('$QR','$CODE')->>'token'"
+# three locks in a row cancel the code
+for round in 1 2 3; do
+  for i in 1 2 3 4 5; do $PSQL -c "set role anon; select guest_verify_stay_code('$QR','$WRONG')" >/dev/null; done
+  $PSQL -c "update stay_access_codes set locked_until = now() - interval '1 minute' where reservation_id='$RES'" >/dev/null
+done
+t "three locks in a row cancel the code"                    "needs_new_code" anon - "select guest_verify_stay_code('$QR','$CODE')->>'reason'"
+t "the gate tells the guest to ask for a new one"           "t" anon - "select (guest_room_gate('$QR')->>'needs_new_code')::boolean"
+# resend: always to the address on file, 3 an hour
+NEW=$($PSQL -c "select system_guest_resend_stay_code('$QR','203.0.113.9')->>'code'")
+[ ${#NEW} = 6 ] && { pass=$((pass+1)); echo "PASS  a resend makes a new code"; } || { fail=$((fail+1)); echo "FAIL  a resend makes a new code (got '$NEW')"; }
+t "the new code works"                                      "$GTOK" anon - "select guest_verify_stay_code('$QR','$NEW')->>'token'"
+t "the old code does not"                                   "f" anon - "select (guest_verify_stay_code('$QR','$CODE') ? 'token') and '$NEW' <> '$CODE'"
+$PSQL -c "select system_guest_resend_stay_code('$QR','203.0.113.9'); select system_guest_resend_stay_code('$QR','203.0.113.9')" >/dev/null
+[ "$($PSQL -c "select system_guest_resend_stay_code('$QR','203.0.113.9')->>'reason'" 2>/dev/null)" = "slow_down" ] && { pass=$((pass+1)); echo "PASS  a 4th resend in an hour is refused"; } || { fail=$((fail+1)); echo "FAIL  a 4th resend in an hour is refused"; }
+t "anon can't call the resend function directly"            error anon - "select system_guest_resend_stay_code('$QR', null)"
+# switching to the link drops the code
+t "reception can switch to the stay link"                   ok authenticated $RECEP "select staff_set_stay_access_link('$RES')"
+t "...which removes the code"                               0 postgres - "select count(*) from stay_access_codes where reservation_id='$RES'"
+t "...and the gate asks for the link again"                 "link_required" anon - "select guest_room_gate('$QR')->>'status'"
+# a code dies with the stay
+$PSQL -c "select system_issue_stay_code('$RES','email')" >/dev/null
+$PSQL -c "update reservations set status='checked_out' where id='$RES'" >/dev/null
+t "checkout deletes the code"                               0 postgres - "select count(*) from stay_access_codes where reservation_id='$RES'"
+t "after checkout the QR shows no stay"                     "none" anon - "select guest_room_gate('$QR')->>'status'"
+t "a guest with no email can't be issued a code"            "no_email" postgres - "update reservations set status='checked_in', access_mode='link' where id='$RES'; update guests set email=null where id='b0000000-0000-0000-0000-000000000001'; select system_issue_stay_code('$RES','email')->>'reason'"
 
 echo; echo "pass=$pass fail=$fail"
