@@ -65,10 +65,17 @@ const COLUMN_LABEL: Record<string, string> = {
   price_per_night: 'price per night', price: 'price', amount: 'amount', status: 'status', description: 'description', rate_per_night: 'room rate',
   check_in: 'check-in', check_out: 'check-out', voided_at: 'voided', void_reason: 'reason', voided_by: 'voided by', max_occupancy: 'capacity',
   name: 'name', phone: 'phone', role: 'role', active: 'on/off', available: 'available', total_amount: 'total', notes: 'notes', room_id: 'room',
+  pre_arrival_enabled: 'offering something ready on arrival', guest_emails_enabled: 'guest emails', maps_url: 'map link', google_review_url: 'Google review link',
+  welcome_note: 'welcome note', thanks_note: 'thank-you note', check_in_time: 'check-in time', check_out_time: 'check-out time',
+  upi_id: 'UPI id', has_external_pms: 'uses another booking system', image: 'photo', location: 'location', legal_name: 'business name',
+  billing_address: 'bill address', billing_phone: 'bill phone', billing_email: 'bill email', gstin: 'GSTIN', gst_enabled: 'GST', invoice_prefix: 'bill prefix',
+  access_mode: 'room service access',
 };
 const labelOf = (c: string) => COLUMN_LABEL[c] ?? c.replace(/_/g, ' ');
 
 const fmt = (v: unknown): string => {
+  if (v === true) return 'on';
+  if (v === false) return 'off';
   if (v === null || v === undefined || v === '') return 'empty';
   if (typeof v === 'number') return v.toLocaleString('en-IN');
   if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) return new Date(v).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
@@ -99,6 +106,38 @@ function summarise(r: AuditRow): string {
 }
 
 const who = (r: AuditRow) => r.actor_email ?? (r.actor_kind === 'service' ? 'Cabadra system' : 'A guest or an automatic job');
+
+/** What a row changed, in words: "price per night: 3,000 → 3,500". The raw record is one tap away. */
+function ChangeDetails({ row }: { row: AuditRow }) {
+  const [raw, setRaw] = useState(false);
+  const c = (row.changes ?? {}) as Record<string, unknown>;
+  const entries = Object.entries(c);
+  const isUpdate = row.action === 'UPDATE';
+  const shown = isUpdate ? entries : entries.filter(([, v]) => v !== null && v !== '' && typeof v !== 'object').slice(0, 8);
+  return (
+    <div className="space-y-1.5">
+      {shown.length > 0 && (
+        <ul className="rounded-xl bg-surface-container-lowest border border-outline-variant divide-y divide-outline-variant overflow-hidden">
+          {shown.map(([k, v]) => {
+            const ch = v as { old?: unknown; new?: unknown; changed?: boolean };
+            return (
+              <li key={k} className="px-3 py-2 flex flex-wrap items-baseline gap-x-2 text-xs">
+                <span className="font-medium text-on-surface capitalize">{labelOf(k)}</span>
+                <span className="text-on-surface-variant">
+                  {isUpdate
+                    ? (ch?.changed ? 'changed' : <>{fmt(ch?.old)} <span aria-hidden>→</span> <span className="text-on-surface font-medium">{fmt(ch?.new)}</span></>)
+                    : fmt(v)}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <button type="button" onClick={() => setRaw(x => !x)} className="text-[11px] font-semibold text-on-surface-variant hover:text-on-surface">{raw ? 'Hide technical details' : 'Show technical details'}</button>
+      {raw && <pre className="whitespace-pre-wrap break-words rounded-xl bg-surface-container-lowest border border-outline-variant p-3 text-[11px] leading-relaxed text-on-surface max-h-64 overflow-auto">{JSON.stringify(row.changes, null, 2)}</pre>}
+    </div>
+  );
+}
 
 const PAGE = 30;
 
@@ -221,9 +260,7 @@ export function ActivityTab({ propertyId }: { propertyId: string }) {
                     {r.via ? <> · via <span className="font-mono">{r.via}</span></> : null}
                     {r.ip ? <> · from <span className="font-mono">{r.ip}</span></> : null}
                   </p>
-                  {r.changes && (
-                    <pre className="whitespace-pre-wrap break-words rounded-xl bg-surface-container-lowest border border-outline-variant p-3 text-[11px] leading-relaxed text-on-surface max-h-64 overflow-auto">{JSON.stringify(r.changes, null, 2)}</pre>
-                  )}
+                  {r.changes && <ChangeDetails row={r} />}
                 </div>
               )}
             </div>
