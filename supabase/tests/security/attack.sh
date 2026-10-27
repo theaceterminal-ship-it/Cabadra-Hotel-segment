@@ -151,4 +151,9 @@ t "the owner reads their hotel's events"               ok authenticated $OWNER "
 t "events can't be edited"                             error postgres - "update security_events set kind='x'"
 t "events can't be deleted"                            error postgres - "delete from security_events"
 
+echo; echo "### I. The room QR still finds the stay (by its random code, not the room id)"
+QR=$($PSQL -c "select qr_code from rooms where id='r101'")
+t "anon: the QR code resolves to the checked-in stay" "$GTOK" anon - "select guest_resolve_room_token('$QR')"
+t "anon: the room id is NOT a way in"                 "" anon - "select guest_resolve_room_token('r101')"
+
 echo; echo "pass=$pass fail=$fail"
