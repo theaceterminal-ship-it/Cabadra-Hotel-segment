@@ -115,18 +115,18 @@ function Hero() {
           </motion.div>
 
           <motion.div className="mt-14 sm:mt-20 pb-10 sm:pb-0 text-center" initial="hidden" animate="show" variants={stagger(0.12, 0.2)}>
-            {/* "atithi devo bhava" (the guest is God): Latin letters in Amita, a calligraphic face with a Devanagari feel. */}
-            <h1 className="mx-auto max-w-4xl text-[46px] leading-[1.08] sm:text-7xl lg:text-[88px] font-bold tracking-[0.05em]" style={{ fontFamily: "'Amita', 'Geist', serif" }}>
+            {/* अतिथि देवो भव ("the guest is God") in Hindi, set in Yatra One. */}
+            <h1 className="mx-auto max-w-4xl text-[46px] leading-[1.08] sm:text-7xl lg:text-[88px] font-normal tracking-normal" style={{ fontFamily: "'Yatra One', 'Geist', serif" }}>
               <motion.span variants={fadeUp} className="inline-block">
-                atithi devo
+                अतिथि देवो
               </motion.span>{' '}
               <br className="hidden sm:block" />
               <motion.span variants={fadeUp} className="inline-block text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.25)]">
-                bhava
+                भव
               </motion.span>
             </h1>
             <motion.p variants={fadeUp} className="mx-auto mt-5 max-w-2xl text-[15px] sm:text-lg text-[#1b1b1b]/80">
-              Room service, laundry, spa, transfers and experiences, ordered from the guest app and added up for checkout. You post one total into your PMS.
+              Let’s serve our guests with warmth, and make every stay feel like coming home.
             </motion.p>
           </motion.div>
 
