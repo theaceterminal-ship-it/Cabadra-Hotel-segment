@@ -91,10 +91,10 @@ export function GuestEmailsPanel({ propertyId }: { propertyId: string }) {
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4">
-          <Field label="Check-in time" hint="Shown as “from 2:00 PM”.">
+          <Field label="Check-in time" hint="Your usual check-in time. The booking confirmation says “Check-in from 2:00 PM”.">
             <input type="time" value={form.checkInTime} onChange={e => set('checkInTime', e.target.value)} className={inputCls} />
           </Field>
-          <Field label="Check-out time" hint="Shown as “by 11:00 AM”.">
+          <Field label="Check-out time" hint="Your usual check-out time. The booking confirmation says “Check-out by 11:00 AM”.">
             <input type="time" value={form.checkOutTime} onChange={e => set('checkOutTime', e.target.value)} className={inputCls} />
           </Field>
           <Field label="Google Maps link" hint="In Google Maps: Share, Copy link. Guests get a Get directions button. Left empty, we search for your hotel by name." className="sm:col-span-2">
@@ -127,9 +127,10 @@ export function GuestEmailsPanel({ propertyId }: { propertyId: string }) {
 
         {error && <ErrorNote>{error}</ErrorNote>}
         {note && <p className="text-sm text-success">{note}</p>}
+        <p className="text-xs text-on-surface-variant -mt-2">Sample emails go to your own address, up to 3 a day of each kind.</p>
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button type="button" disabled={!!busy} onClick={() => sendSample('booking_confirmation')} className={btnSecondary}>{busy === 'test-booking_confirmation' ? 'Sending…' : 'Email me a sample confirmation'}</button>
             <button type="button" disabled={!!busy} onClick={() => sendSample('pre_arrival')} className={btnSecondary}>{busy === 'test-pre_arrival' ? 'Sending…' : 'Email me a sample pre-arrival offer'}</button>
             <button type="button" disabled={!!busy} onClick={() => sendSample('checkout_thanks')} className={btnSecondary}>{busy === 'test-checkout_thanks' ? 'Sending…' : 'Email me a sample thank-you'}</button>
