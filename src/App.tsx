@@ -27,6 +27,7 @@ import PartnerInvoicePage from './pages/PartnerInvoicePage';
 import NotFoundPage from './pages/site/NotFoundPage';
 import BillPage from './pages/BillPage';
 import KitchenPage from './pages/KitchenPage';
+import PublicBookingPage from './pages/PublicBookingPage';
 
 /**
  * Three separate pages, not one role-switcher: an owner and a receptionist
@@ -52,6 +53,7 @@ export default function App() {
       <Route path="/owner/*" element={<OwnerApp />} />
       <Route path="/reception/*" element={<ReceptionApp />} />
       <Route path="/guest/room/:roomId" element={<RoomRedirect />} />
+      <Route path="/book/:slug" element={<PublicBookingPage />} />
       <Route path="/pre/:token" element={<ArrivalPreorderPage />} />
       <Route path="/guest/:token" element={<GuestApp />} />
       <Route path="/guest" element={<GuestApp />} />

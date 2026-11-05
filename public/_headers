@@ -16,6 +16,17 @@
   Permissions-Policy: camera=(self), microphone=(), geolocation=(), payment=(self "https://checkout.razorpay.com" "https://api.razorpay.com"), usb=(), interest-cohort=()
   Strict-Transport-Security: max-age=15552000
 
+# The booking page (/book/<hotel>) may sit inside a hotel's own website (public/book.js), so it is
+# the one place framing is allowed, and only over https. Every other page keeps frame-ancestors 'none'.
+/book/*
+  ! X-Frame-Options
+  ! Content-Security-Policy
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://checkout.razorpay.com https://cdn.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.cloudinary.com https://*.razorpay.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io; frame-src https://*.razorpay.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors https:
+
+# The embed script is fetched by other sites; a short cache lets fixes reach them within the hour.
+/book.js
+  Cache-Control: public, max-age=3600
+
 # The worker file must always be fetched fresh so a fixed version reaches installed apps.
 /sw.js
   Cache-Control: no-cache
