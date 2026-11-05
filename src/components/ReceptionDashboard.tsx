@@ -466,6 +466,7 @@ export const ReceptionDashboard: React.FC<ReceptionDashboardProps> = ({
       {!hasExternalPms && showNewBooking && (
         <NewBookingModal
           propertyId={propertyId}
+          propertyName={propertyName}
           currency={currency}
           rooms={rooms}
           onClose={() => setShowNewBooking(false)}
