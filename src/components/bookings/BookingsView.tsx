@@ -188,6 +188,8 @@ export function BookingsView({ propertyId, propertyName, currency, upiId, rooms,
           booking={selected}
           rooms={rooms}
           currency={currency}
+          propertyId={propertyId}
+          propertyName={propertyName}
           onClose={() => setSelected(null)}
           onChanged={refreshAll}
           onOpenBill={b => setBillFor(b)}
@@ -213,6 +215,7 @@ export function BookingsView({ propertyId, propertyName, currency, upiId, rooms,
       {newAt && (
         <NewBookingModal
           propertyId={propertyId}
+          propertyName={propertyName}
           currency={currency}
           rooms={rooms}
           initialRoom={newAt.room}

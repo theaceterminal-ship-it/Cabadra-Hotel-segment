@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Ban, CalendarX, Crown, LogIn, Pencil, Phone, Mail, Receipt, StickyNote, X, FileCheck2 } from 'lucide-react';
+import { Ban, CalendarX, Crown, LogIn, MessageCircle, Pencil, Phone, Mail, Receipt, StickyNote, X, FileCheck2 } from 'lucide-react';
+import { BookingWhatsAppShare } from './BookingWhatsAppShare';
 import type { Room } from '../../types';
 import {
   BOOKING_CHANNELS, GUEST_ID_TYPES, Booking, BookingChanges, GuestIdType, cancelReservation, checkInReservation, issueBookingBill, markNoShow, updateBooking, updateGuestRegister,
@@ -21,16 +22,18 @@ const label = 'text-xs text-on-surface-variant block mb-1';
  * (early arrivals included), edit, move rooms, extend, cancel with a fee,
  * mark a no-show, open the bill, close a cancelled booking's bill.
  */
-export function BookingDrawer({ booking, rooms, currency, onClose, onChanged, onOpenBill }: {
+export function BookingDrawer({ booking, rooms, currency, propertyId, propertyName, onClose, onChanged, onOpenBill }: {
   booking: Booking;
   rooms: Room[];
   currency: string;
+  propertyId: string;
+  propertyName: string;
   onClose: () => void;
   /** After any change: refresh, and show the booking as it is now. */
   onChanged: (updated?: Booking) => void;
   onOpenBill: (b: Booking) => void;
 }) {
-  const [mode, setMode] = useState<'view' | 'edit' | 'cancel' | 'no_show'>('view');
+  const [mode, setMode] = useState<'view' | 'edit' | 'cancel' | 'no_show' | 'whatsapp'>('view');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const c = (n: number) => formatCurrency(n, currency);
@@ -134,6 +137,21 @@ export function BookingDrawer({ booking, rooms, currency, onClose, onChanged, on
               })}
             />
           )}
+          {mode === 'whatsapp' && (
+            <div className="space-y-3">
+              <p className="font-semibold">Booking confirmation on WhatsApp</p>
+              <BookingWhatsAppShare
+                propertyId={propertyId}
+                guestPhone={b.guest.phone}
+                booking={{
+                  propertyName, guestName: b.guest.name, roomType: b.roomType, checkInDate: b.checkInDate, checkOutDate: b.checkOutDate,
+                  nights: b.nights, partySize: b.partySize, ref: b.ref,
+                  advancePaid: b.totals.paid - b.totals.refunded, currencyLabel: currency === 'INR' ? '₹' : `${currency} `,
+                }}
+              />
+              <button type="button" onClick={() => setMode('view')} className={btnQuiet}>Back</button>
+            </div>
+          )}
           {mode === 'cancel' && (
             <FeeForm
               title="Cancel this booking"
@@ -171,6 +189,7 @@ export function BookingDrawer({ booking, rooms, currency, onClose, onChanged, on
               </button>
             )}
             <button onClick={() => onOpenBill(b)} className={b.status === 'checked_in' ? btnPrimary : btnQuiet}><Receipt className="size-4" /> {b.status === 'checked_in' ? 'Bill & check out' : 'Bill'}</button>
+            {b.status === 'upcoming' && <button onClick={() => setMode('whatsapp')} className={btnQuiet}><MessageCircle className="size-4" /> WhatsApp</button>}
             {open && <button onClick={() => setMode('edit')} className={btnQuiet}><Pencil className="size-4" /> Edit</button>}
             {b.status === 'checked_out' && <button onClick={() => setMode('edit')} className={btnQuiet}><Pencil className="size-4" /> Register details</button>}
             {b.status === 'upcoming' && <button onClick={() => setMode('cancel')} className={btnQuiet}><Ban className="size-4" /> Cancel</button>}

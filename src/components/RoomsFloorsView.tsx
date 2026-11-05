@@ -313,6 +313,7 @@ export const RoomsFloorsView: React.FC<RoomsFloorsViewProps> = ({ propertyId, pr
       {!hasExternalPms && showNewBooking && (
         <NewBookingModal
           propertyId={propertyId}
+          propertyName={propertyName}
           currency={currency}
           rooms={rooms}
           onClose={() => setShowNewBooking(false)}

@@ -8,9 +8,13 @@ import { PhoneField } from './PhoneField';
 import { promptStayAccess } from '../lib/stayAccess';
 import { RoomQrModal } from './RoomQrModal';
 import { DateRangePicker } from './DatePicker';
+import { BookingWhatsAppShare } from './bookings/BookingWhatsAppShare';
+import { daysBetween } from './bookings/bookingUtils';
 
 interface NewBookingModalProps {
   propertyId: string;
+  /** For the WhatsApp confirmation's wording. */
+  propertyName?: string;
   currency: string;
   rooms: Room[];
   onClose: () => void;
@@ -55,7 +59,7 @@ function tomorrowIso(): string {
  * decides which based on the date. The simpler "I already know which room"
  * case still exists too, per-room, via CheckInModal on Rooms & Floors.
  */
-export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked, initialRoom, initialCheckIn }: NewBookingModalProps) {
+export function NewBookingModal({ propertyId, propertyName, currency, rooms, onClose, onBooked, initialRoom, initialCheckIn }: NewBookingModalProps) {
   const [step, setStep] = useState<Step>(initialRoom ? 'details' : 'search');
   const [partySize, setPartySize] = useState('2');
   const [roomType, setRoomType] = useState('any');
@@ -339,6 +343,18 @@ export function NewBookingModal({ propertyId, currency, rooms, onClose, onBooked
                 <p className="text-xs text-on-surface-variant">
                   Arriving {checkIn}. It'll show in Upcoming Arrivals on the Dashboard — check them in from there when they arrive, or cancel it if plans change.
                 </p>
+                {propertyName && (
+                  <div className="pt-2">
+                    <BookingWhatsAppShare
+                      propertyId={propertyId}
+                      guestPhone={phone}
+                      booking={{
+                        propertyName, guestName: name, roomType: selectedRoom.type, checkInDate: checkIn, checkOutDate: checkOut,
+                        nights: daysBetween(checkIn, checkOut), partySize: parseInt(partySize, 10) || 1,
+                      }}
+                    />
+                  </div>
+                )}
                 <button onClick={onClose} className="w-full h-10 rounded-lg bg-on-surface text-inverse-on-surface text-xs font-semibold mt-2">
                   Done
                 </button>
