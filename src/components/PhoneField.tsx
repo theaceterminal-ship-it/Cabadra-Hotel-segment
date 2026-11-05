@@ -35,10 +35,13 @@ export function joinPhone(dial: string, national: string): string {
   return digits ? `${dial}${digits}` : '';
 }
 
-const fieldCls = 'h-10 text-sm border border-outline-variant rounded-lg focus:border-primary focus:outline-none bg-surface-container-lowest';
+const baseFieldCls = 'h-10 text-sm border border-outline-variant rounded-lg focus:border-primary focus:outline-none bg-surface-container-lowest';
 
 /** A phone number with a country-code dropdown. onChange gets the full number ("+91…") or ''. */
-export function PhoneField({ value, onChange, placeholder = '98765 43210' }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+export function PhoneField({ value, onChange, placeholder = '98765 43210', pill }: { value: string; onChange: (v: string) => void; placeholder?: string; pill?: boolean }) {
+  const fieldCls = pill
+    ? 'h-12 text-sm border border-outline-variant rounded-full focus:border-on-surface focus:outline-none bg-surface-container-lowest'
+    : baseFieldCls;
   const parsed = splitPhone(value);
   // The chosen country is kept here, because an empty number carries no country with it.
   const [dial, setDial] = useState(parsed.dial);

@@ -6,6 +6,7 @@ import { formatCurrency } from '../../lib/currency';
 import { ErrorNote, Field, Modal, Panel, PhotoField, Switch, btnPrimary, btnSecondary, inputCls } from './ui';
 import { BillingPanel } from './BillingPanel';
 import { GuestEmailsPanel } from './GuestEmailsPanel';
+import { BookingLinkPanel } from './BookingLinkPanel';
 
 const ROOM_STATUSES: { key: Room['status']; label: string; dot: string }[] = [
   { key: 'ready', label: 'Ready', dot: 'bg-room-ready' },
@@ -83,6 +84,8 @@ export function OverviewTab({ property, rooms, staff, ticketAnalytics, onChanged
       )}
 
       <PropertySettings property={property} onChanged={onChanged} />
+
+      {!property.hasExternalPms && <BookingLinkPanel propertyId={property.id} />}
 
       <MoreSettings propertyId={property.id} />
     </div>
