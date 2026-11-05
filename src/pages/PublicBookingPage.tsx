@@ -67,6 +67,14 @@ export default function PublicBookingPage() {
 
   const closeEmbed = () => window.parent?.postMessage({ type: 'cabadra-booking-close' }, '*');
 
+  // Keys pressed while this page has focus never reach the hotel's site, so Escape is passed up.
+  useEffect(() => {
+    if (!embed) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') window.parent?.postMessage({ type: 'cabadra-booking-close' }, '*'); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [embed]);
+
   const handleSearch = async () => {
     if (nights < 1) { setError('Check-out must be after check-in.'); return; }
     setBusy(true); setError(null);
@@ -114,6 +122,7 @@ export default function PublicBookingPage() {
       <div className="text-center py-24 space-y-2">
         <p className="text-lg font-semibold text-on-surface">This booking link isn’t available</p>
         <p className="text-sm text-on-surface-variant">{loadError ?? 'Check the link, or contact the hotel directly.'}</p>
+        {embed && <button onClick={closeEmbed} className="mt-4 h-11 px-6 rounded-full border border-outline-variant text-sm font-medium text-on-surface hover:bg-surface-container-low">Close</button>}
       </div>
     );
   }
