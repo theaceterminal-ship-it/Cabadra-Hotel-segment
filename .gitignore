@@ -16,3 +16,6 @@ supabase/.temp/
 .claude/worktrees/
 deno.lock
 promo/out/*.png
+promo/out/*.wav
+promo/*.onnx
+promo/voices.bin

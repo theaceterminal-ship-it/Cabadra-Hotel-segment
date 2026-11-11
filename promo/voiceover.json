@@ -1,0 +1,26 @@
+{
+  "voice": "af_heart",
+  "hindi_voice": "hf_alpha",
+  "films": {
+    "hotels": [
+      { "at": 0.4,  "until": 2.0,  "lang": "hi", "text": "अतिथि देवो भव।" },
+      { "at": 2.1,  "until": 5.5,  "text": "Serve every guest with warmth. Make every stay feel like home." },
+      { "at": 5.7,  "until": 10.4, "text": "Paper slips. WhatsApp messages. Phone calls. And half of it never reaches the bill." },
+      { "at": 10.7, "until": 17.2, "text": "With Cabadra, guests scan the QR in their room and order from their phone. Nothing to install." },
+      { "at": 17.6, "until": 23.4, "text": "Each order goes straight to the right department, and staff pick it up with a badge scan." },
+      { "at": 23.8, "until": 30.0, "text": "Every extra adds up to one total at checkout, ready to post into the PMS you already use." },
+      { "at": 30.4, "until": 34.9, "text": "Guests book treks and bonfires with a tap. That's new income." },
+      { "at": 35.3, "until": 39.0, "text": "Sign up, pay a one-time setup, and you're live." },
+      { "at": 39.5, "until": 43.0, "text": "Cabadra. Keep your PMS. Capture every extra." }
+    ],
+    "partners": [
+      { "at": 0.4,  "until": 5.4,  "text": "Taxi, tours, spa or shop? Be the first name guests see nearby." },
+      { "at": 5.8,  "until": 12.0, "text": "Guests at hotels near you open Cabadra to find what to do next, and your listing is right there." },
+      { "at": 12.4, "until": 17.6, "text": "They call you, message you, or ask for directions. No middleman, and no cut of your sale." },
+      { "at": 18.0, "until": 23.6, "text": "Guests can send you booking requests too, straight to your email." },
+      { "at": 24.0, "until": 29.4, "text": "Every month, a report shows how many guests saw you, opened your listing, and called." },
+      { "at": 29.8, "until": 33.9, "text": "Sign up, we check your listing, then pay and go live." },
+      { "at": 34.3, "until": 39.0, "text": "One monthly fee. No commission on your sales. Apply today." }
+    ]
+  }
+}
