@@ -15,3 +15,4 @@ supabase/.temp/
 # folder's own .claude/worktrees — not part of Cabadra.
 .claude/worktrees/
 deno.lock
+promo/out/*.png
