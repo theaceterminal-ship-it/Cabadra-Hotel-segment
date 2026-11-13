@@ -3,24 +3,178 @@
   "hindi_voice": "hf_alpha",
   "films": {
     "hotels": [
-      { "at": 0.4,  "until": 2.0,  "lang": "hi", "text": "अतिथि देवो भव।" },
-      { "at": 2.1,  "until": 5.5,  "text": "Serve every guest with warmth. Make every stay feel like home." },
-      { "at": 5.7,  "until": 10.4, "text": "Paper slips. WhatsApp messages. Phone calls. And half of it never reaches the bill." },
-      { "at": 10.7, "until": 17.2, "text": "With Cabadra, guests scan the QR in their room and order from their phone. Nothing to install." },
-      { "at": 17.6, "until": 23.4, "text": "Each order goes straight to the right department, and staff pick it up with a badge scan." },
-      { "at": 23.8, "until": 30.0, "text": "Every extra adds up to one total at checkout, ready to post into the PMS you already use." },
-      { "at": 30.4, "until": 34.9, "text": "Guests book treks and bonfires with a tap. That's new income." },
-      { "at": 35.3, "until": 39.0, "text": "Sign up, pay a one-time setup, and you're live." },
-      { "at": 39.5, "until": 43.0, "text": "Cabadra. Keep your PMS. Capture every extra." }
+      {
+        "at": 0.4,
+        "until": 2.0,
+        "lang": "hi",
+        "text": "अतिथि देवो भव।"
+      },
+      {
+        "at": 2.1,
+        "until": 5.5,
+        "text": "Serve every guest with warmth. Make every stay feel like home."
+      },
+      {
+        "at": 5.7,
+        "until": 10.4,
+        "text": "Paper slips. WhatsApp messages. Phone calls. And half of it never reaches the bill."
+      },
+      {
+        "at": 10.7,
+        "until": 17.2,
+        "text": "With Cabadra, guests scan the QR in their room and order from their phone. Nothing to install."
+      },
+      {
+        "at": 17.6,
+        "until": 23.4,
+        "text": "Each order goes straight to the right department, and staff pick it up with a badge scan."
+      },
+      {
+        "at": 23.8,
+        "until": 30.0,
+        "text": "Every extra adds up to one total at checkout, ready to post into the PMS you already use."
+      },
+      {
+        "at": 30.4,
+        "until": 34.9,
+        "text": "Guests book treks and bonfires with a tap. That's new income."
+      },
+      {
+        "at": 35.3,
+        "until": 39.0,
+        "text": "Sign up, pay a one-time setup, and you're live."
+      },
+      {
+        "at": 39.5,
+        "until": 43.0,
+        "text": "Cabadra. Keep your PMS. Capture every extra."
+      }
     ],
     "partners": [
-      { "at": 0.4,  "until": 5.4,  "text": "Taxi, tours, spa or shop? Be the first name guests see nearby." },
-      { "at": 5.8,  "until": 12.0, "text": "Guests at hotels near you open Cabadra to find what to do next, and your listing is right there." },
-      { "at": 12.4, "until": 17.6, "text": "They call you, message you, or ask for directions. No middleman, and no cut of your sale." },
-      { "at": 18.0, "until": 23.6, "text": "Guests can send you booking requests too, straight to your email." },
-      { "at": 24.0, "until": 29.4, "text": "Every month, a report shows how many guests saw you, opened your listing, and called." },
-      { "at": 29.8, "until": 33.9, "text": "Sign up, we check your listing, then pay and go live." },
-      { "at": 34.3, "until": 39.0, "text": "One monthly fee. No commission on your sales. Apply today." }
+      {
+        "at": 0.4,
+        "until": 5.4,
+        "text": "Taxi, tours, spa or shop? Be the first name guests see nearby."
+      },
+      {
+        "at": 5.8,
+        "until": 12.0,
+        "text": "Guests at hotels near you open Cabadra to find what to do next, and your listing is right there."
+      },
+      {
+        "at": 12.4,
+        "until": 17.6,
+        "text": "They call you, message you, or ask for directions. No middleman, and no cut of your sale."
+      },
+      {
+        "at": 18.0,
+        "until": 23.6,
+        "text": "Guests can send you booking requests too, straight to your email."
+      },
+      {
+        "at": 24.0,
+        "until": 29.4,
+        "text": "Every month, a report shows how many guests saw you, opened your listing, and called."
+      },
+      {
+        "at": 29.8,
+        "until": 33.9,
+        "text": "Sign up, we check your listing, then pay and go live."
+      },
+      {
+        "at": 34.3,
+        "until": 39.0,
+        "text": "One monthly fee. No commission on your sales. Apply today."
+      }
     ]
+  },
+  "hindi": {
+    "voice": "hf_alpha",
+    "films": {
+      "hotels": [
+        {
+          "at": 0.4,
+          "until": 2.0,
+          "text": "अतिथि देवो भव।"
+        },
+        {
+          "at": 2.1,
+          "until": 5.5,
+          "text": "हर मेहमान को घर जैसा एहसास दें।"
+        },
+        {
+          "at": 5.7,
+          "until": 10.4,
+          "text": "पर्ची, व्हाट्सऐप, फ़ोन कॉल... और आधे चार्ज बिल तक पहुँचते ही नहीं।"
+        },
+        {
+          "at": 10.7,
+          "until": 17.2,
+          "text": "कबाड्रा के साथ, मेहमान कमरे का क्यू-आर स्कैन करके फ़ोन से ऑर्डर करते हैं। कोई ऐप नहीं।"
+        },
+        {
+          "at": 17.6,
+          "until": 23.4,
+          "text": "हर ऑर्डर सीधे सही डिपार्टमेंट तक, और स्टाफ़ बैज स्कैन करके उसे उठाता है।"
+        },
+        {
+          "at": 23.8,
+          "until": 30.0,
+          "text": "चेकआउट पर सारे एक्स्ट्रा चार्ज का एक टोटल, सीधे आपके पी-एम-एस के लिए।"
+        },
+        {
+          "at": 30.4,
+          "until": 34.9,
+          "text": "ट्रेक, बॉनफ़ायर, सब एक टैप में बुक। यानी नई कमाई।"
+        },
+        {
+          "at": 35.3,
+          "until": 39.0,
+          "text": "साइन अप करें, एक बार का सेटअप, और आप तैयार।"
+        },
+        {
+          "at": 39.5,
+          "until": 43.0,
+          "text": "कबाड्रा। अपना पी-एम-एस रखिए, हर एक्स्ट्रा कमाइए।"
+        }
+      ],
+      "partners": [
+        {
+          "at": 0.4,
+          "until": 5.4,
+          "text": "टैक्सी, टूर, स्पा या दुकान? मेहमानों को सबसे पहले आपका नाम दिखे।"
+        },
+        {
+          "at": 5.8,
+          "until": 12.0,
+          "text": "पास के होटलों के मेहमान कबाड्रा खोलते हैं, और वहीं आपकी लिस्टिंग दिखती है।"
+        },
+        {
+          "at": 12.4,
+          "until": 17.6,
+          "text": "मेहमान सीधे आपको कॉल या मैसेज करते हैं। न बिचौलिया, न कमीशन।"
+        },
+        {
+          "at": 18.0,
+          "until": 23.6,
+          "text": "मेहमान बुकिंग रिक्वेस्ट भी भेज सकते हैं, सीधे आपके ईमेल पर।"
+        },
+        {
+          "at": 24.0,
+          "until": 29.4,
+          "text": "हर महीने एक रिपोर्ट: कितनों ने आपको देखा, लिस्टिंग खोली, और कॉल किया।"
+        },
+        {
+          "at": 29.8,
+          "until": 33.9,
+          "text": "साइन अप, हमारी जाँच, फिर पेमेंट और आप लाइव।"
+        },
+        {
+          "at": 34.3,
+          "until": 39.0,
+          "text": "एक मासिक फ़ीस, कोई कमीशन नहीं। आज ही अप्लाई करें।"
+        }
+      ]
+    }
   }
 }

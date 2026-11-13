@@ -36,4 +36,11 @@ KOKORO_DIR=/path/to/models python3 promo/voiceover.py hotels
 KOKORO_DIR=/path/to/models python3 promo/voiceover.py partners
 ```
 
+For the Hindi narration (script under `"hindi"` in `voiceover.json`, voice `hf_alpha`), add `--hindi`.
+It writes `out/cabadra-hotels-voiceover-hindi.mp4` and `out/cabadra-partners-voiceover-hindi.mp4`:
+
+```bash
+KOKORO_DIR=/path/to/models python3 promo/voiceover.py hotels --hindi
+```
+
 Run it after `render.mjs`; it reads the silent MP4 and writes the `-voiceover` one next to it.

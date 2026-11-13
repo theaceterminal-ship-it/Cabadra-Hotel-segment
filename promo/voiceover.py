@@ -2,6 +2,7 @@
 
     python3 promo/voiceover.py hotels   -> promo/out/cabadra-hotels-voiceover.mp4
     python3 promo/voiceover.py partners
+    python3 promo/voiceover.py hotels --hindi  -> promo/out/cabadra-hotels-voiceover-hindi.mp4
 
 Lines and their timings are in promo/voiceover.json ("at" = start, "until" = the
 latest it may end, in seconds). A line that runs long is re-spoken a little faster
@@ -22,8 +23,12 @@ from kokoro_onnx import Kokoro
 
 here = os.path.dirname(os.path.abspath(__file__))
 name = sys.argv[1]
+hindi_film = '--hindi' in sys.argv[2:]
 cfg = json.load(open(os.path.join(here, 'voiceover.json')))
+if hindi_film:
+    cfg = {'voice': cfg['hindi']['voice'], 'hindi_voice': cfg['hindi']['voice'], 'films': cfg['hindi']['films']}
 lines = cfg['films'][name]
+suffix = '-hindi' if hindi_film else ''
 model_dir = os.environ.get('KOKORO_DIR', here)
 tts = Kokoro(os.path.join(model_dir, 'kokoro.onnx'), os.path.join(model_dir, 'voices.bin'))
 
@@ -40,7 +45,7 @@ def trim(a, threshold=0.01):
 
 
 for line in lines:
-    hindi = line.get('lang') == 'hi'
+    hindi = hindi_film or line.get('lang') == 'hi'
     voice = cfg['hindi_voice'] if hindi else cfg['voice']
     lang = 'hi' if hindi else 'en-us'
     window = line['until'] - line['at']
@@ -60,10 +65,10 @@ for line in lines:
 
 peak = np.max(np.abs(track)) or 1.0
 track = track / peak * 0.89  # about -1 dBFS
-wav = os.path.join(here, 'out', f'{name}-voiceover.wav')
+wav = os.path.join(here, 'out', f'{name}-voiceover{suffix}.wav')
 sf.write(wav, track, SR)
 
-out = os.path.join(here, 'out', f'cabadra-{name}-voiceover.mp4')
+out = os.path.join(here, 'out', f'cabadra-{name}-voiceover{suffix}.mp4')
 subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', video, '-i', wav,
                 '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k',
                 '-af', 'highpass=f=70,acompressor=threshold=-18dB:ratio=3:attack=5:release=120,loudnorm=I=-16:TP=-1.5',
