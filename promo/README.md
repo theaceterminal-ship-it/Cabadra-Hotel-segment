@@ -44,3 +44,17 @@ KOKORO_DIR=/path/to/models python3 promo/voiceover.py hotels --hindi
 ```
 
 Run it after `render.mjs`; it reads the silent MP4 and writes the `-voiceover` one next to it.
+
+## Vertical (9:16) cuts for Reels and Shorts
+
+`hotels-vertical.html` and `partners-vertical.html` are portrait layouts (1080×1920) of the same scenes,
+with the same timings, so the voiceover scripts fit them unchanged. Content stays clear of the top ~220 px
+and bottom ~380 px, where Reels and Shorts draw their own buttons and captions.
+
+```bash
+node promo/render.mjs hotels-vertical
+KOKORO_DIR=/path/to/models python3 promo/voiceover.py hotels-vertical          # English
+KOKORO_DIR=/path/to/models python3 promo/voiceover.py hotels-vertical --hindi  # Hindi
+```
+
+When you change a scene's timing, change it in both the 16:9 and 9:16 pages.

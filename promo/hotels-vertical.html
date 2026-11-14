@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cabadra for Hotels (9:16)</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Yatra+One&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<!-- Portrait cut of hotels.html: same scenes and timings (so voiceover.json fits as is), laid out for 1080×1920.
+     Content keeps clear of the top ~220px and bottom ~380px, where Reels/Shorts draw their own UI. -->
+<style>
+  :root { --w: 1080px; --h: 1920px; }
+  .h1 { font-size: 104px; }
+  .h2 { font-size: 80px; }
+  .body { font-size: 36px; }
+  .pad { position: absolute; left: 80px; right: 80px; }
+
+  .hero-bg { position: absolute; inset: 0; background: url(hero.jpg) center/cover, var(--mist); animation: kenburns 6s var(--ease) 0s both; }
+  .hero-haze { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(242,244,242,.7) 0%, rgba(242,244,242,.35) 40%, rgba(0,0,0,0) 62%, rgba(0,0,0,.35) 100%); }
+  .hero-title { font-size: 168px; line-height: 1.05; }
+  .hero-title .w { color: #fff; text-shadow: 0 4px 40px rgba(0,0,0,.3); }
+  .glass { display: inline-flex; align-items: center; gap: 14px; padding: 16px 30px; border-radius: 999px; border: 2px solid #ffffffcc; color: #fff; font-size: 32px; font-weight: 500; text-shadow: 0 1px 10px #0006; backdrop-filter: blur(8px); background: #0000004d; }
+
+  .pain { font-size: 76px; font-weight: 600; letter-spacing: -0.035em; line-height: 1.3; position: relative; display: inline-block; color: #1b1b1b; }
+  .pain::after { content: ''; position: absolute; left: -8px; right: -8px; top: 54%; height: 9px; border-radius: 6px; background: #d64f6e; transform-origin: left; animation: strike .5s var(--ease) var(--s) both; }
+  .pain-wrap > .in { animation: fadeUp .9s var(--ease) var(--d) both, dim .5s ease var(--s) both; margin-bottom: 18px; }
+  @keyframes dim { to { opacity: .35; } }
+
+  .tile { background: #fff; border-radius: 26px; padding: 22px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 4px 14px #0000000d; }
+  .tile .mi { font-size: 40px; width: 64px; height: 64px; border-radius: 18px; display: grid; place-items: center; }
+  .tile b { font-size: 22px; font-weight: 600; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 34px 34px 0 0; padding: 30px 30px 40px; box-shadow: 0 -20px 50px #0000001f; animation: sheetUp .8s var(--ease) var(--d) both; }
+  @keyframes sheetUp { from { transform: translateY(110%); } to { transform: none; } }
+  .tap { position: absolute; width: 90px; height: 90px; border-radius: 50%; border: 4px solid var(--lime-deep); opacity: 0; animation: tap 0.9s ease-out var(--d) both; }
+  @keyframes tap { 0% { opacity: 0; transform: scale(.4);} 20% {opacity: 1;} 100% { opacity: 0; transform: scale(1.6);} }
+  .qr { width: 260px; height: 260px; border-radius: 32px; background: #fff; padding: 30px; position: relative; overflow: hidden; }
+  .qr svg { width: 100%; height: 100%; }
+  .scanline { position: absolute; left: 18px; right: 18px; height: 6px; border-radius: 4px; background: var(--lime); box-shadow: 0 0 24px var(--lime); animation: scan 1.6s ease-in-out var(--d) 2 both; }
+  @keyframes scan { 0% { top: 18px; } 50% { top: 236px; } 100% { top: 18px; } }
+  .scale85 { transform: scale(.85); transform-origin: top left; }
+
+  .kds { width: 920px; height: 540px; background: #16151a; border-radius: 40px; padding: 30px; color: #fff; position: relative; }
+  .kds-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; height: 420px; margin-top: 24px; }
+  .kds-col { background: #ffffff0d; border-radius: 24px; padding: 20px; }
+  .kds-col h4 { font-size: 20px; letter-spacing: .12em; text-transform: uppercase; color: #ffffff80; font-weight: 600; }
+  .ticket { position: absolute; top: 150px; left: 44px; width: 246px; background: #fff; color: var(--ink); border-radius: 20px; padding: 20px; box-shadow: 0 20px 40px #0006; animation: pop .6s var(--ease) var(--d) both, ticketMove 4.6s var(--ease) var(--m) both; }
+  @keyframes ticketMove { 0%, 22% { transform: translateX(0); } 38%, 62% { transform: translateX(293px); } 78%, 100% { transform: translateX(586px); } }
+  .ghost { background: #ffffff12; border-radius: 20px; height: 100px; margin-top: 16px; }
+  .stage-pill { display: inline-flex; align-items: center; gap: 16px; font-size: 36px; font-weight: 600; }
+
+  .folio { width: 920px; padding: 48px 52px; }
+  .line { display: flex; justify-content: space-between; font-size: 32px; padding: 20px 0; border-bottom: 2px dashed #0000001a; }
+  .line span:first-child { color: #1b1b1bcc; }
+  .line .mi { font-size: 32px; vertical-align: -6px; margin-right: 14px; color: var(--lime-deep); }
+  .total { display: flex; justify-content: space-between; align-items: baseline; padding-top: 30px; font-size: 40px; font-weight: 600; }
+  .total .amt { font-size: 80px; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+
+  .dusk { position: absolute; inset: 0; background: url(hero.jpg) center/cover; filter: brightness(.55) saturate(1.2) hue-rotate(-12deg); animation: kenburns 6s linear var(--d) both; }
+  .dusk-tint { position: absolute; inset: 0; background: linear-gradient(180deg, #1a120cf0 0%, #2a1a10aa 50%, #e0a43a33 100%); }
+  .xp { width: 680px; overflow: hidden; }
+  .xp-img { height: 320px; background: radial-gradient(circle at 50% 110%, #ffb347 0%, #e0602a 30%, #5a2a1a 62%, #1e1410 100%); position: relative; }
+  .xp-img::after { content: ''; position: absolute; left: 50%; bottom: 40px; width: 70px; height: 90px; transform: translateX(-50%); background: radial-gradient(ellipse at 50% 80%, #fff6b0 0%, #ffb02e 40%, #e0602a00 72%); filter: blur(2px); }
+
+  .step { width: 920px; padding: 40px 44px; text-align: left; display: grid; grid-template-columns: 90px 1fr; column-gap: 20px; }
+  .step .n { font-size: 40px; font-weight: 600; color: var(--lime-deep); grid-row: span 2; }
+  .step h3 { font-size: 52px; letter-spacing: -0.03em; margin-bottom: 10px; }
+  .step p { font-size: 30px; line-height: 1.4; color: #1b1b1bb3; }
+</style>
+</head>
+<body data-duration="43" data-size="1080x1920">
+<div class="stage">
+
+  <!-- S1 · Hero -->
+  <section class="scene" style="--d:0s; --o:5.1s">
+    <div class="hero-bg"></div>
+    <div class="hero-haze"></div>
+    <div class="brandtag in" style="--d:.2s; top:250px; left:80px; font-size:44px">Cabadra</div>
+    <div class="pad center" style="top:420px">
+      <h1 class="deva hero-title">
+        <span class="in" style="--d:.4s; display:inline-block">अतिथि देवो</span><br>
+        <span class="in w" style="--d:.7s; display:inline-block">भव</span>
+      </h1>
+      <p class="body in" style="--d:1.2s; margin-top:36px; color:#1b1b1bd9; font-size:40px">Let’s serve our guests with warmth, and make every stay feel like coming home.</p>
+    </div>
+    <div class="pad" style="top:1180px; display:flex; flex-direction:column; gap:18px; align-items:center">
+      <span class="glass in" style="--d:2.0s">Works with any PMS</span>
+      <span class="glass in" style="--d:2.2s">Every extra charge captured</span>
+      <span class="glass in" style="--d:2.4s">Guest app, no download needed</span>
+    </div>
+  </section>
+
+  <!-- S2 · The problem -->
+  <section class="scene" style="--d:5.2s; --o:10.4s">
+    <div class="pad" style="top:420px">
+      <p class="eyebrow in" style="--d:5.4s; margin-bottom:40px">How extras get lost today</p>
+      <div class="pain-wrap"><div class="in" style="--d:5.7s; --s:7.7s"><span class="pain" style="--s:7.7s">Room service on a slip.</span></div></div>
+      <div class="pain-wrap"><div class="in" style="--d:6.2s; --s:7.95s"><span class="pain" style="--s:7.95s">Laundry on WhatsApp.</span></div></div>
+      <div class="pain-wrap"><div class="in" style="--d:6.7s; --s:8.2s"><span class="pain" style="--s:8.2s">Spa over a phone call.</span></div></div>
+      <p class="h3 in" style="--d:8.6s; margin-top:60px; font-size:60px">…and half of it never reaches the <span class="hl">checkout bill.</span></p>
+    </div>
+  </section>
+
+  <!-- S3 · Guest app -->
+  <section class="scene" style="--d:10.3s; --o:17.2s; background:var(--mist)">
+    <div class="pad" style="top:250px; display:flex; flex-direction:column; gap:24px">
+      <p class="eyebrow in" style="--d:10.6s">Guest app</p>
+      <h2 class="h2 in" style="--d:10.8s; font-size:72px">Guests scan the room QR and <span class="hl">order from their phone.</span></h2>
+      <div class="in" style="--d:11.4s; display:flex; gap:16px"><span class="chip"><span class="mi" style="font-size:32px">download_for_offline</span> Nothing to install</span><span class="chip"><span class="mi" style="font-size:32px">qr_code_2</span> One QR per room</span></div>
+    </div>
+    <div class="pop" style="--d:10.9s; position:absolute; left:80px; top:960px">
+      <div class="qr card">
+        <svg viewBox="0 0 21 21" shape-rendering="crispEdges"><path fill="#111" d="M0 0h7v7H0zM1 1v5h5V1zM2 2h3v3H2zM14 0h7v7h-7zM15 1v5h5V1zM16 2h3v3h-3zM0 14h7v7H0zM1 15v5h5v-5zM2 16h3v3H2zM8 0h1v1H8zM10 0h2v1h-2zM9 2h2v2H9zM12 3h1v2h-1zM8 5h1v3H8zM10 6h2v1h-2zM0 8h2v1H0zM3 8h3v1H3zM2 10h2v2H2zM5 10h2v1H5zM8 9h3v1H8zM12 8h2v2h-2zM15 8h2v1h-2zM18 8h3v1h-3zM9 11h2v2H9zM13 11h3v1h-3zM17 10h2v3h-2zM20 11h1v2h-1zM8 14h2v1H8zM11 13h1v3h-1zM13 14h3v2h-3zM17 15h4v1h-4zM8 17h3v1H8zM12 18h2v2h-2zM15 17h2v3h-2zM18 18h3v1h-3zM9 19h2v2H9zM19 20h2v1h-2z"/></svg>
+        <div class="scanline" style="--d:11.3s"></div>
+      </div>
+      <p style="text-align:center; font-size:28px; font-weight:600; margin-top:20px">Room 204</p>
+    </div>
+    <div style="position:absolute; left:592px; top:740px" class="scale85">
+    <div class="phone in-r" style="--d:11.6s">
+      <div class="screen">
+        <div class="notch"></div>
+        <div style="padding:80px 30px 0">
+          <p style="font-size:20px; color:#1b1b1b99">Good evening</p>
+          <p style="font-size:38px; font-weight:600; letter-spacing:-0.02em">Room 204</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:28px">
+            <div class="tile pop" style="--d:12.2s"><span class="mi" style="background:#fbe9c8; color:#b8771a">room_service</span><b>Room dining</b></div>
+            <div class="tile pop" style="--d:12.35s"><span class="mi" style="background:#e5e1f4; color:#4a4470">spa</span><b>Spa</b></div>
+            <div class="tile pop" style="--d:12.5s"><span class="mi" style="background:#dceccd; color:#4f7a26">local_laundry_service</span><b>Laundry</b></div>
+            <div class="tile pop" style="--d:12.65s"><span class="mi" style="background:#d6e8f2; color:#2a6a8a">cleaning_services</span><b>Housekeeping</b></div>
+            <div class="tile pop" style="--d:12.8s"><span class="mi" style="background:#f6d9cf; color:#a8452a">local_fire_department</span><b>Experiences</b></div>
+            <div class="tile pop" style="--d:12.95s"><span class="mi" style="background:#e4e4e4; color:#333">airport_shuttle</span><b>Transfers</b></div>
+          </div>
+        </div>
+        <div class="sheet" style="--d:13.7s">
+          <p style="font-size:20px; color:#1b1b1b99">Your order</p>
+          <div style="display:flex; justify-content:space-between; font-size:28px; font-weight:600; margin:12px 0 4px"><span>Masala chai × 2</span><span>₹180</span></div>
+          <p style="font-size:20px; color:#1b1b1b99; margin-bottom:24px">Ginger, less sugar</p>
+          <div data-swap="0,15.3">
+            <div style="background:#111; color:#fff; border-radius:999px; text-align:center; padding:22px; font-size:26px; font-weight:600">Place order · ₹180</div>
+            <div style="background:var(--lime); color:#111; border-radius:999px; text-align:center; padding:22px; font-size:26px; font-weight:600">✓ Sent to kitchen</div>
+          </div>
+          <div class="tap" style="--d:14.9s; left:175px; top:150px"></div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <!-- S4 · Right department -->
+  <section class="scene" style="--d:17.3s; --o:23.4s">
+    <div class="pad" style="top:250px">
+      <p class="eyebrow in" style="--d:17.5s">Department screens</p>
+      <h2 class="h2 in" style="--d:17.7s; margin-top:20px">Straight to the right department.</h2>
+    </div>
+    <div class="kds in" style="--d:18.0s; position:absolute; left:80px; top:560px">
+      <div style="display:flex; justify-content:space-between; align-items:center">
+        <span style="font-size:32px; font-weight:600"><span class="mi" style="font-size:34px; vertical-align:-6px; color:var(--lime)">skillet</span>&nbsp; Kitchen</span>
+        <span style="font-size:22px; color:#ffffff80">Live</span>
+      </div>
+      <div class="kds-cols">
+        <div class="kds-col"><h4>New</h4><div class="ghost" style="margin-top:150px"></div></div>
+        <div class="kds-col"><h4>Preparing</h4><div class="ghost" style="margin-top:150px"></div><div class="ghost"></div></div>
+        <div class="kds-col"><h4>Delivered</h4><div class="ghost" style="margin-top:150px"></div></div>
+      </div>
+      <div class="ticket" style="--d:18.5s; --m:18.6s">
+        <p style="font-size:16px; color:#1b1b1b99; font-weight:600">ROOM 204 · GUEST APP</p>
+        <p style="font-size:26px; font-weight:600; margin-top:6px">Masala chai × 2</p>
+        <p style="font-size:17px; color:#1b1b1b99; margin-top:4px">Ginger, less sugar</p>
+      </div>
+    </div>
+    <div class="pad" style="top:1140px; display:grid; grid-template-columns:1fr 1fr; gap:24px">
+      <div class="card in" style="--d:18.6s; padding:30px">
+        <p style="font-size:20px; color:#1b1b1b99; font-weight:600">STATUS THE GUEST SEES</p>
+        <div data-swap="0,19.9,21.6" style="margin-top:16px">
+          <span class="stage-pill"><span class="dot" style="background:var(--amber)"></span>Sent to kitchen</span>
+          <span class="stage-pill"><span class="dot" style="background:var(--amber)"></span>Being prepared</span>
+          <span class="stage-pill"><span class="dot" style="background:var(--green)"></span>Delivered</span>
+        </div>
+      </div>
+      <div class="card in" style="--d:19.0s; padding:30px; display:flex; gap:20px; align-items:center">
+        <span class="mi" style="font-size:52px; width:88px; height:88px; flex:none; border-radius:24px; background:#dceccd; color:#4f7a26; display:grid; place-items:center">badge</span>
+        <p style="font-size:28px; line-height:1.3"><b>Staff pick it up</b><br>with a badge scan.</p>
+      </div>
+    </div>
+    <p class="pad body in" style="--d:20.4s; top:1380px">No calls, slips or WhatsApp. <b style="color:#111">Nobody has to chase it.</b></p>
+  </section>
+
+  <!-- S5 · One checkout total -->
+  <section class="scene" style="--d:23.5s; --o:30.0s; background:var(--mist)">
+    <div class="pad" style="top:250px">
+      <p class="eyebrow in" style="--d:23.7s">At checkout</p>
+      <h2 class="h2 in" style="--d:23.9s; margin-top:20px">One total. <span class="hl">Nothing missed.</span></h2>
+    </div>
+    <div class="card folio in" style="--d:24.0s; position:absolute; left:80px; top:520px">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:12px">
+        <span style="font-size:40px; font-weight:600; letter-spacing:-0.02em">Room 204 · Stay total</span>
+        <span style="font-size:24px; color:#1b1b1b80">3 nights</span>
+      </div>
+      <div class="line in" style="--d:24.7s"><span><span class="mi">room_service</span>Masala chai × 2</span><span>₹180</span></div>
+      <div class="line in" style="--d:25.2s"><span><span class="mi">local_laundry_service</span>Laundry · 4 items</span><span>₹320</span></div>
+      <div class="line in" style="--d:25.7s"><span><span class="mi">spa</span>Deep tissue massage</span><span>₹2,400</span></div>
+      <div class="line in" style="--d:26.2s"><span><span class="mi">airport_shuttle</span>Airport transfer</span><span>₹1,800</span></div>
+      <div class="line in" style="--d:26.7s"><span><span class="mi">local_fire_department</span>Bonfire & dinner × 2</span><span>₹3,000</span></div>
+      <div class="total"><span>Extras total</span><span class="amt" data-count="0,7700,24.7,3.0" data-prefix="₹" data-fmt="inr">₹0</span></div>
+      <div class="pop" style="--d:28.3s; margin-top:26px; background:#111; color:#fff; border-radius:999px; padding:24px; text-align:center; font-size:30px; font-weight:600">Post ₹7,700 to PMS</div>
+    </div>
+    <p class="pad in" style="--d:28.0s; top:1360px; font-size:34px; font-weight:500; line-height:1.4">Works alongside <b>eZee</b>, <b>Hotelogix</b> or any other PMS. <span style="color:#1b1b1b99">No integration needed.</span></p>
+  </section>
+
+  <!-- S6 · Experiences -->
+  <section class="scene" style="--d:30.1s; --o:34.9s; background:#1a120c">
+    <div class="dusk" style="--d:30.1s"></div>
+    <div class="dusk-tint"></div>
+    <div class="pad" style="top:250px; color:#fff; display:flex; flex-direction:column; gap:26px">
+      <p class="eyebrow in" style="--d:30.4s; color:#ffffffaa">Exclusive experiences</p>
+      <h2 class="h2 in" style="--d:30.6s">Guests ask what to do. Answer with a tap.</h2>
+      <p class="body in" style="--d:31.1s; color:#ffffffcc"><b style="color:var(--lime)">New income from extras.</b></p>
+    </div>
+    <div class="card xp in" style="--d:31.0s; position:absolute; left:200px; top:760px">
+      <div class="xp-img"></div>
+      <div style="padding:34px 38px">
+        <p style="font-size:20px; letter-spacing:.14em; text-transform:uppercase; color:#1b1b1b99; font-weight:600">Exclusive Experiences</p>
+        <p style="font-size:44px; font-weight:600; letter-spacing:-0.02em; margin-top:10px">Sunset bonfire & dinner</p>
+        <p style="font-size:26px; color:#1b1b1b99; margin-top:6px">Per person · tonight, 7 pm</p>
+        <div data-swap="0,33.0" style="margin-top:26px">
+          <div style="background:#111; color:#fff; border-radius:999px; text-align:center; padding:22px; font-size:28px; font-weight:600">Book now</div>
+          <div style="background:var(--lime); color:#111; border-radius:999px; text-align:center; padding:22px; font-size:28px; font-weight:600">✓ Booked · 2 guests</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- S7 · How it works -->
+  <section class="scene" style="--d:35.0s; --o:38.9s">
+    <div class="pad" style="top:250px">
+      <p class="eyebrow in" style="--d:35.2s">How it works</p>
+      <h2 class="h2 in" style="--d:35.4s; margin-top:20px">Up and running in three steps.</h2>
+    </div>
+    <div class="pad" style="top:640px; display:flex; flex-direction:column; gap:30px">
+      <div class="card step in" style="--d:35.8s"><span class="n">01</span><h3>Sign up</h3><p>With Google or email and password.</p></div>
+      <div class="card step in" style="--d:36.2s"><span class="n">02</span><h3>One-time setup</h3><p><b style="color:#111">₹4,999 per property.</b> Your dashboard opens straight away.</p></div>
+      <div class="card step in" style="--d:36.6s"><span class="n">03</span><h3>Add your property</h3><p>Menu, services, a QR in each room. Keep your PMS.</p></div>
+    </div>
+  </section>
+
+  <!-- S8 · End card -->
+  <section class="scene last center" style="--d:39.0s; background:var(--mist); padding-bottom:200px">
+    <p class="deva blur-in" style="--d:39.2s; font-size:64px; color:#1b1b1bb3">अतिथि देवो भव</p>
+    <h1 class="h1 blur-in" style="--d:39.5s; font-size:190px; margin:10px 0 24px">Cabadra</h1>
+    <p class="h3 in" style="--d:40.0s; font-weight:500; font-size:56px">Keep your PMS.<br><span class="hl">Capture every extra.</span></p>
+    <div class="in" style="--d:40.6s; display:flex; flex-direction:column; gap:28px; align-items:center; margin-top:70px">
+      <span class="btn" style="font-size:38px">Get started →</span>
+      <span class="url" style="font-size:40px">hotel.churmuri.com</span>
+    </div>
+  </section>
+
+  <div class="progress"></div>
+</div>
+<script src="shared.js"></script>
+</body>
+</html>

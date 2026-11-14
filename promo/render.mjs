@@ -2,6 +2,7 @@
 //   node promo/render.mjs hotels            -> promo/out/cabadra-hotels.mp4
 //   node promo/render.mjs partners --fps 30 -> promo/out/cabadra-partners.mp4
 //   node promo/render.mjs hotels --still 12.5  -> PNG of one moment, for checking
+//   node promo/render.mjs hotels-vertical   -> 9:16 version for Reels/Shorts
 // Needs Playwright (Chromium) and ffmpeg on PATH.
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
@@ -17,7 +18,7 @@ const name = args[0];
 const opt = k => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : undefined; };
 const fps = Number(opt('--fps') || 30);
 const still = opt('--still');
-if (!name) { console.error('usage: node promo/render.mjs <hotels|partners> [--fps 30] [--still seconds]'); process.exit(1); }
+if (!name) { console.error('usage: node promo/render.mjs <hotels|partners|hotels-vertical|partners-vertical> [--fps 30] [--still seconds]'); process.exit(1); }
 
 const outDir = join(here, 'out');
 mkdirSync(outDir, { recursive: true });
@@ -26,6 +27,9 @@ const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
 await page.goto(pathToFileURL(join(here, `${name}.html`)).href + '?render', { waitUntil: 'networkidle' });
 await page.evaluate(() => document.fonts.ready);
+// Portrait pages set data-size="1080x1920" on <body>.
+const [vw, vh] = (await page.evaluate(() => document.body.dataset.size || '1920x1080')).split('x').map(Number);
+await page.setViewportSize({ width: vw, height: vh });
 const duration = await page.evaluate(() => window.DURATION);
 
 if (still !== undefined) {

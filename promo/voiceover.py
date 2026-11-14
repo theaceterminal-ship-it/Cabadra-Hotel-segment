@@ -3,6 +3,7 @@
     python3 promo/voiceover.py hotels   -> promo/out/cabadra-hotels-voiceover.mp4
     python3 promo/voiceover.py partners
     python3 promo/voiceover.py hotels --hindi  -> promo/out/cabadra-hotels-voiceover-hindi.mp4
+    python3 promo/voiceover.py hotels-vertical [--hindi]  -> the 9:16 cut, same script
 
 Lines and their timings are in promo/voiceover.json ("at" = start, "until" = the
 latest it may end, in seconds). A line that runs long is re-spoken a little faster
@@ -27,7 +28,8 @@ hindi_film = '--hindi' in sys.argv[2:]
 cfg = json.load(open(os.path.join(here, 'voiceover.json')))
 if hindi_film:
     cfg = {'voice': cfg['hindi']['voice'], 'hindi_voice': cfg['hindi']['voice'], 'films': cfg['hindi']['films']}
-lines = cfg['films'][name]
+# A vertical cut has the same scenes and timings, so it reuses its film's script.
+lines = cfg['films'][name.removesuffix('-vertical')]
 suffix = '-hindi' if hindi_film else ''
 model_dir = os.environ.get('KOKORO_DIR', here)
 tts = Kokoro(os.path.join(model_dir, 'kokoro.onnx'), os.path.join(model_dir, 'voices.bin'))

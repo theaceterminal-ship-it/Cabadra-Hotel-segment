@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cabadra for Partners (9:16)</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Yatra+One&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<!-- Portrait cut of partners.html: same scenes and timings (so voiceover.json fits as is), laid out for 1080×1920.
+     Content keeps clear of the top ~220px and bottom ~380px, where Reels/Shorts draw their own UI. -->
+<style>
+  :root { --w: 1080px; --h: 1920px; }
+  .h1 { font-size: 112px; }
+  .h2 { font-size: 80px; }
+  .body { font-size: 36px; }
+  .pad { position: absolute; left: 80px; right: 80px; }
+
+  .hero-bg { position: absolute; inset: 0; background: url(hero.jpg) center/cover, var(--mist); animation: kenburns 6.5s var(--ease) 0s both; }
+  .hero-haze { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(244,243,238,.94) 0%, rgba(244,243,238,.8) 50%, rgba(244,243,238,.15) 80%); }
+
+  .pcard { width: 300px; flex: none; background: #fff; border-radius: 26px; overflow: hidden; box-shadow: 0 6px 18px #0000000f; }
+  .pcard .img { height: 160px; position: relative; display: grid; place-items: center; }
+  .pcard .img .mi { font-size: 64px; color: #ffffffd9; }
+  .pcard .meta { padding: 18px 20px 22px; }
+  .pcard b { font-size: 24px; display: block; }
+  .pcard span.t { font-size: 18px; color: #1b1b1b99; }
+  .badge { position: absolute; top: 14px; left: 14px; background: var(--lime); color: #111; font-size: 16px; font-weight: 700; padding: 6px 12px; border-radius: 999px; display: flex; align-items: center; gap: 6px; }
+  .row { display: flex; gap: 18px; }
+  .detail { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 34px 34px 0 0; padding: 30px 30px 42px; box-shadow: 0 -20px 50px #00000024; animation: sheetUp .8s var(--ease) var(--d) both; }
+  @keyframes sheetUp { from { transform: translateY(110%); } to { transform: none; } }
+  .act { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px 0; border-radius: 22px; background: #f2f1ec; font-size: 18px; font-weight: 600; }
+  .act .mi { font-size: 34px; }
+  .scale9 { transform: none; }
+
+  .big { width: 920px; height: 200px; border-radius: 44px; display: flex; align-items: center; gap: 40px; padding: 0 56px; font-size: 56px; font-weight: 600; letter-spacing: -0.02em; position: relative; }
+  .big .mi { font-size: 96px; }
+  .ring { position: absolute; inset: 0; border-radius: 44px; border: 4px solid currentColor; opacity: 0; animation: ring 1.2s ease-out var(--d) 2 forwards; }
+  @keyframes ring { 0% { transform: scale(1); opacity: .8; } 100% { transform: scale(1.05); opacity: 0; } }
+
+  .mail { width: 920px; padding: 44px 48px; text-align: left; }
+  .mail .from { display: flex; align-items: center; gap: 20px; padding-bottom: 26px; border-bottom: 2px solid #0000000f; }
+  .avatar { width: 72px; height: 72px; border-radius: 50%; background: var(--lime); display: grid; place-items: center; font-size: 30px; font-weight: 700; flex: none; }
+  .quote { font-size: 64px; font-weight: 600; letter-spacing: -0.03em; margin: 34px 0 30px; min-height: 80px; }
+  .kv { display: grid; grid-template-columns: 200px 1fr; row-gap: 14px; font-size: 30px; }
+  .kv dt { color: #1b1b1b80; }
+  .typing::after { content: '|'; color: var(--lime-deep); margin-left: 2px; }
+
+  .stat { padding: 22px 30px; text-align: left; }
+  .stat .mi { font-size: 34px; color: var(--lime-deep); }
+  .stat .v { font-size: 64px; font-weight: 600; letter-spacing: -0.04em; margin-top: 8px; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 26px; color: #1b1b1b99; }
+  .bar { height: 14px; border-radius: 8px; background: var(--lime); transform-origin: left; animation: strike 1.6s var(--ease) var(--d) both; margin-top: 16px; }
+  .tick { display: flex; align-items: center; gap: 18px; font-size: 32px; }
+  .tick .mi { font-size: 36px; color: var(--lime-deep); }
+
+  .step { width: 920px; padding: 36px 44px; text-align: left; display: grid; grid-template-columns: 100px 1fr; column-gap: 16px; }
+  .step .n { width: 76px; height: 76px; border-radius: 50%; background: #111; color: #fff; display: grid; place-items: center; font-size: 34px; font-weight: 600; grid-row: span 2; }
+  .step h3 { font-size: 50px; letter-spacing: -0.03em; margin-bottom: 8px; }
+  .step p { font-size: 30px; line-height: 1.4; color: #1b1b1bb3; }
+  .arrow { font-size: 56px; color: var(--lime-deep); text-align: center; line-height: 1; }
+</style>
+</head>
+<body data-duration="39" data-size="1080x1920">
+<div class="stage">
+
+  <!-- P1 · Hook -->
+  <section class="scene" style="--d:0s; --o:5.4s">
+    <div class="hero-bg"></div>
+    <div class="hero-haze"></div>
+    <div class="brandtag in" style="--d:.2s; top:250px; left:80px; font-size:44px">Cabadra <span style="font-weight:400; color:#1b1b1b99">Partners</span></div>
+    <div class="pad" style="top:480px; display:flex; flex-direction:column; gap:40px">
+      <p class="eyebrow in" style="--d:.4s">Taxis · tours · spas · shops</p>
+      <h1 class="h1 in" style="--d:.6s">Be the first name guests <span class="hl">see nearby.</span></h1>
+      <p class="body in" style="--d:1.3s">Guests at hotels and homestays across Himachal open the Cabadra app on their phone. Be in it.</p>
+    </div>
+  </section>
+
+  <!-- P2 · Where guests find you -->
+  <section class="scene" style="--d:5.5s; --o:12.0s; background:var(--mist)">
+    <div class="pad" style="top:250px; display:flex; flex-direction:column; gap:24px">
+      <p class="eyebrow in" style="--d:5.8s">Inside the guest app</p>
+      <h2 class="h2 in" style="--d:6.0s; font-size:72px">Right where guests look for <span class="hl">what to do next.</span></h2>
+    </div>
+    <div style="position:absolute; left:0; right:0; top:600px; display:flex; justify-content:center">
+    <div class="scale9">
+    <div class="phone in" style="--d:6.2s">
+      <div class="screen">
+        <div class="notch"></div>
+        <div style="padding:84px 0 0 28px">
+          <p style="font-size:18px; color:#1b1b1b99">Local favourites, picked by Cabadra</p>
+          <p style="font-size:36px; font-weight:600; letter-spacing:-0.02em; margin-bottom:22px">Around Kasauli</p>
+          <div class="row">
+            <div class="pcard pop" style="--d:6.9s"><div class="img" style="background:linear-gradient(135deg,#c9d6c1,#8fa58a)"><span class="badge"><span class="mi" style="font-size:16px">star</span>Featured</span><span class="mi">local_taxi</span></div><div class="meta"><b>Himalayan Cabs</b><span class="t">Airport & sightseeing</span></div></div>
+            <div class="pcard pop" style="--d:7.1s"><div class="img" style="background:linear-gradient(135deg,#d9d2c3,#a89a80)"><span class="mi">hiking</span></div><div class="meta"><b>Pine Trails</b><span class="t">Guided treks</span></div></div>
+          </div>
+          <div class="row" style="margin-top:18px">
+            <div class="pcard pop" style="--d:7.3s"><div class="img" style="background:linear-gradient(135deg,#e5e1f4,#9992c9)"><span class="mi">spa</span></div><div class="meta"><b>Cedar Spa</b><span class="t">Massage & wellness</span></div></div>
+            <div class="pcard pop" style="--d:7.5s"><div class="img" style="background:linear-gradient(135deg,#f3dcc4,#d29a62)"><span class="mi">storefront</span></div><div class="meta"><b>Hill Crafts</b><span class="t">Local shop</span></div></div>
+          </div>
+        </div>
+        <div class="detail" style="--d:9.0s">
+          <p style="font-size:30px; font-weight:600">Himalayan Cabs</p>
+          <p style="font-size:20px; color:var(--lime-deep); font-weight:600; margin:8px 0 22px"><span class="mi" style="font-size:20px; vertical-align:-3px">sell</span> 10% off for hotel guests</p>
+          <div style="display:flex; gap:12px">
+            <div class="act"><span class="mi" style="color:#111">call</span>Call</div>
+            <div class="act"><span class="mi" style="color:#25a35a">chat</span>WhatsApp</div>
+            <div class="act"><span class="mi" style="color:#2a6a8a">directions</span>Directions</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+    </div>
+  </section>
+
+  <!-- P3 · Direct contact, no cut -->
+  <section class="scene" style="--d:12.1s; --o:17.6s">
+    <h2 class="pad h2 in" style="--d:12.3s; top:250px">They call <span class="hl">you</span>, not someone else.</h2>
+    <div class="pad" style="top:560px; display:flex; flex-direction:column; gap:30px">
+      <div class="big pop" style="--d:12.8s; background:#111; color:#fff"><span class="mi">call</span>Call<span class="ring" style="--d:14.0s"></span></div>
+      <div class="big pop" style="--d:13.0s; background:#dff1e4; color:#1d7a44"><span class="mi">chat</span>WhatsApp<span class="ring" style="--d:14.4s"></span></div>
+      <div class="big pop" style="--d:13.2s; background:#d6e8f2; color:#2a6a8a"><span class="mi">directions</span>Directions<span class="ring" style="--d:14.8s"></span></div>
+    </div>
+    <p class="pad h3 in" style="--d:15.0s; top:1300px; font-weight:500">No middleman. <b>No cut of your sale.</b></p>
+  </section>
+
+  <!-- P4 · Booking requests -->
+  <section class="scene" style="--d:17.7s; --o:23.6s; background:var(--mist)">
+    <div class="pad" style="top:250px; display:flex; flex-direction:column; gap:24px">
+      <p class="eyebrow in" style="--d:18.0s">Booking requests</p>
+      <h2 class="h2 in" style="--d:18.2s">Guests ask. <span class="hl">You get it by email.</span></h2>
+    </div>
+    <div class="card mail in" style="--d:18.4s; position:absolute; left:80px; top:700px">
+      <div class="from">
+        <div class="avatar">C</div>
+        <div><p style="font-size:30px; font-weight:600">New booking request</p><p style="font-size:22px; color:#1b1b1b80">Cabadra · to Himalayan Cabs</p></div>
+        <span class="chip pop" style="--d:22.0s; margin-left:auto; background:var(--lime); box-shadow:none; font-size:22px; padding:10px 20px">Just now</span>
+      </div>
+      <p class="quote">“<span data-type="19.3,18">Cab to Kasauli at 9</span>”</p>
+      <dl class="kv in" style="--d:20.6s">
+        <dt>Guest</dt><dd>Sample guest</dd>
+        <dt>Phone</dt><dd>+91 98••• •••12</dd>
+        <dt>Staying at</dt><dd>A hotel near you</dd>
+      </dl>
+    </div>
+    <p class="pad body in" style="--d:18.7s; top:1330px">With their name, phone and the hotel they’re staying at.</p>
+  </section>
+
+  <!-- P5 · Monthly report -->
+  <section class="scene" style="--d:23.7s; --o:29.4s">
+    <div class="pad" style="top:250px">
+      <p class="eyebrow in" style="--d:23.9s">A report every month</p>
+      <h2 class="h2 in" style="--d:24.1s; margin-top:20px; font-size:72px">See exactly what your listing does.</h2>
+      <p class="in" style="--d:24.4s; font-size:22px; color:#1b1b1b80; margin-top:12px">Illustrative numbers</p>
+    </div>
+    <div class="pad" style="top:620px; display:grid; grid-template-columns:1fr 1fr; gap:24px">
+      <div class="card stat in" style="--d:24.6s; grid-column:span 2"><span class="mi">visibility</span><div class="v" data-count="0,1240,24.8,2.2" data-fmt="inr">0</div><div class="l">Guests saw you</div><div class="bar" style="--d:24.8s"></div></div>
+      <div class="card stat in" style="--d:24.8s"><span class="mi">touch_app</span><div class="v" data-count="0,386,25.0,2.2">0</div><div class="l">Opened your listing</div></div>
+      <div class="card stat in" style="--d:25.0s"><span class="mi">call</span><div class="v" data-count="0,74,25.2,2.2">0</div><div class="l">Called you</div></div>
+      <div class="card stat in" style="--d:25.2s"><span class="mi">chat</span><div class="v" data-count="0,52,25.4,2.2">0</div><div class="l">Messaged you</div></div>
+      <div class="card stat in" style="--d:25.4s"><span class="mi">directions</span><div class="v" data-count="0,41,25.6,2.2">0</div><div class="l">Asked for directions</div></div>
+    </div>
+    <div class="pad" style="top:1390px; display:grid; grid-template-columns:1fr 1fr; gap:22px 20px">
+      <span class="tick in" style="--d:26.6s"><span class="mi">notifications_active</span>Renewal reminders</span>
+      <span class="tick in" style="--d:26.9s"><span class="mi">star</span>Guest ratings</span>
+      <span class="tick in" style="--d:27.2s"><span class="mi">concierge</span>Front-desk bookings</span>
+      <span class="tick in" style="--d:27.5s"><span class="mi">receipt_long</span>GST invoices</span>
+    </div>
+  </section>
+
+  <!-- P6 · Three steps -->
+  <section class="scene" style="--d:29.5s; --o:33.9s; background:var(--mist)">
+    <h2 class="pad h2 in" style="--d:29.7s; top:250px">Three steps, then guests find you.</h2>
+    <div class="pad" style="top:600px; display:flex; flex-direction:column; gap:14px">
+      <div class="card step in" style="--d:30.1s"><span class="n">1</span><h3>Sign up</h3><p>With Google. Tell us about your business. Five minutes.</p></div>
+      <div class="arrow in" style="--d:30.5s">↓</div>
+      <div class="card step in" style="--d:30.7s"><span class="n">2</span><h3>We check it</h3><p>Checked by a person, usually within two working days.</p></div>
+      <div class="arrow in" style="--d:31.1s">↓</div>
+      <div class="card step in" style="--d:31.3s"><span class="n" style="background:var(--lime); color:#111">3</span><h3>Pay and go live</h3><p>Pay online. Guests nearby see you straight away.</p></div>
+    </div>
+  </section>
+
+  <!-- P7 · End card -->
+  <section class="scene last" style="--d:34.0s">
+    <div class="pad" style="top:440px; text-align:center; display:flex; flex-direction:column; align-items:center">
+      <h2 class="h2 blur-in" style="--d:34.2s">One monthly fee.<br><span class="hl">No commission on your sales.</span></h2>
+      <p class="body in" style="--d:34.9s; margin-top:40px">Pay for 1, 3, 6 or 12 months. No auto-renewal. Nothing to pay until you’re approved.</p>
+      <div class="in" style="--d:35.6s; display:flex; flex-direction:column; gap:28px; align-items:center; margin-top:70px">
+        <span class="btn" style="font-size:38px">Apply now →</span>
+        <span class="url" style="font-size:38px">hotel.churmuri.com/partners</span>
+      </div>
+      <p class="wordmark in" style="--d:36.2s; margin-top:110px; font-size:48px">Cabadra <span style="font-weight:400; color:#1b1b1b99">Partners</span></p>
+    </div>
+  </section>
+
+  <div class="progress"></div>
+</div>
+<script src="shared.js"></script>
+</body>
+</html>
