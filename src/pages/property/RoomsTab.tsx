@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import Papa from 'papaparse';
-import { Bed, BedDouble, Pencil, Plus, Upload, Users } from 'lucide-react';
+import { Bed, BedDouble, Check, ListChecks, Pencil, Plus, Upload, Users } from 'lucide-react';
 import { Room } from '../../types';
-import { addRoom, bulkAddRooms, deleteRoom, updateRoom } from '../../lib/staffApi';
+import { addRoom, bulkAddRooms, bulkUpdateRooms, deleteRoom, updateRoom } from '../../lib/staffApi';
 import { formatCurrency } from '../../lib/currency';
 import {
   ChoiceField, CsvImportModal, DeleteButton, SearchFilterBar, EmptyState, ErrorNote, Field, Modal, PhotoField, SectionHeader,
@@ -48,6 +48,18 @@ export function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChange
   const [typeFilter, setTypeFilter] = useState('');
   const [bedsFilter, setBedsFilter] = useState('');
   const [floorFilter, setFloorFilter] = useState('');
+
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkOpen, setBulkOpen] = useState(false);
+
+  const toggleRoom = (id: string) => setSelected(s => {
+    const next = new Set(s);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  const selectMany = (ids: string[]) => setSelected(s => new Set([...s, ...ids]));
+  const stopSelecting = () => { setSelecting(false); setSelected(new Set()); };
 
   const allFloors = [...new Set(rooms.map(r => r.floor))].sort((a, b) => a - b);
   const usedTypes = [...new Set(rooms.map(r => r.type).filter(Boolean))].sort();
@@ -170,6 +182,9 @@ export function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChange
         description={rooms.length ? `${rooms.length} room${rooms.length === 1 ? '' : 's'} on ${allFloors.length} floor${allFloors.length === 1 ? '' : 's'}.` : 'Each room gets its own QR code for the guest app.'}
         actions={rooms.length > 0 && (
           <>
+            <button onClick={() => (selecting ? stopSelecting() : setSelecting(true))} className={btnSecondary}>
+              <ListChecks className="size-4" /> {selecting ? 'Done' : 'Select'}
+            </button>
             <button onClick={() => { setShowImport(true); setImportResult(null); setImportError(null); }} className={btnSecondary}>
               <Upload className="size-4" /> Import
             </button>
@@ -204,6 +219,16 @@ export function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChange
             { id: 'floor', label: 'Floor', value: floorFilter, onChange: setFloorFilter, options: allFloors.map(f => ({ value: String(f), label: `Floor ${f}` })) },
           ].filter(g => g.options.length > 0)}
         />
+        {selecting && (
+          <div className="sticky top-24 z-20 mb-4 flex flex-wrap items-center gap-2 rounded-[20px] bg-surface-container-lowest border border-outline-variant px-4 py-3">
+            <p className="text-sm text-on-surface mr-auto">{selected.size === 0 ? 'Tap rooms to select them' : `${selected.size} selected`}</p>
+            <button onClick={() => selectMany(visibleRooms.map(r => r.id))} className={btnSecondary}>Select all{filtering ? ' shown' : ''}</button>
+            {selected.size > 0 && <button onClick={() => setSelected(new Set())} className={btnSecondary}>Clear</button>}
+            <button disabled={selected.size === 0} onClick={() => setBulkOpen(true)} className={btnPrimary}>
+              <Pencil className="size-4" /> Edit {selected.size > 0 ? selected.size : ''} room{selected.size === 1 ? '' : 's'}
+            </button>
+          </div>
+        )}
         {filtering && visibleRooms.length === 0 ? (
           <p className="text-sm text-on-surface-variant text-center py-12">No rooms match. Try another number or clear the filters.</p>
         ) : (
@@ -212,18 +237,27 @@ export function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChange
             const floorRooms = visibleRooms.filter(r => r.floor === floor);
             return (
               <section key={floor}>
-                <p className="text-sm font-medium text-on-surface-variant mb-3">
-                  Floor {floor} <span className="text-on-surface-variant/70">· {floorRooms.length}</span>
+                <p className="text-sm font-medium text-on-surface-variant mb-3 flex items-center gap-3">
+                  <span>Floor {floor} <span className="text-on-surface-variant/70">· {floorRooms.length}</span></span>
+                  {selecting && <button onClick={() => selectMany(floorRooms.map(r => r.id))} className="text-xs underline underline-offset-2 hover:text-on-surface">Select floor</button>}
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {floorRooms.map(r => (
+                  {floorRooms.map(r => {
+                    const picked = selecting && selected.has(r.id);
+                    return (
                     <div
                       key={r.id}
-                      onClick={() => openEdit(r)}
-                      className="group cursor-pointer rounded-[20px] bg-surface-container-lowest border border-outline-variant overflow-hidden hover:border-on-surface-variant transition-colors"
+                      onClick={() => (selecting ? toggleRoom(r.id) : openEdit(r))}
+                      aria-pressed={selecting ? picked : undefined}
+                      className={`group cursor-pointer rounded-[20px] border overflow-hidden transition-colors ${picked ? 'border-on-surface bg-highlight' : 'bg-surface-container-lowest border-outline-variant hover:border-on-surface-variant'}`}
                     >
-                      <div className="h-24 bg-surface-container flex items-center justify-center text-on-surface-variant">
+                      <div className="relative h-24 bg-surface-container flex items-center justify-center text-on-surface-variant">
                         {r.image ? <img src={r.image} alt={`Room ${r.number}`} className="size-full object-cover" /> : <Bed className="size-6 opacity-50" />}
+                        {selecting && (
+                          <span className={`absolute top-2 left-2 size-6 rounded-full border flex items-center justify-center ${picked ? 'bg-primary border-primary text-on-primary' : 'bg-surface-container-lowest/90 border-outline'}`}>
+                            {picked && <Check className="size-3.5" />}
+                          </span>
+                        )}
                       </div>
                       <div className="p-3.5">
                         <div className="flex items-start justify-between gap-1">
@@ -231,18 +265,23 @@ export function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChange
                             <p className="text-base font-semibold text-on-surface leading-tight">{r.number}</p>
                             <p className="text-xs text-on-surface-variant truncate mt-0.5">{r.type}</p>
                           </div>
-                          <div className="flex -mr-1.5 -mt-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
-                            <button onClick={() => openEdit(r)} className={iconBtn} aria-label={`Edit room ${r.number}`}><Pencil className="size-4" /></button>
-                            <DeleteButton onDelete={() => handleDelete(r.id)} label="Delete room" />
-                          </div>
+                          {!selecting && (
+                            <div className="flex -mr-1.5 -mt-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                              <button onClick={() => openEdit(r)} className={iconBtn} aria-label={`Edit room ${r.number}`}><Pencil className="size-4" /></button>
+                              <DeleteButton onDelete={() => handleDelete(r.id)} label="Delete room" />
+                            </div>
+                          )}
                         </div>
                         <div className="mt-2.5 flex items-center justify-between text-xs text-on-surface-variant">
                           <span className="inline-flex items-center gap-1"><Users className="size-3.5" /> {r.maxOccupancy}</span>
-                          {!hasExternalPms && <span className="font-medium text-on-surface">{formatCurrency(r.pricePerNight, currency)}<span className="text-on-surface-variant font-normal"> /night</span></span>}
+                          {!hasExternalPms && (r.pricePerNight > 0
+                            ? <span className="font-medium text-on-surface">{formatCurrency(r.pricePerNight, currency)}<span className="text-on-surface-variant font-normal"> /night</span></span>
+                            : <span className="font-medium text-warning">No price</span>)}
                         </div>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </section>
             );
@@ -288,6 +327,18 @@ export function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChange
         </Modal>
       )}
 
+      {bulkOpen && (
+        <BulkEditModal
+          rooms={rooms.filter(r => selected.has(r.id))}
+          currency={currency}
+          hasExternalPms={hasExternalPms}
+          usedTypes={usedTypes}
+          usedBeds={usedBeds}
+          onClose={() => setBulkOpen(false)}
+          onSaved={() => { setBulkOpen(false); stopSelecting(); onChanged(); }}
+        />
+      )}
+
       {showImport && (
         <CsvImportModal
           title="Import rooms"
@@ -301,5 +352,85 @@ export function RoomsTab({ propertyId, currency, rooms, hasExternalPms, onChange
         />
       )}
     </div>
+  );
+}
+
+/**
+ * One change for several rooms. A field left blank keeps each room's own value, so setting only the
+ * price leaves types and beds alone.
+ */
+function BulkEditModal({ rooms, currency, hasExternalPms, usedTypes, usedBeds, onClose, onSaved }: {
+  rooms: Room[]; currency: string; hasExternalPms: boolean; usedTypes: string[]; usedBeds: string[]; onClose: () => void; onSaved: () => void;
+}) {
+  const [form, setForm] = useState({ type: '', occupancy: '', price: '', bedsDescription: '', bathroomDetails: '', image: '' });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const set = (key: keyof typeof form) => (v: string) => setForm(f => ({ ...f, [key]: v }));
+
+  const numbers = [...rooms].sort((a, b) => a.number.localeCompare(b.number, undefined, { numeric: true })).map(r => r.number);
+  const changed = Object.values(form).some(v => v.trim() !== '');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const patch: Parameters<typeof bulkUpdateRooms>[1] = {};
+    if (form.type.trim()) patch.type = form.type.trim();
+    if (form.occupancy.trim()) {
+      const n = parseInt(form.occupancy, 10);
+      if (!(n >= 1 && n <= 20)) { setError('Sleeps should be a number from 1 to 20.'); return; }
+      patch.maxOccupancy = n;
+    }
+    if (form.price.trim()) {
+      const p = parseFloat(form.price);
+      if (!(p >= 0)) { setError('Enter the price as a number, such as 2500.'); return; }
+      patch.pricePerNight = p;
+    }
+    if (form.bedsDescription.trim()) patch.bedsDescription = form.bedsDescription.trim();
+    if (form.bathroomDetails.trim()) patch.bathroomDetails = form.bathroomDetails.trim();
+    if (form.image.trim()) patch.image = form.image.trim();
+    setSaving(true);
+    setError(null);
+    try {
+      await bulkUpdateRooms(rooms.map(r => r.id), patch);
+      onSaved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Couldn’t save the changes.');
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal
+      title={`Edit ${rooms.length} room${rooms.length === 1 ? '' : 's'}`}
+      description="Fill in only what should change. A blank field keeps each room as it is."
+      onClose={onClose}
+      onSubmit={handleSubmit}
+      footer={
+        <>
+          <button type="button" onClick={onClose} className={btnSecondary}>Cancel</button>
+          <button type="submit" disabled={saving || !changed} className={btnPrimary}>{saving ? 'Saving…' : `Save ${rooms.length} room${rooms.length === 1 ? '' : 's'}`}</button>
+        </>
+      }
+    >
+      <p className="text-xs text-on-surface-variant rounded-2xl bg-surface-container-low px-4 py-3">
+        Rooms {numbers.slice(0, 12).join(', ')}{numbers.length > 12 ? ` and ${numbers.length - 12} more` : ''}
+      </p>
+      <Field label="Room type" hint="Rooms with the same type are offered together on your booking link.">
+        <ChoiceField options={[...ROOM_TYPE_PRESETS, ...usedTypes]} value={form.type} onChange={set('type')} placeholder="Keep as is" emptyLabel="Keep as is" newLabel="Add a new type…" optional />
+      </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Sleeps"><input type="number" min={1} value={form.occupancy} onChange={e => set('occupancy')(e.target.value)} placeholder="Keep as is" className={inputCls} /></Field>
+        {!hasExternalPms && (
+          <Field label={`Price per night (${currency})`}><input type="number" min={0} value={form.price} onChange={e => set('price')(e.target.value)} placeholder="Keep as is" className={inputCls} /></Field>
+        )}
+      </div>
+      <Field label="Beds">
+        <ChoiceField options={[...BED_CONFIG_PRESETS, ...usedBeds]} value={form.bedsDescription} onChange={set('bedsDescription')} placeholder="Keep as is" emptyLabel="Keep as is" newLabel="Something else…" optional />
+      </Field>
+      <Field label="Bathroom">
+        <input value={form.bathroomDetails} onChange={e => set('bathroomDetails')(e.target.value)} placeholder="Keep as is" className={inputCls} />
+      </Field>
+      <PhotoField label="Photo for all of these rooms" value={form.image} onChange={set('image')} />
+      <ErrorNote>{error}</ErrorNote>
+    </Modal>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Check, Copy, ExternalLink, Link2 } from 'lucide-react';
+import { ArrowRight, Check, Copy, ExternalLink, Link2, TriangleAlert } from 'lucide-react';
+import type { Room } from '../../types';
 import { fetchBookingLink, setBookingLink } from '../../lib/publicBookingApi';
 import { ErrorNote, Panel, Switch, btnPrimary, btnSecondary } from './ui';
 
@@ -20,7 +21,7 @@ function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) 
  * The hotel's public booking link (0094) and the Book now button for its own website. Off until the
  * owner turns it on; bookings arrive in Reception as "website" bookings, pay at the hotel.
  */
-export function BookingLinkPanel({ propertyId }: { propertyId: string }) {
+export function BookingLinkPanel({ propertyId, rooms, onGoToRooms }: { propertyId: string; rooms: Room[]; onGoToRooms: () => void }) {
   const [state, setState] = useState<{ slug: string | null; enabled: boolean } | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +38,16 @@ export function BookingLinkPanel({ propertyId }: { propertyId: string }) {
   };
 
   if (!state) return error ? <ErrorNote>{error}</ErrorNote> : null;
+
+  // A room with no price is never offered to guests, so a link with none priced shows nothing at all.
+  const unpriced = rooms.filter(r => !(r.pricePerNight > 0)).length;
+  const roomsNote = rooms.length === 0
+    ? 'You haven’t added any rooms yet, so guests see no rooms.'
+    : unpriced === rooms.length
+      ? `None of your ${rooms.length} rooms has a price yet, so guests see no rooms.`
+      : unpriced > 0
+        ? `${unpriced} of your ${rooms.length} rooms have no price and won’t be offered to guests.`
+        : null;
 
   const origin = window.location.origin;
   const link = state.slug ? `${origin}/book/${state.slug}` : '';
@@ -55,6 +66,18 @@ export function BookingLinkPanel({ propertyId }: { propertyId: string }) {
         <Switch checked={state.enabled} onChange={toggle} disabled={saving} label="Booking link on" />
       </div>
       {error && <div className="mt-4"><ErrorNote>{error}</ErrorNote></div>}
+
+      {state.enabled && roomsNote && (
+        <button
+          type="button"
+          onClick={onGoToRooms}
+          className="mt-4 w-full flex items-center gap-3 rounded-[20px] bg-[#fbeedd] text-[#6b4511] px-5 py-4 text-left hover:brightness-[0.98] transition"
+        >
+          <TriangleAlert className="size-5 shrink-0" />
+          <span className="flex-1 text-sm"><span className="font-medium">{roomsNote}</span> Set prices and room types in Rooms, where you can select several rooms and edit them together.</span>
+          <ArrowRight className="size-4 shrink-0" />
+        </button>
+      )}
 
       {state.enabled && state.slug && (
         <div className="mt-5 space-y-5">

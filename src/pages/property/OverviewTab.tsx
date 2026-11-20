@@ -17,13 +17,14 @@ const ROOM_STATUSES: { key: Room['status']; label: string; dot: string }[] = [
   { key: 'maintenance', label: 'Maintenance', dot: 'bg-room-maintenance' },
 ];
 
-export function OverviewTab({ property, rooms, staff, ticketAnalytics, onChanged, onGoToStaff }: {
+export function OverviewTab({ property, rooms, staff, ticketAnalytics, onChanged, onGoToStaff, onGoToRooms }: {
   property: Property;
   rooms: Room[];
   staff: StaffMember[];
   ticketAnalytics: TicketSizeAnalytics | null;
   onChanged: () => Promise<void> | void;
   onGoToStaff: () => void;
+  onGoToRooms: () => void;
 }) {
   const hasReceptionist = staff.some(s => s.role === 'receptionist');
 
@@ -85,7 +86,7 @@ export function OverviewTab({ property, rooms, staff, ticketAnalytics, onChanged
 
       <PropertySettings property={property} onChanged={onChanged} />
 
-      {!property.hasExternalPms && <BookingLinkPanel propertyId={property.id} />}
+      {!property.hasExternalPms && <BookingLinkPanel propertyId={property.id} rooms={rooms} onGoToRooms={onGoToRooms} />}
 
       <MoreSettings propertyId={property.id} />
     </div>

@@ -356,6 +356,7 @@ export function ChoiceField({
   placeholder = 'Choose',
   newLabel = 'Add a new one…',
   optional = false,
+  emptyLabel = 'Not set',
 }: {
   options: string[];
   value: string;
@@ -364,6 +365,8 @@ export function ChoiceField({
   newLabel?: string;
   /** Lets the owner pick "Not set" to clear it. */
   optional?: boolean;
+  /** What the empty choice says when `optional` is on. */
+  emptyLabel?: string;
 }) {
   const all = [...new Set([...options, ...(value.trim() ? [value.trim()] : [])].map(o => o.trim()).filter(Boolean))];
   const [typing, setTyping] = useState(false);
@@ -394,7 +397,7 @@ export function ChoiceField({
       }}
       className={inputCls}
     >
-      <option value="" disabled={!optional}>{optional ? 'Not set' : placeholder}</option>
+      <option value="" disabled={!optional}>{optional ? emptyLabel : placeholder}</option>
       {all.map(o => <option key={o} value={o}>{o}</option>)}
       <option value="__new__">{newLabel}</option>
     </select>

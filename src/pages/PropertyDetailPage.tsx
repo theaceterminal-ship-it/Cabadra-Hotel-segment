@@ -208,6 +208,7 @@ export default function PropertyDetailPage({ properties, onChanged }: PropertyDe
             ticketAnalytics={ticketAnalytics}
             onChanged={handleReload}
             onGoToStaff={() => setTab('staff')}
+            onGoToRooms={() => setTab('rooms')}
           />
         ) : tab === 'reports' ? (
           // Same reports the front desk sees, including every day close and its cash difference.
