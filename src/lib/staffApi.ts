@@ -305,6 +305,25 @@ export async function updateRoom(roomId: string, patch: {
   if (error) throw error;
 }
 
+/** The same change to many rooms at once. Only the fields given are touched. */
+export async function bulkUpdateRooms(roomIds: string[], patch: {
+  type?: string; maxOccupancy?: number; pricePerNight?: number; image?: string; bedsDescription?: string; bathroomDetails?: string;
+}): Promise<void> {
+  if (roomIds.length === 0) return;
+  const changes = {
+    ...(patch.type !== undefined && { type: patch.type }),
+    ...(patch.maxOccupancy !== undefined && { max_occupancy: patch.maxOccupancy }),
+    ...(patch.pricePerNight !== undefined && { price_per_night: patch.pricePerNight }),
+    ...(patch.image !== undefined && { image: patch.image }),
+    ...(patch.bedsDescription !== undefined && { beds_description: patch.bedsDescription }),
+    ...(patch.bathroomDetails !== undefined && { bathroom_details: patch.bathroomDetails }),
+  };
+  if (Object.keys(changes).length === 0) return;
+  const { data, error } = await supabase.from('rooms').update(changes).in('id', roomIds).select('id');
+  if (error) throw error;
+  if ((data?.length ?? 0) !== roomIds.length) throw new Error(`Only ${data?.length ?? 0} of ${roomIds.length} rooms were changed. Reload and try again.`);
+}
+
 /** Creates a room for real — the missing piece that made a freshly-created property a dead end (no rooms means nothing for Reception to show or a reservation to point at). */
 export async function addRoom(propertyId: string, room: { number: string; type: string; floor: number; maxOccupancy?: number; pricePerNight: number; image?: string; bedsDescription?: string; bathroomDetails?: string }): Promise<void> {
   const { error } = await supabase.from('rooms').insert({
