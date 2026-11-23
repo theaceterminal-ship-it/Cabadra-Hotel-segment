@@ -112,7 +112,8 @@ export default function GuestApp() {
   // background while the stay loads, no logo or message in between.
   if (loading && !context) return <div className="fixed inset-0 bg-surface" aria-busy="true" />;
 
-  if (!effectiveToken) {
+  // A link that failed to load says so; "No active stay" is only for opening the app with no link at all.
+  if (!effectiveToken && !error) {
     return (
       <CenteredMessage
         title="No active stay"
